@@ -1,6 +1,14 @@
 import { AppSidebar } from "@/components/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Header } from "@/components/header";
+import { VisibilityScoreCard } from "@/components/VisibilityScoreCard";
+import { 
+  LineChartCard, 
+  DonutChartCard, 
+  BarChartCard, 
+  VisibilityBreakdownCard, 
+  WhatMovedCard 
+} from "@/components/DashboardCharts";
 
 const stats = [
   {
@@ -51,12 +59,19 @@ export default function Home() {
             ))}
           </div>
 
-          <section className="mt-8 flex-1 rounded-lg border border-dash-border bg-dash-card p-6">
-            <h2 className="text-dash-foreground">Overview</h2>
-            <p className="mt-2 text-body text-dash-muted">
-              Chart and metrics visualization will appear here.
-            </p>
-          </section>
+          <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div className="flex flex-col gap-6 xl:col-span-2">
+              <VisibilityScoreCard />
+              <WhatMovedCard />
+              <LineChartCard />
+            </div>
+            
+            <div className="flex flex-col gap-6">
+              <VisibilityBreakdownCard />
+              <DonutChartCard />
+              <BarChartCard />
+            </div>
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>
