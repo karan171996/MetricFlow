@@ -6,13 +6,13 @@ import { ArrowUp } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 const data = [
-  { name: "Jan", visibility: 40 },
-  { name: "Feb", visibility: 30 },
-  { name: "Mar", visibility: 45 },
-  { name: "Apr", visibility: 42 },
-  { name: "May", visibility: 60 },
-  { name: "Jun", visibility: 55 },
-  { name: "Jul", visibility: 78.4 },
+  { name: "Jan", score: 40 },
+  { name: "Feb", score: 30 },
+  { name: "Mar", score: 45 },
+  { name: "Apr", score: 42 },
+  { name: "May", score: 60 },
+  { name: "Jun", score: 55 },
+  { name: "Jul", score: 78.4 },
 ];
 
 export function VisibilityScoreCard() {
@@ -24,7 +24,7 @@ export function VisibilityScoreCard() {
     >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
-          <CardTitle className="text-[18px] font-bold text-white tracking-tight">Visibility Score</CardTitle>
+          <CardTitle className="text-[18px] font-bold text-white tracking-tight">Web Vitals Score</CardTitle>
           
           <div className="flex items-center rounded-full bg-[#0f1419] p-1 border border-gray-800">
             {["Daily", "Weekly", "Monthly"].map((p) => (
@@ -43,7 +43,7 @@ export function VisibilityScoreCard() {
           </div>
         </div>
         <CardDescription className="text-[13px] text-gray-400 pr-20">
-          Compass Visibility Score &middot; content performance over time
+          Aggregate Core Web Vitals score across tracked pages
         </CardDescription>
       </CardHeader>
 
@@ -69,7 +69,7 @@ export function VisibilityScoreCard() {
               </defs>
               <Area
                 type="monotone"
-                dataKey="visibility"
+                dataKey="score"
                 stroke="#3ee0a1"
                 strokeWidth={2}
                 fillOpacity={1}

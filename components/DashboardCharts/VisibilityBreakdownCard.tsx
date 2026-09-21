@@ -3,7 +3,7 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
-import { ArrowUp, MoreHorizontal, Eye, Link } from "lucide-react";
+import { ArrowUp, MoreHorizontal, Gauge, Zap } from "lucide-react";
 
 const trendData = [
   { value: 6.5 },
@@ -20,9 +20,9 @@ export function VisibilityBreakdownCard() {
     <Card className="w-full min-w-[350px] flex-1 rounded-xl border-[#2d3748] bg-[#1a202c] shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
       <CardHeader className="flex flex-row items-center justify-between p-6 pb-4">
         <div>
-          <CardTitle className="text-[18px] font-bold text-white tracking-tight">Visibility Breakdown</CardTitle>
+          <CardTitle className="text-[18px] font-bold text-white tracking-tight">Web Vitals Breakdown</CardTitle>
           <CardDescription className="text-[13px] text-gray-400 mt-1">
-            Rankings across your tracked keywords
+            Core Web Vitals across your tracked pages
           </CardDescription>
         </div>
         <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#2d3748] bg-[#0f1419] text-gray-400 hover:text-white transition-colors">
@@ -35,15 +35,15 @@ export function VisibilityBreakdownCard() {
         <div className="relative overflow-hidden rounded-xl border border-[#2d3748] bg-[#0f1419] p-5 flex flex-col justify-between h-[150px]">
           <div className="flex items-center gap-2 text-gray-300 relative z-10">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10">
-              <Eye className="h-3.5 w-3.5" />
+              <Gauge className="h-3.5 w-3.5" />
             </div>
-            <span className="text-sm font-medium">Avg Position</span>
+            <span className="text-sm font-medium">Avg Performance Score</span>
           </div>
           <div className="mt-2 flex items-end justify-between relative z-10">
-            <span className="text-[40px] font-bold leading-none tracking-tight text-white">8.5</span>
+            <span className="text-[40px] font-bold leading-none tracking-tight text-white">86.5</span>
             <div className="flex items-center text-sm font-medium text-[#3ee0a1]">
               <ArrowUp className="mr-1 h-3.5 w-3.5" />
-              <span>0.6</span>
+              <span>2.3</span>
             </div>
           </div>
           {/* Mini Chart Background */}
@@ -66,11 +66,11 @@ export function VisibilityBreakdownCard() {
         <div className="flex items-center justify-between rounded-xl border border-[#2d3748] bg-[#0f1419] p-4 transition-colors hover:bg-white/5 cursor-pointer">
           <div className="flex items-center gap-3 text-gray-300">
              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-white/5">
-              <Eye className="h-4 w-4" />
+              <Zap className="h-4 w-4" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-medium text-gray-400">Top 3 Rankings</span>
-              <span className="text-lg font-bold text-white leading-tight">47/47</span>
+              <span className="text-xs font-medium text-gray-400">Pages Passing Core Web Vitals</span>
+              <span className="text-lg font-bold text-white leading-tight">44/47</span>
             </div>
           </div>
           <div className="flex items-center rounded bg-[#10b981]/15 px-2 py-1 text-xs font-bold text-[#10b981]">
@@ -83,11 +83,11 @@ export function VisibilityBreakdownCard() {
         <div className="flex items-center justify-between rounded-xl border border-[#2d3748] bg-[#0f1419] p-4 transition-colors hover:bg-white/5 cursor-pointer">
           <div className="flex items-center gap-3 text-gray-300">
              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-white/5">
-              <Link className="h-4 w-4" />
+              <Gauge className="h-4 w-4" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-medium text-gray-400">Top 10 Rankings</span>
-              <span className="text-lg font-bold text-white leading-tight">82/100</span>
+              <span className="text-xs font-medium text-gray-400">Pages Within Load Budget</span>
+              <span className="text-lg font-bold text-white leading-tight">86/100</span>
             </div>
           </div>
           <div className="flex items-center rounded bg-[#10b981]/15 px-2 py-1 text-xs font-bold text-[#10b981]">

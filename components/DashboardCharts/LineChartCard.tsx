@@ -18,7 +18,7 @@ export function LineChartCard() {
   return (
     <Card className="w-full rounded-xl border-[#2d3748] bg-[#1a202c] shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
       <CardHeader className="p-6 pb-2">
-        <CardTitle className="text-[18px] font-bold text-white tracking-tight">Visibility Trend</CardTitle>
+        <CardTitle className="text-[18px] font-bold text-white tracking-tight">Core Web Vitals Score Trend</CardTitle>
       </CardHeader>
       <CardContent className="p-6 pt-2">
         <div className="h-[250px] w-full mt-4">

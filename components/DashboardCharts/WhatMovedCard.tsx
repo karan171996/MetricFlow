@@ -5,19 +5,19 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { ArrowUp, ArrowDown, MoreHorizontal } from "lucide-react";
 
 const gainers = [
-  { rank: "#3", keyword: "best B2B CRM 2026", path: "/blog/best-crm-2026", change: 6, vol: "8,400/mo" },
-  { rank: "#5", keyword: "API integration testing", path: "/guides/api-testing", change: 4, vol: "3,200/mo" },
-  { rank: "#2", keyword: "switching from Salesforce", path: "/compare/salesforce-alternatives", change: 3, vol: "2,100/mo" },
-  { rank: "#8", keyword: "lead scoring model", path: "/blog/lead-scoring", change: 5, vol: "1,800/mo" },
-  { rank: "#4", keyword: "data warehouse vs data lake", path: "/blog/warehouse-vs-lake", change: 4, vol: "4,400/mo" },
+  { rank: "92", page: "/checkout", path: "LCP 1.4s → 0.9s", change: 6, vol: "8,400 views/mo" },
+  { rank: "88", page: "/pricing", path: "TTFB 320ms → 190ms", change: 4, vol: "3,200 views/mo" },
+  { rank: "95", page: "/product/[slug]", path: "CLS 0.18 → 0.08", change: 3, vol: "2,100 views/mo" },
+  { rank: "81", page: "/blog/[slug]", path: "LCP 2.1s → 1.5s", change: 5, vol: "1,800 views/mo" },
+  { rank: "90", page: "/signup", path: "TTFB 280ms → 150ms", change: 4, vol: "4,400 views/mo" },
 ];
 
 const decliners = [
-  { rank: "#18", keyword: "marketing automation", path: "/blog/marketing-automation", change: -9, vol: "12,000/mo" },
-  { rank: "#14", keyword: "what is RevOps", path: "/guides/revops-101", change: -6, vol: "5,400/mo" },
-  { rank: "#22", keyword: "B2B email subject lines", path: "/blog/email-subject-lines", change: -11, vol: "3,200/mo" },
-  { rank: "#16", keyword: "sales pipeline template", path: "/resources/pipeline-template", change: -4, vol: "2,800/mo" },
-  { rank: "#19", keyword: "outbound vs inbound", path: "/blog/outbound-inbound", change: -7, vol: "1,900/mo" },
+  { rank: "58", page: "/dashboard", path: "LCP 1.2s → 2.4s", change: -9, vol: "12,000 views/mo" },
+  { rank: "64", page: "/settings", path: "CLS 0.05 → 0.15", change: -6, vol: "5,400 views/mo" },
+  { rank: "49", page: "/search", path: "TTFB 200ms → 480ms", change: -11, vol: "3,200 views/mo" },
+  { rank: "70", page: "/profile", path: "LCP 1.6s → 2.0s", change: -4, vol: "2,800 views/mo" },
+  { rank: "55", page: "/analytics", path: "CLS 0.06 → 0.14", change: -7, vol: "1,900 views/mo" },
 ];
 
 export function WhatMovedCard() {
@@ -25,9 +25,9 @@ export function WhatMovedCard() {
     <Card className="w-full flex-[2] min-w-[350px] rounded-xl border-[#2d3748] bg-[#1a202c] shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
       <CardHeader className="flex flex-row items-center justify-between p-6 pb-4">
         <div>
-          <CardTitle className="text-[18px] font-bold text-white tracking-tight">What moved this week</CardTitle>
+          <CardTitle className="text-[18px] font-bold text-white tracking-tight">Page Performance Changes</CardTitle>
           <CardDescription className="text-[13px] text-gray-400 mt-1">
-            Keyword rankings movement &middot; last 7 days
+            Frontend performance movement &middot; last 7 days
           </CardDescription>
         </div>
         <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#2d3748] bg-[#0f1419] text-gray-400 hover:text-white transition-colors">
@@ -42,7 +42,7 @@ export function WhatMovedCard() {
           <div className="flex flex-col">
             <div className="flex items-center gap-2 mb-4">
               <div className="h-2 w-2 rounded-full bg-[#10b981]" />
-              <span className="text-sm font-semibold text-[#10b981]">Gainers</span>
+              <span className="text-sm font-semibold text-[#10b981]">Improved</span>
             </div>
             
             <div className="flex flex-col gap-3 max-h-[360px] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[#2d3748] [&::-webkit-scrollbar-thumb]:rounded-full">
@@ -53,7 +53,7 @@ export function WhatMovedCard() {
                       {item.rank}
                     </div>
                     <div className="flex flex-col overflow-hidden">
-                      <a href="#" className="text-[13px] font-bold text-white group-hover:underline truncate">{item.keyword}</a>
+                      <a href="#" className="text-[13px] font-bold text-white group-hover:underline truncate">{item.page}</a>
                       <span className="text-[11px] text-gray-500 truncate">{item.path}</span>
                     </div>
                   </div>
@@ -73,7 +73,7 @@ export function WhatMovedCard() {
           <div className="flex flex-col">
             <div className="flex items-center gap-2 mb-4">
               <div className="h-2 w-2 rounded-full bg-[#ef4444]" />
-              <span className="text-sm font-semibold text-[#ef4444]">Decliners</span>
+              <span className="text-sm font-semibold text-[#ef4444]">Regressed</span>
             </div>
             
             <div className="flex flex-col gap-3 max-h-[360px] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[#2d3748] [&::-webkit-scrollbar-thumb]:rounded-full">
@@ -84,7 +84,7 @@ export function WhatMovedCard() {
                       {item.rank}
                     </div>
                     <div className="flex flex-col overflow-hidden">
-                      <a href="#" className="text-[13px] font-bold text-white group-hover:underline truncate">{item.keyword}</a>
+                      <a href="#" className="text-[13px] font-bold text-white group-hover:underline truncate">{item.page}</a>
                       <span className="text-[11px] text-gray-500 truncate">{item.path}</span>
                     </div>
                   </div>
