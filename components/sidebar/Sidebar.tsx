@@ -1,5 +1,7 @@
 "use client";
 
+import NextLink from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Layers,
@@ -27,22 +29,23 @@ import {
 
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard" },
-  { icon: Layers, label: "Layers" },
-  { icon: Bell, label: "Notifications" },
-  { icon: Box, label: "Projects" },
-  { icon: BarChart2, label: "Analytics" },
-  { icon: Link, label: "Connections" },
-  { icon: Mail, label: "Messages" },
-  { icon: Users, label: "Team" },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/" },
+  // { icon: Layers, label: "Layers", href: "#" },
+  // { icon: Bell, label: "Notifications", href: "#" },
+  // { icon: Box, label: "Projects", href: "#" },
+  { icon: BarChart2, label: "Performance", href: "/performance" },
+  // { icon: Link, label: "Connections", href: "#" },
+  // { icon: Mail, label: "Messages", href: "#" },
+  // { icon: Users, label: "Team", href: "#" },
 ];
 
 export function AppSidebar() {
 
   const { isMobile } = useSidebar()
+  const pathname = usePathname()
 
   return (
-    <Sidebar collapsible={isMobile ? "offcanvas" : "none"} className="w-[70px] border-r bg-[#131518] text-white">
+    <Sidebar collapsible={isMobile ? "offcanvas" : "none"} className="w-[70px] border-r border-[#2d3748] bg-[#131518] text-white sticky top-0 h-screen overflow-y-auto [&::-webkit-scrollbar]:hidden">
       <SidebarHeader className="flex items-center justify-center py-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#3ee0a1] text-black">
           <Hexagon className="h-6 w-6 fill-current" />
@@ -54,8 +57,10 @@ export function AppSidebar() {
           {navItems.map((item, index) => (
             <SidebarMenuItem key={index}>
               <SidebarMenuButton
+                render={<NextLink href={item.href} />}
+                isActive={pathname === item.href}
                 tooltip={item.label}
-                className={isMobile 
+                className={isMobile
                   ? "w-full justify-start gap-4 p-3 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white text-base"
                   : "h-10 w-10 justify-center rounded-lg text-gray-400 hover:bg-white/10 hover:text-white"}
               >
@@ -70,9 +75,11 @@ export function AppSidebar() {
       <SidebarFooter className={isMobile ? "p-4" : "flex flex-col items-center gap-4 pb-4"}>
         <SidebarMenu className={isMobile ? "gap-2" : "flex flex-col items-center gap-4"}>
           <SidebarMenuItem>
-            <SidebarMenuButton 
-              tooltip="Settings" 
-              className={isMobile 
+            <SidebarMenuButton
+              render={<NextLink href="/settings" />}
+              isActive={pathname === "/settings"}
+              tooltip="Settings"
+              className={isMobile
                 ? "w-full justify-start gap-4 p-3 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white text-base"
                 : "h-10 w-10 justify-center rounded-lg text-gray-400 hover:bg-white/10 hover:text-white"}
             >
@@ -81,9 +88,9 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton 
-              tooltip="Log out" 
-              className={isMobile 
+            <SidebarMenuButton
+              tooltip="Log out"
+              className={isMobile
                 ? "w-full justify-start gap-4 p-3 rounded-lg text-red-400 hover:bg-red-400/10 hover:text-red-400 text-base"
                 : "h-10 w-10 justify-center rounded-lg text-red-400 hover:bg-red-400/10 hover:text-red-400"}
             >
@@ -92,9 +99,9 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton 
-              tooltip="Profile" 
-              className={isMobile 
+            <SidebarMenuButton
+              tooltip="Profile"
+              className={isMobile
                 ? "w-full justify-start gap-4 p-3 rounded-lg hover:bg-white/10 text-base mt-2"
                 : "h-10 w-10 justify-center p-0 overflow-hidden rounded-full border border-gray-700 mt-2"}
             >

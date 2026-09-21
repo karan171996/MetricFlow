@@ -60,7 +60,7 @@ export function BarChartCard() {
                   position="right" 
                   fill="#9ca3af" 
                   fontSize={12}
-                  formatter={(value: number) => value.toLocaleString()}
+                  formatter={(value: any) => Number(value).toLocaleString()}
                 />
               </Bar>
             </BarChart>
