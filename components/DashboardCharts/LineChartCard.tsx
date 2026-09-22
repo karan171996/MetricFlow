@@ -3,27 +3,21 @@
 import React from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { LineChartCardData } from "@/types";
 
-const data = [
-  { month: "JAN", value: 30 },
-  { month: "FEB", value: 45 },
-  { month: "MAR", value: 40 },
-  { month: "APR", value: 65 },
-  { month: "MAY", value: 55 },
-  { month: "JUN", value: 75 },
-  { month: "JUL", value: 85 },
-];
-
-export function LineChartCard() {
+export function LineChartCard({ title, points }: LineChartCardData) {
   return (
     <Card className="w-full rounded-xl border-[#2d3748] bg-[#1a202c] shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
       <CardHeader className="p-6 pb-2">
-        <CardTitle className="text-[18px] font-bold text-white tracking-tight">Core Web Vitals Score Trend</CardTitle>
+        <CardTitle className="text-[18px] font-bold text-white tracking-tight">{title}</CardTitle>
       </CardHeader>
       <CardContent className="p-6 pt-2">
         <div className="h-[250px] w-full mt-4">
+          {points.length === 0 ? (
+            <p className="text-xs text-gray-500">Not enough history yet — check back shortly.</p>
+          ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart data={points} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -58,6 +52,7 @@ export function LineChartCard() {
               />
             </AreaChart>
           </ResponsiveContainer>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -1,7 +1,10 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { AppSidebar } from "@/components/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Header } from "@/components/header";
-import { VisibilityScoreCard } from "@/components/VisibilityScoreCard";
+import { DashboardBodySkeleton } from "@/components/Skeletons";
 import {
   LineChartCard,
   AISuggestionsDonutCard,
@@ -10,41 +13,123 @@ import {
   WhatMovedCard,
   WebVitalCard
 } from "@/components/DashboardCharts";
+import {
+  computeStats,
+  computeWebVitals,
+  computeVisibilityBreakdown,
+  computeWhatMoved,
+  computeCwvTrend,
+  alertsToSuggestions
+} from "@/lib/dashboardTransforms";
+import type { MetricsPage, MetricsSnapshot } from "@/lib/metricsHistory";
 
-const stats = [
-  {
-    label: "Avg Response Time",
-    value: "124ms",
-    change: "-12% from last hour",
-    changeClass: "text-dash-success",
-  },
-  {
-    label: "Error Rate",
-    value: "0.08%",
-    change: "+0.02% from last hour",
-    changeClass: "text-dash-warning",
-  },
-  {
-    label: "Throughput",
-    value: "2.4k/s",
-    change: "+8% from last hour",
-    changeClass: "text-dash-success-cyan",
-  },
-  {
-    label: "Apdex Score",
-    value: "0.94",
-    change: "Stable",
-    changeClass: "text-dash-blue",
-  },
-];
+interface MetricsResponse {
+  pages: MetricsPage[];
+  history: MetricsSnapshot[];
+  timestamp: string;
+}
+
+interface AnalysisResponse {
+  analysis?: string;
+  alerts?: { severity: "high" | "medium" | "low"; page: string; message: string; metric: string }[];
+  recommendations?: string[];
+}
+
+const REFRESH_INTERVAL_MS = 30000;
+const ANALYZE_INTERVAL_MS = 24 * 60 * 60 * 1000; // Gemini call: at most once/day for now
+const LAST_ANALYZED_KEY = "dashboard:lastAnalyzedAt";
+
+function shouldRunAnalysis(): boolean {
+  try {
+    const last = localStorage.getItem(LAST_ANALYZED_KEY);
+    return !last || Date.now() - Number(last) >= ANALYZE_INTERVAL_MS;
+  } catch {
+    return true;
+  }
+}
+
+function markAnalysisRan() {
+  try {
+    localStorage.setItem(LAST_ANALYZED_KEY, String(Date.now()));
+  } catch {
+    // localStorage unavailable (private mode, etc.) — falls back to running every fetch
+  }
+}
 
 export default function Home() {
+  const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
+  const [refreshing, setRefreshing] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  async function fetchData() {
+    try {
+      setRefreshing(true);
+
+      const metricsRes = await fetch("/api/metrics");
+      const metricsData: MetricsResponse = await metricsRes.json();
+      setMetrics(metricsData);
+
+      if (shouldRunAnalysis()) {
+        const analysisRes = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ metrics: { pages: metricsData.pages } })
+        });
+        const analysisData: AnalysisResponse = await analysisRes.json();
+        setAnalysis(analysisData);
+        markAnalysisRan();
+      }
+
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+      setError("Failed to load live data.");
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate fetch-on-mount + poll
+    fetchData();
+    const interval = setInterval(fetchData, REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!metrics) {
+    return (
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset className="bg-dash-surface">
+          <Header />
+          <DashboardBodySkeleton />
+        </SidebarInset>
+      </SidebarProvider>
+    );
+  }
+
+  const { pages, history } = metrics;
+  const stats = computeStats(pages, history);
+  const webVitals = computeWebVitals(pages, history);
+  const visibility = computeVisibilityBreakdown(pages, history);
+  const whatMoved = computeWhatMoved(pages, history);
+  const cwvTrend = computeCwvTrend(history);
+  const suggestions = alertsToSuggestions(analysis);
+
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="bg-dash-surface">
         <Header />
         <div className="flex flex-1 flex-col p-6 md:p-8">
+          {error && (
+            <div className="mb-4 rounded-lg border border-dash-warning/40 bg-dash-warning/10 px-4 py-2 text-body-sm text-dash-warning">
+              {error}
+              {refreshing && <span className="ml-2 text-dash-muted">Retrying…</span>}
+            </div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((stat) => (
               <div
@@ -63,50 +148,17 @@ export default function Home() {
           <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             <div className="flex flex-col gap-6 xl:col-span-2">
               <div className="grid gap-6 md:grid-cols-3">
-                <WebVitalCard
-                  title="TTFB"
-                  description="Time to First Byte"
-                  value="120ms"
-                  change="12ms"
-                  isPositive={true}
-                  color="#3ee0a1"
-                  data={[
-                    { name: "1", value: 180 }, { name: "2", value: 160 }, { name: "3", value: 140 },
-                    { name: "4", value: 130 }, { name: "5", value: 125 }, { name: "6", value: 120 }
-                  ]}
-                />
-                <WebVitalCard
-                  title="LCP"
-                  description="Largest Contentful Paint"
-                  value="1.2s"
-                  change="0.2s"
-                  isPositive={true}
-                  color="#3ee0a1"
-                  data={[
-                    { name: "1", value: 1.8 }, { name: "2", value: 1.6 }, { name: "3", value: 1.5 },
-                    { name: "4", value: 1.4 }, { name: "5", value: 1.3 }, { name: "6", value: 1.2 }
-                  ]}
-                />
-                <WebVitalCard
-                  title="CLS"
-                  description="Cumulative Layout Shift"
-                  value="0.12"
-                  change="0.04"
-                  isPositive={false}
-                  color="#ef4444"
-                  data={[
-                    { name: "1", value: 0.05 }, { name: "2", value: 0.06 }, { name: "3", value: 0.08 },
-                    { name: "4", value: 0.10 }, { name: "5", value: 0.11 }, { name: "6", value: 0.12 }
-                  ]}
-                />
+                <WebVitalCard {...webVitals.ttfb} />
+                <WebVitalCard {...webVitals.lcp} />
+                <WebVitalCard {...webVitals.cls} />
               </div>
-              <WhatMovedCard />
-              <LineChartCard />
+              <WhatMovedCard {...whatMoved} />
+              <LineChartCard {...cwvTrend} />
             </div>
 
             <div className="flex flex-col gap-6">
-              <VisibilityBreakdownCard />
-              <AISuggestionsDonutCard />
+              <VisibilityBreakdownCard {...visibility} />
+              <AISuggestionsDonutCard suggestions={suggestions} />
               <BarChartCard />
             </div>
           </div>

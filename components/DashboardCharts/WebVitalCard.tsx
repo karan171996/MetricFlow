@@ -4,16 +4,9 @@ import React, { useState } from "react";
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import type { WebVitalCardData } from "@/types";
 
-interface WebVitalCardProps {
-  title: string;
-  description: string;
-  value: string;
-  change: string;
-  isPositive: boolean;
-  color: string;
-  data: { name: string; value: number }[];
-}
+type WebVitalCardProps = WebVitalCardData;
 
 export function WebVitalCard({ title, description, value, change, isPositive, color, data }: WebVitalCardProps) {
   const [period, setPeriod] = useState("Monthly");
