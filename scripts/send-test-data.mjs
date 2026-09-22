@@ -40,6 +40,7 @@ async function sendToNewRelic() {
         loadTime: 845,
         lcp: 800,
         ttfb: 100,
+        cls: 0.08,
         fid: 50,
         errorRate: 0.12,
         throughput: 1000,

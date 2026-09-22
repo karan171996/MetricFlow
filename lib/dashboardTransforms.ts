@@ -77,25 +77,6 @@ function sparkline(history: MetricsSnapshot[], pick: (p: MetricsPage) => number)
   }));
 }
 
-/**
- * CLS has no real source anywhere in the pipeline — New Relic's
- * PageMetrics event (see lib/newrelic.ts) never collects it, so this card
- * stays illustrative, same as BarChartCard's rankings. Wire it up once a
- * real CLS beacon field exists.
- */
-const MOCK_CLS: WebVitalCardData = {
-  title: 'CLS',
-  description: 'Cumulative Layout Shift',
-  value: '0.12',
-  change: '0.04',
-  isPositive: false,
-  color: '#ef4444',
-  data: [
-    { label: '1', value: 0.05 }, { label: '2', value: 0.06 }, { label: '3', value: 0.08 },
-    { label: '4', value: 0.10 }, { label: '5', value: 0.11 }, { label: '6', value: 0.12 }
-  ]
-};
-
 export function computeWebVitals(
   pages: MetricsPage[],
   history: MetricsSnapshot[]
@@ -103,8 +84,10 @@ export function computeWebVitals(
   const prev = previousPages(history);
   const ttfb = avg(pages.map(p => p.newRelic.ttfb));
   const lcp = avg(pages.map(p => p.newRelic.lcp));
+  const cls = avg(pages.map(p => p.newRelic.cls));
   const prevTtfb = prev ? avg(prev.map(p => p.newRelic.ttfb)) : ttfb;
   const prevLcp = prev ? avg(prev.map(p => p.newRelic.lcp)) : lcp;
+  const prevCls = prev ? avg(prev.map(p => p.newRelic.cls)) : cls;
 
   return {
     ttfb: {
@@ -125,7 +108,15 @@ export function computeWebVitals(
       color: lcp <= prevLcp ? '#3ee0a1' : '#ef4444',
       data: sparkline(history, p => p.newRelic.lcp)
     },
-    cls: MOCK_CLS
+    cls: {
+      title: 'CLS',
+      description: 'Cumulative Layout Shift',
+      value: cls.toFixed(2),
+      change: Math.abs(cls - prevCls).toFixed(2),
+      isPositive: cls <= prevCls,
+      color: cls <= prevCls ? '#3ee0a1' : '#ef4444',
+      data: sparkline(history, p => p.newRelic.cls)
+    }
   };
 }
 

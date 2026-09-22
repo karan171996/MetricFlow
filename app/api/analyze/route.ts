@@ -1,5 +1,6 @@
 import { analyzeMetrics } from '@/lib/aiAnalysis';
 import { mockAnalysis } from '@/lib/mockData';
+import { recordTiming } from '@/lib/apiTimingStore';
 
 export async function POST(request: Request) {
   try {
@@ -12,10 +13,12 @@ export async function POST(request: Request) {
       return Response.json(mockAnalysis);
     }
 
+    const geminiStart = performance.now();
     const analysis = await analyzeMetrics(
       data.metrics,
       process.env.GEMINI_API_KEY ?? ''
     );
+    recordTiming('Gemini: analyze', performance.now() - geminiStart);
 
     return Response.json(analysis);
   } catch (error) {

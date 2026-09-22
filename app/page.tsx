@@ -22,6 +22,7 @@ import {
   alertsToSuggestions
 } from "@/lib/dashboardTransforms";
 import type { MetricsPage, MetricsSnapshot } from "@/lib/metricsHistory";
+import type { TrafficBarItem } from "@/types";
 
 interface MetricsResponse {
   pages: MetricsPage[];
@@ -59,6 +60,7 @@ function markAnalysisRan() {
 export default function Home() {
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
+  const [apiTimings, setApiTimings] = useState<TrafficBarItem[]>([]);
   const [refreshing, setRefreshing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,6 +71,10 @@ export default function Home() {
       const metricsRes = await fetch("/api/metrics");
       const metricsData: MetricsResponse = await metricsRes.json();
       setMetrics(metricsData);
+
+      const timingsRes = await fetch("/api/timings");
+      const timingsData: { items: TrafficBarItem[] } = await timingsRes.json();
+      setApiTimings(timingsData.items);
 
       if (shouldRunAnalysis()) {
         const analysisRes = await fetch("/api/analyze", {
@@ -159,7 +165,7 @@ export default function Home() {
             <div className="flex flex-col gap-6">
               <VisibilityBreakdownCard {...visibility} />
               <AISuggestionsDonutCard suggestions={suggestions} />
-              <BarChartCard />
+              <BarChartCard title="Rankings Moved" items={apiTimings} />
             </div>
           </div>
         </div>

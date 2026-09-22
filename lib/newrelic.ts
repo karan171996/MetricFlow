@@ -6,6 +6,7 @@ export interface NewRelicPageMetrics {
   loadTime: number;
   lcp: number;
   ttfb: number;
+  cls: number;
   fid: number;
   errorRate: number;
   throughput: number;
@@ -31,7 +32,7 @@ export async function getNewRelicMetrics(
       query {
         actor {
           account(id: ${accountId}) {
-            nrql(query: "SELECT average(loadTime) as loadTime, average(lcp) as lcp, average(ttfb) as ttfb, average(fid) as fid, average(errorRate) as errorRate, average(throughput) as throughput, average(apdexScore) as apdexScore FROM PageMetrics FACET page SINCE 1 hour ago LIMIT MAX") {
+            nrql(query: "SELECT average(loadTime) as loadTime, average(lcp) as lcp, average(ttfb) as ttfb, average(cls) as cls, average(fid) as fid, average(errorRate) as errorRate, average(throughput) as throughput, average(apdexScore) as apdexScore FROM PageMetrics FACET page SINCE 1 hour ago LIMIT MAX") {
               results
             }
           }
@@ -85,6 +86,7 @@ function parseNewRelicResponse(data: NewRelicGraphQLResponse): Record<string, Ne
       loadTime: Number(row.loadTime ?? 0),
       lcp: Number(row.lcp ?? 0),
       ttfb: Number(row.ttfb ?? 0),
+      cls: Number(row.cls ?? 0),
       fid: Number(row.fid ?? 0),
       errorRate: Number(row.errorRate ?? 0),
       throughput: Number(row.throughput ?? 0),
