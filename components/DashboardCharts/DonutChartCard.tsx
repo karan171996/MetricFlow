@@ -12,11 +12,13 @@ const data = [
   { name: "modern data stack", value: 189, fill: "#f59e0b" }, // orange
 ];
 
-const renderCustomLegend = (props: any) => {
-  const { payload } = props;
+type LegendEntry = { value?: string | number; color?: string };
+
+const renderCustomLegend = (props: { payload?: readonly LegendEntry[] }) => {
+  const { payload = [] } = props;
   return (
     <ul className="flex flex-col gap-3 pl-4">
-      {payload.map((entry: any, index: number) => (
+      {payload.map((entry, index) => (
         <li key={`item-${index}`} className="flex items-center text-[13px] text-gray-300">
           <span
             className="mr-3 block h-3 w-3 rounded-sm"

@@ -19,7 +19,7 @@ export function ThresholdSettings() {
           Performance Thresholds
         </CardTitle>
         <CardDescription className="text-sm text-gray-400">
-          Set the boundaries that will trigger "Warning" or "Critical" statuses in your dashboard.
+          Set the boundaries that will trigger &quot;Warning&quot; or &quot;Critical&quot; statuses in your dashboard.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-8 max-w-2xl">

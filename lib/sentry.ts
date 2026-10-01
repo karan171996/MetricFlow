@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { normalizePath } from '@/lib/discoverPages';
 
 const SENTRY_API_URL = 'https://sentry.io/api/0';
 
@@ -9,73 +10,85 @@ export interface SentryPageErrors {
   latestErrors: { title: string; count: number; lastSeen: string }[];
 }
 
-const EMPTY_SENTRY_DATA: SentryPageErrors = {
+export const EMPTY_SENTRY_DATA: SentryPageErrors = {
   errorCount: 0,
   errorRate: 0,
   warningCount: 0,
   latestErrors: []
 };
 
+const sentryHeaders = (token: string) => ({ Authorization: `Bearer ${token}` });
+
+// ponytail: in-process memo of slug -> numeric id (the events API wants the numeric id).
+const projectIdCache = new Map<string, string>();
+
+async function numericProjectId(token: string, org: string, project: string): Promise<string> {
+  const k = `${org}/${project}`;
+  const hit = projectIdCache.get(k);
+  if (hit) return hit;
+  const res = await axios.get(`${SENTRY_API_URL}/projects/${encodeURIComponent(org)}/${encodeURIComponent(project)}/`, {
+    headers: sentryHeaders(token),
+    timeout: 8000
+  });
+  const id = String(res.data?.id ?? '');
+  if (!id) throw new Error('no project id');
+  projectIdCache.set(k, id);
+  return id;
+}
+
 /**
- * Returns unresolved-issue counts for one page, filtered by Sentry's
- * built-in `url` tag (auto-set by the browser/Next.js SDK from
- * request/page context). A page with no matching issues just hasn't
- * errored yet — that's `EMPTY_SENTRY_DATA`, not a failure.
+ * ONE org-level events call (last 24h, errors only) grouped by url + title,
+ * summed per normalized page path. Replaces one call per page (rate limits).
+ * Pages with no matching events are simply absent from the result.
+ * Warnings are not counted here (only event.type:error is queried).
  */
-export async function getSentryErrors(
+export async function getSentryErrorsByPath(
   apiKey: string,
   orgSlug: string,
-  projectId: string,
-  pageUrl: string
-): Promise<SentryPageErrors> {
-  if (!apiKey || !orgSlug || !projectId) {
-    return EMPTY_SENTRY_DATA;
-  }
+  project: string
+): Promise<Record<string, SentryPageErrors>> {
+  if (!apiKey || !orgSlug || !project) return {};
 
   try {
-    const response = await axios.get(
-      `${SENTRY_API_URL}/projects/${orgSlug}/${projectId}/issues/`,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`
-        },
-        params: {
-          query: `is:unresolved url:${pageUrl}`,
-          limit: 25
-        }
-      }
-    );
-
-    return parseSentryResponse(response.data);
+    const id = await numericProjectId(apiKey, orgSlug, project);
+    const res = await axios.get(`${SENTRY_API_URL}/organizations/${encodeURIComponent(orgSlug)}/events/`, {
+      headers: sentryHeaders(apiKey),
+      timeout: 10000,
+      params: {
+        project: id,
+        field: ['url', 'title', 'count()', 'last_seen()'],
+        query: 'event.type:error',
+        statsPeriod: '24h',
+        sort: '-last_seen',
+        per_page: 100
+      },
+      paramsSerializer: { indexes: null }
+    });
+    return groupByPath(res.data?.data ?? []);
   } catch (error) {
-    console.error('Sentry API error:', error);
-    return EMPTY_SENTRY_DATA;
+    console.error('Sentry API error:', axios.isAxiosError(error) ? error.response?.status : 'request failed');
+    return {};
   }
 }
 
-interface SentryIssue {
-  title: string;
-  count: string;
-  lastSeen: string;
-  level: string;
+interface SentryEventRow {
+  url?: string;
+  title?: string;
+  'count()'?: number;
+  'last_seen()'?: string;
 }
 
-function parseSentryResponse(issues: SentryIssue[]): SentryPageErrors {
-  const errors = issues.filter(i => i.level === 'error' || i.level === 'fatal');
-  const warnings = issues.filter(i => i.level === 'warning');
-  const errorCount = errors.reduce((sum, i) => sum + Number(i.count), 0);
-
-  return {
-    errorCount,
-    // ponytail: no page-visit source wired up yet, so errorRate is a
-    // count-based stand-in (errors per issue), not errors/visits. Upgrade
-    // once real traffic numbers are available per page.
-    errorRate: errors.length ? Number((errorCount / errors.length).toFixed(2)) : 0,
-    warningCount: warnings.length,
-    latestErrors: errors.slice(0, 5).map(i => ({
-      title: i.title,
-      count: Number(i.count),
-      lastSeen: i.lastSeen
-    }))
-  };
+function groupByPath(rows: SentryEventRow[]): Record<string, SentryPageErrors> {
+  const out: Record<string, SentryPageErrors> = {};
+  for (const row of rows) {
+    const path = normalizePath(row.url ?? '');
+    if (path === null) continue;
+    const entry = (out[path] ??= { errorCount: 0, errorRate: 0, warningCount: 0, latestErrors: [] });
+    const count = Number(row['count()'] ?? 0);
+    entry.errorCount += count;
+    if (entry.latestErrors.length < 5) {
+      entry.latestErrors.push({ title: row.title ?? 'Unknown error', count, lastSeen: row['last_seen()'] ?? '' });
+    }
+  }
+  return out;
 }
