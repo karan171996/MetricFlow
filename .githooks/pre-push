@@ -1,0 +1,9 @@
+#!/bin/sh
+cd "$(git rev-parse --show-toplevel)" || exit 1
+npm run -s test:cli || { echo "BLOCKED: tests failed"; exit 1; }
+npx --no-install tsc --noEmit || { echo "BLOCKED: type errors"; exit 1; }
+npm run -s lint || { echo "BLOCKED: lint failed"; exit 1; }
+npm audit --audit-level=high || { echo "BLOCKED: high/critical vulnerabilities (npm audit)"; exit 1; }
+# secrets in anything about to be pushed
+git grep -n -I -E 'sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|NRAK-[A-Z0-9]{20,}|sntry[su]_[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY' && { echo "BLOCKED: token in tracked files"; exit 1; }
+exit 0
