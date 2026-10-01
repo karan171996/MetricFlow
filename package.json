@@ -10,7 +10,10 @@
     "cy:open": "cypress open",
     "cy:run": "cypress run",
     "prepublishOnly": "next build",
-    "test:cli": "node --experimental-test-module-mocks --import ./test/register.mjs --test test/*.test.mjs"
+    "test:cli": "node --experimental-test-module-mocks --import ./test/register.mjs --test test/*.test.mjs",
+    "test:basic": "node scripts/test-env.mjs basic",
+    "test:real": "node scripts/test-env.mjs real",
+    "test": "npm run test:basic"
   },
   "dependencies": {
     "axios": "^1.20.0",

@@ -5,7 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { load, root } from "./helpers.mjs";
+import { load, root } from "../helpers.mjs";
 
 const REQUIRED = ["NEWRELIC_API_KEY", "NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID", "SENTRY_API_KEY", "SENTRY_ORG_SLUG", "SENTRY_PROJECT_ID"];
 const file = join(root, ".env.local");
