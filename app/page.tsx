@@ -21,10 +21,13 @@ import {
   computeCwvTrend,
   alertsToSuggestions
 } from "@/lib/dashboardTransforms";
+import { EmptyState } from "@/components/EmptyState";
+import { hasData } from "@/lib/useMetrics";
 import type { MetricsPage, MetricsSnapshot } from "@/lib/metricsHistory";
 import type { TrafficBarItem } from "@/types";
 
 interface MetricsResponse {
+  configured: boolean;
   pages: MetricsPage[];
   history: MetricsSnapshot[];
   timestamp: string;
@@ -76,7 +79,7 @@ export default function Home() {
       const timingsData: { items: TrafficBarItem[] } = await timingsRes.json();
       setApiTimings(timingsData.items);
 
-      if (shouldRunAnalysis()) {
+      if (metricsData.configured && shouldRunAnalysis()) {
         const analysisRes = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -116,6 +119,23 @@ export default function Home() {
   }
 
   const { pages, history } = metrics;
+  if (!metrics.configured || !pages.some(hasData)) {
+    return (
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset className="bg-dash-surface">
+          <Header />
+          <div className="flex flex-1 flex-col p-6 md:p-8">
+            {metrics.configured ? (
+              <EmptyState />
+            ) : (
+              <EmptyState title="Connect your data" reason="Add your New Relic and Sentry keys to see real numbers." href="/setup" cta="Set up keys" />
+            )}
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    );
+  }
   const stats = computeStats(pages, history);
   const webVitals = computeWebVitals(pages, history);
   const visibility = computeVisibilityBreakdown(pages, history);

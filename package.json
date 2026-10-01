@@ -1,14 +1,16 @@
 {
   "name": "performance-dashboard",
   "version": "0.1.0",
-  "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 127.0.0.1",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -H 127.0.0.1",
     "lint": "eslint",
     "send-test-data": "node scripts/send-test-data.mjs",
-    "send-test-rankings": "node scripts/send-test-rankings.mjs"
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "prepublishOnly": "next build",
+    "test:cli": "node --experimental-test-module-mocks --import ./test/register.mjs --test test/*.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -18,7 +20,7 @@
     "cn": "^0.3.0",
     "dotenv": "^18.0.1",
     "lucide-react": "^1.47.0",
-    "next": "16.3.5",
+    "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "recharts": "^3.10.1",
@@ -30,9 +32,25 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cypress": "^16.1.1",
     "eslint": "^9",
-    "eslint-config-next": "16.3.5",
+    "eslint-config-next": "16.3.8",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "bin": {
+    "performance-dashboard": "bin/cli.mjs"
+  },
+  "files": [
+    "bin",
+    "public",
+    ".next",
+    "!.next/dev",
+    "!.next/cache",
+    "!.next/types",
+    "!.next/diagnostics"
+  ],
+  "engines": {
+    "node": ">=20.12"
   }
 }

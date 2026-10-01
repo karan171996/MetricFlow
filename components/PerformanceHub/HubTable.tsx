@@ -12,16 +12,10 @@ import {
 } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { hasData } from "@/lib/useMetrics";
+import type { MetricsPage } from "@/lib/metricsHistory";
 
-const trackedPages = [
-  { name: "Homepage", slug: "homepage", visitors: "45.2k", load: "845ms", errors: 12, status: "Healthy" },
-  { name: "Pricing", slug: "pricing", visitors: "12.1k", load: "920ms", errors: 2, status: "Healthy" },
-  { name: "Blog Core", slug: "blog", visitors: "84.5k", load: "1.4s", errors: 45, status: "Warning" },
-  { name: "Checkout Flow", slug: "checkout", visitors: "8.4k", load: "2.1s", errors: 84, status: "Critical" },
-  { name: "Documentation", slug: "docs", visitors: "24.1k", load: "780ms", errors: 5, status: "Healthy" },
-];
-
-export function HubTable() {
+export function HubTable({ pages }: { pages: MetricsPage[] }) {
   const router = useRouter();
 
   return (
@@ -43,18 +37,23 @@ export function HubTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {trackedPages.map((page) => (
+              {pages.map((page) => {
+                const live = hasData(page);
+                return (
                 <TableRow 
                   key={page.slug} 
                   className="border-[#2d3748] hover:bg-white/5 transition-colors cursor-pointer"
                   onClick={() => router.push(`/performance/${page.slug}`)}
                 >
                   <TableCell className="font-medium text-white">{page.name}</TableCell>
-                  <TableCell className="text-gray-500 font-mono text-xs">/{page.slug}</TableCell>
-                  <TableCell className="text-gray-400">{page.visitors}</TableCell>
-                  <TableCell className="text-gray-400">{page.load}</TableCell>
-                  <TableCell className="text-gray-400">{page.errors}</TableCell>
+                  <TableCell className="text-gray-500 font-mono text-xs">{page.url}</TableCell>
+                  <TableCell className="text-gray-400">{live ? page.visitors : "—"}</TableCell>
+                  <TableCell className="text-gray-400">{live ? `${Math.round(page.newRelic.loadTime)}ms` : "—"}</TableCell>
+                  <TableCell className="text-gray-400">{live ? page.sentry.errorCount : "—"}</TableCell>
                   <TableCell className="text-right">
+                    {!live ? (
+                      <Badge variant="outline" className="border-[#4a5568] text-gray-400">No data yet</Badge>
+                    ) : (
                     <Badge
                       variant="outline"
                       className={`
@@ -65,9 +64,11 @@ export function HubTable() {
                     >
                       {page.status}
                     </Badge>
+                    )}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </div>

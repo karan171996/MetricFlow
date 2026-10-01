@@ -1,7 +1,7 @@
 import { AppSidebar } from "@/components/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Header } from "@/components/header";
-import { HubTable, HubMetrics } from "@/components/PerformanceHub";
+import { PerformanceHub } from "@/components/PerformanceHub";
 
 export default function PerformanceHubPage() {
   return (
@@ -13,8 +13,7 @@ export default function PerformanceHubPage() {
           <h1 className="text-2xl font-bold text-white tracking-tight mb-2">Performance Hub</h1>
           <p className="text-sm text-gray-400">Overview of all tracked pages and their current health status.</p>
           
-          <HubMetrics />
-          <HubTable />
+          <PerformanceHub />
         </div>
       </SidebarInset>
     </SidebarProvider>

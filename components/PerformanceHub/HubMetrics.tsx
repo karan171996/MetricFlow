@@ -3,24 +3,18 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Globe, Clock, AlertTriangle } from "lucide-react";
+import { hasData } from "@/lib/useMetrics";
+import type { MetricsPage } from "@/lib/metricsHistory";
 
-export function HubMetrics() {
+export function HubMetrics({ pages }: { pages: MetricsPage[] }) {
+  const live = pages.filter(hasData);
+  const avgLoad = live.length ? live.reduce((s, p) => s + p.newRelic.loadTime, 0) / live.length : null;
+  const errors = pages.reduce((s, p) => s + p.sentry.errorCount, 0);
+
   const metrics = [
-    {
-      label: "Total Tracked Pages",
-      value: "24",
-      icon: <Globe className="h-4 w-4 text-[#3ee0a1]" />,
-    },
-    {
-      label: "Avg Global Load Time",
-      value: "1.2s",
-      icon: <Clock className="h-4 w-4 text-[#06b6d4]" />,
-    },
-    {
-      label: "Total Errors (24h)",
-      value: "84",
-      icon: <AlertTriangle className="h-4 w-4 text-[#ef4444]" />,
-    },
+    { label: "Pages Reporting", value: `${live.length} of ${pages.length}`, icon: <Globe className="h-4 w-4 text-[#3ee0a1]" /> },
+    { label: "Avg Load Time", value: avgLoad === null ? "No data yet" : `${Math.round(avgLoad)}ms`, icon: <Clock className="h-4 w-4 text-[#06b6d4]" /> },
+    { label: "Open Errors", value: live.length || errors ? String(errors) : "No data yet", icon: <AlertTriangle className="h-4 w-4 text-[#ef4444]" /> },
   ];
 
   return (
