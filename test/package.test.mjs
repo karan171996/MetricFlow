@@ -38,3 +38,19 @@ test("npm run lint has 0 errors", () => {
   const r = spawnSync("npm", ["run", "lint"], { cwd: root, encoding: "utf8" });
   assert.equal(r.status, 0, r.stdout.slice(-800));
 });
+
+test("scoped package name is publishable and README uses it", () => {
+  assert.match(pkg.name, /^@[a-z0-9-]+\/metricflow$/);
+  assert.equal(pkg.publishConfig?.access, "public"); // scoped packages are private by default
+  assert.deepEqual(Object.keys(pkg.bin), ["performance-dashboard"]); // single bin so `npx <name>` runs it
+  assert.ok(readFileSync(join(root, "README.md"), "utf8").includes(`npx ${pkg.name}`), "README must show `npx " + pkg.name + "`");
+});
+
+// The published package ships a prebuilt .next, so only what `next start` loads at runtime belongs in dependencies.
+test("dependencies are runtime-only; build/UI-only packages are devDependencies", () => {
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), ["axios", "next", "react", "react-dom"]);
+  for (const d of ["recharts", "lucide-react", "@base-ui/react", "class-variance-authority", "cn", "shadcn", "tw-animate-css", "@sentry/node", "dotenv"]) {
+    assert.ok(pkg.devDependencies?.[d], `${d} must be in devDependencies`);
+    assert.ok(!pkg.dependencies[d], `${d} must not be in dependencies`);
+  }
+});

@@ -1,9 +1,20 @@
 #!/bin/sh
 cd "$(git rev-parse --show-toplevel)" || exit 1
-npm run -s test:cli || { echo "BLOCKED: tests failed"; exit 1; }
+zero=0000000000000000000000000000000000000000
+
+# Guard what is actually being pushed (every added line of every new commit), not just the tip.
+while read -r lref lsha rref rsha; do
+  [ "$lsha" = "$zero" ] && continue # deleting a ref
+  if [ "$rsha" = "$zero" ]; then range="$lsha --not --remotes"; else range="$rsha..$lsha"; fi
+  git log -p -U0 --no-color $range | node .githooks/guard-env-values.mjs stdin || { echo "BLOCKED: push contains a real .env.local value"; exit 1; }
+  bad=$(git log --name-only --format= $range | grep -E '(^|/)\.env($|\.)|(^|/)(cypress/(screenshots|videos|downloads)|test-results|playwright-report|coverage)/' | grep -v -E '(^|/)\.env\.(local|test)\.example$|(^|/)\.env\.(example|sample)$' | sort -u)
+  [ -n "$bad" ] && { printf 'BLOCKED: push contains env files or test output:\n%s\n' "$bad"; exit 1; }
+  hits=$(git log -p -U0 --no-color $range | grep -E '^\+' | grep -v '^+++' | sed -E 's/FAKE-[A-Za-z0-9_-]*//g' | grep -c -E 'sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,}|NRAK-[A-Z0-9]{20,}|sntry[su]_[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY')
+  [ "$hits" != "0" ] && { echo "BLOCKED: key-shaped string in commits being pushed ($hits lines)"; exit 1; }
+done
+
+.githooks/run-tests.sh || exit 1
 npx --no-install tsc --noEmit || { echo "BLOCKED: type errors"; exit 1; }
 npm run -s lint || { echo "BLOCKED: lint failed"; exit 1; }
 npm audit --audit-level=high || { echo "BLOCKED: high/critical vulnerabilities (npm audit)"; exit 1; }
-# secrets in anything about to be pushed
-git grep -n -I -E 'sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|NRAK-[A-Z0-9]{20,}|sntry[su]_[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY' && { echo "BLOCKED: token in tracked files"; exit 1; }
 exit 0
