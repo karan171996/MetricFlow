@@ -1,8 +1,8 @@
 # MetricFlow — Performance Dashboard
 
-MetricFlow is a local web dashboard that pulls page-performance data from New Relic and errors from Sentry, and uses AI (Gemini) to turn them into insights and alerts. Start it with one command: `npx performance-dashboard`.
+MetricFlow is a local web dashboard that pulls page-performance data from New Relic and errors from Sentry, and uses AI (Gemini) to turn them into insights and alerts. Start it with one command: `npx @karan/metricflow`.
 
-> Status: early (`v0.1.0`). The npm package and CLI command are named `performance-dashboard`; the product and GitHub repo are MetricFlow. Not yet published to npm, so `npx` works only after publishing.
+> Status: early (`v0.1.0`). The npm package is `@karan/metricflow` (run it with `npx @karan/metricflow`; after a global install the command is `performance-dashboard`). Not yet published to npm, so `npx` works only after publishing.
 
 ## Features
 

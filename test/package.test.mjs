@@ -38,3 +38,10 @@ test("npm run lint has 0 errors", () => {
   const r = spawnSync("npm", ["run", "lint"], { cwd: root, encoding: "utf8" });
   assert.equal(r.status, 0, r.stdout.slice(-800));
 });
+
+test("scoped package name is publishable and README uses it", () => {
+  assert.equal(pkg.name, "@karan/metricflow");
+  assert.equal(pkg.publishConfig?.access, "public"); // scoped packages are private by default
+  assert.deepEqual(Object.keys(pkg.bin), ["performance-dashboard"]); // single bin so `npx @karan/metricflow` runs it
+  assert.match(readFileSync(join(root, "README.md"), "utf8"), /npx @karan\/metricflow/);
+});
