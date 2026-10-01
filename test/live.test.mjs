@@ -31,9 +31,12 @@ test("real keys pass the /setup validation (one read call per source)", T, async
 
 test("a wrong New Relic key is rejected with a message that never contains a real key", T, async () => {
   needKeys();
-  const r = await validate.validateKeys({ ...real, NEWRELIC_API_KEY: "FAKE-NOT-A-KEY" });
+  // Bad key derived in memory from the real one (reversed): no literal fake key exists and nothing is printed.
+  const bad = [...real.NEWRELIC_API_KEY].reverse().join("");
+  assert.notEqual(bad, real.NEWRELIC_API_KEY);
+  const r = await validate.validateKeys({ ...real, NEWRELIC_API_KEY: bad });
   assert.equal(r.NEWRELIC_API_KEY.ok, false);
-  assert.ok(!leaks(r));
+  assert.ok(!leaks(r) && !JSON.stringify(r).includes(bad));
 });
 
 test("a wrong Sentry org or project is reported on that field", T, async () => {
