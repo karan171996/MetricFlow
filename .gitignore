@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# cypress artifacts (live runs capture real data)
+/cypress/screenshots/
+/cypress/videos/
