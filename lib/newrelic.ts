@@ -21,9 +21,15 @@ interface NewRelicGraphQLResponse {
   errors?: unknown[];
 }
 
-/** NRQL percentile() comes back as { "75": value }; plain aggregates as a number. */
-function num(v: unknown): number {
-  if (v && typeof v === 'object') return Number(Object.values(v)[0] ?? 0) || 0;
+/**
+ * NRQL percentile() comes back as { "75": value }; apdex() as { score, s, t, f }
+ * (taking the first value would return the satisfied count, not the 0-1 score); plain aggregates as a number.
+ */
+export function num(v: unknown): number {
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    return Number('score' in o ? o.score : Object.values(o)[0] ?? 0) || 0;
+  }
   return Number(v ?? 0) || 0;
 }
 
@@ -32,8 +38,8 @@ const WINDOW = 'SINCE 24 hours ago';
 /**
  * Real-user metrics per page path from New Relic's native browser events
  * (PageView, PageViewTiming, JavaScriptError), 75th percentiles, last 24h.
- * Keyed by normalized path. Unit note: PageView durations are seconds, the
- * dashboard shows ms. A path missing from the result has no events yet.
+ * Keyed by normalized path. Unit note: PageView durations and
+ * LCP are seconds, converted to ms; INP/FID are already ms (unconfirmed). A path missing from the result has no events yet.
  * Throws on API failure so callers can show an error, not empty data.
  */
 export async function getNewRelicMetrics(
@@ -57,7 +63,14 @@ export async function getNewRelicMetrics(
   }
   const account = data.data?.actor?.account;
   if (!account?.views) throw new Error('New Relic rejected the metrics query. Check your key and account ID.');
+  return aggregateMetrics(account);
+}
 
+type NrAccount = NonNullable<NonNullable<NonNullable<NewRelicGraphQLResponse['data']>['actor']>['account']>;
+
+/** Pure: NRQL result rows -> per-path metrics in dashboard units (ms, 0-1 apdex, % error rate). */
+export function aggregateMetrics(account: NrAccount): Record<string, NewRelicPageMetrics> {
+  if (!account.views) return {};
   const key = (r: Record<string, unknown>) => normalizePath(String(r.pageUrl ?? r.facet ?? ''));
 
   // Merge query-string variants: sum counts, view-weighted average of percentiles
@@ -79,7 +92,7 @@ export async function getNewRelicMetrics(
     const p = key(r);
     if (p === null || !acc[p]) continue;
     const a = acc[p], v = a.views || 1;
-    a.lcp += num(r.lcp) * v;
+    a.lcp += num(r.lcp) * 1000 * v; // PageViewTiming LCP is reported in seconds (13.4 next to a 13.3s duration in a real run)
     a.cls += num(r.cls) * v;
     a.inp += num(r.inp) * v;
     a.fid += num(r.fid) * v;

@@ -13,6 +13,26 @@ export type SetupKey = (typeof SETUP_KEYS)[number];
 /** Sends events from your site (Ingest - License key). Not needed to read data; set on /connect. */
 export const INSERT_KEY = 'NEWRELIC_INSERT_KEY';
 
+/** Optional AI provider for suggestions. Key = env var holding that provider's API key. */
+export const AI_PROVIDERS = {
+  gemini: { label: 'Google Gemini', key: 'GEMINI_API_KEY' },
+  claude: { label: 'Anthropic Claude', key: 'CLAUDE_API_KEY' },
+  openai: { label: 'OpenAI', key: 'OPENAI_API_KEY' }
+} as const;
+export type AiProvider = keyof typeof AI_PROVIDERS;
+export const AI_PROVIDER_KEY = 'AI_PROVIDER';
+
+/** The chosen provider if its key is set, else the first provider that has a key. */
+export function activeAi(): { provider: AiProvider; key: string } | null {
+  const chosen = process.env[AI_PROVIDER_KEY] as AiProvider | undefined;
+  const order = (chosen && chosen in AI_PROVIDERS ? [chosen] : []).concat(Object.keys(AI_PROVIDERS) as AiProvider[]);
+  for (const provider of order) {
+    const key = process.env[AI_PROVIDERS[provider].key];
+    if (key) return { provider, key };
+  }
+  return null;
+}
+
 /**
  * Computed-key read: Next inlines literal `process.env.NEXT_PUBLIC_*` at build
  * time, which would freeze the account id before /setup could write it.
@@ -31,7 +51,7 @@ export function envFilePath(): string {
 }
 
 /** Merges `values` into .env.local, keeping unrelated lines, and updates process.env so no restart is needed. */
-export function writeEnvLocal(values: Partial<Record<SetupKey | typeof INSERT_KEY, string>>, path = envFilePath()): void {
+export function writeEnvLocal(values: Partial<Record<SetupKey | typeof INSERT_KEY | typeof AI_PROVIDER_KEY | (typeof AI_PROVIDERS)[AiProvider]['key'], string>>, path = envFilePath()): void {
   const existing = existsSync(path) ? readFileSync(path, 'utf8').split('\n') : [];
   const pending = new Map(Object.entries(values));
   const lines = existing.map(line => {

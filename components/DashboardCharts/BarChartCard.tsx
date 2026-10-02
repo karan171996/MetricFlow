@@ -4,6 +4,7 @@ import React from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LabelList } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { BarChartCardData } from "@/types";
+import { formatDuration } from "@/lib/formatDuration";
 
 interface CustomTooltipProps {
   active?: boolean;
@@ -15,7 +16,7 @@ const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
     return (
       <div className="bg-[#1f2937] p-2 rounded-lg shadow-xl text-white text-xs">
         <p className="font-semibold">{payload[0].payload.name}</p>
-        <p className="text-[#10b981]">{payload[0].value.toLocaleString()}ms</p>
+        <p className="text-[#10b981]">{formatDuration(payload[0].value)}</p>
       </div>
     );
   }
@@ -73,7 +74,7 @@ export function BarChartCard({ title, items }: BarChartCardData) {
                   position="right" 
                   fill="#9ca3af" 
                   fontSize={12}
-                  formatter={(value) => `${Number(value).toLocaleString()}ms`}
+                  formatter={(value) => formatDuration(Number(value))}
                 />
               </Bar>
             </BarChart>

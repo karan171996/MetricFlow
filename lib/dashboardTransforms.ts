@@ -9,6 +9,7 @@ import type {
   TimeSeriesPoint,
   LineChartCardData
 } from '@/types';
+import { formatDuration } from '@/lib/formatDuration';
 
 function avg(values: number[]): number {
   if (!values.length) return 0;
@@ -49,7 +50,7 @@ export function computeStats(pages: MetricsPage[], history: MetricsSnapshot[]): 
   return [
     {
       label: 'Avg Response Time',
-      value: `${Math.round(loadTime)}ms`,
+      value: formatDuration(loadTime),
       ...buildChange(loadTime, prevLoadTime, false)
     },
     {
@@ -93,8 +94,8 @@ export function computeWebVitals(
     ttfb: {
       title: 'TTFB',
       description: 'Time to First Byte',
-      value: `${Math.round(ttfb)}ms`,
-      change: `${Math.abs(Math.round(ttfb - prevTtfb))}ms`,
+      value: formatDuration(ttfb),
+      change: formatDuration(Math.abs(ttfb - prevTtfb)),
       isPositive: ttfb <= prevTtfb,
       color: ttfb <= prevTtfb ? '#3ee0a1' : '#ef4444',
       data: sparkline(history, p => p.newRelic.ttfb)
@@ -102,8 +103,8 @@ export function computeWebVitals(
     lcp: {
       title: 'LCP',
       description: 'Largest Contentful Paint',
-      value: `${(lcp / 1000).toFixed(1)}s`,
-      change: `${Math.abs((lcp - prevLcp) / 1000).toFixed(1)}s`,
+      value: formatDuration(lcp),
+      change: formatDuration(Math.abs(lcp - prevLcp)),
       isPositive: lcp <= prevLcp,
       color: lcp <= prevLcp ? '#3ee0a1' : '#ef4444',
       data: sparkline(history, p => p.newRelic.lcp)
@@ -196,7 +197,7 @@ export function computeWhatMoved(pages: MetricsPage[], history: MetricsSnapshot[
     const movement: PageMovement = {
       score: String(scoreAfter),
       page: page.url,
-      metricChange: `Load ${Math.round(before.newRelic.loadTime)}ms → ${Math.round(page.newRelic.loadTime)}ms`,
+      metricChange: `Load ${formatDuration(before.newRelic.loadTime)} → ${formatDuration(page.newRelic.loadTime)}`,
       scoreDelta,
       monthlyTraffic: page.visitors
     };
