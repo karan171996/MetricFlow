@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { MetricsPage } from "@/lib/metricsHistory";
+import { deriveStatus } from "@/lib/thresholds";
+import { useThresholds } from "@/lib/useThresholds";
 
 export type MetricsState =
   | { status: "loading" }
@@ -33,9 +35,15 @@ export function useMetrics() {
     };
   }, [attempt]);
 
+  const thresholds = useThresholds();
+  const out: MetricsState =
+    state.status === "ready"
+      ? { ...state, pages: state.pages.map((p) => ({ ...p, status: deriveStatus(p.newRelic, thresholds) })) }
+      : state;
+
   const retry = () => {
     setState({ status: "loading" });
     setAttempt((n) => n + 1);
   };
-  return { state, retry };
+  return { state: out, retry };
 }

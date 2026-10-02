@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { AiProvider } from '@/lib/env';
 
 // flash-lite: Gemini's cheapest/lowest-latency tier, and "-latest" tracks
 // the current version instead of a dated name that Google later retires.
@@ -15,29 +16,46 @@ interface Metrics {
   pages?: PageMetrics[];
 }
 
-export async function analyzeMetrics(metrics: Metrics, apiKey: string) {
-  if (!apiKey) {
+const MAX_TOKENS = 512;
+
+// Each provider: send the prompt, return the reply text. Cheapest current tier of each.
+const PROVIDERS: Record<AiProvider, (prompt: string, key: string) => Promise<string>> = {
+  gemini: async (prompt, key) => {
+    const res = await axios.post(
+      `${GEMINI_API_URL}?key=${key}`,
+      { contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: MAX_TOKENS } },
+      { headers: { 'content-type': 'application/json' } }
+    );
+    return res.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  },
+  claude: async (prompt, key) => {
+    const res = await axios.post(
+      'https://api.anthropic.com/v1/messages',
+      { model: 'claude-haiku-4-5-20251001', max_tokens: MAX_TOKENS, messages: [{ role: 'user', content: prompt }] },
+      { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' } }
+    );
+    return res.data?.content?.[0]?.text ?? '';
+  },
+  openai: async (prompt, key) => {
+    const res = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      { model: 'gpt-4o-mini', max_tokens: MAX_TOKENS, messages: [{ role: 'user', content: prompt }] },
+      { headers: { Authorization: `Bearer ${key}` } }
+    );
+    return res.data?.choices?.[0]?.message?.content ?? '';
+  }
+};
+
+export async function analyzeMetrics(metrics: Metrics, ai: { provider: AiProvider; key: string } | null) {
+  if (!ai) {
     return getMockAnalysis();
   }
 
   try {
-    const prompt = formatMetricsForPrompt(metrics);
-
-    const response = await axios.post(
-      `${GEMINI_API_URL}?key=${apiKey}`,
-      {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 512 }
-      },
-      {
-        headers: { 'content-type': 'application/json' }
-      }
-    );
-
-    const text: string = response.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-    return parseAnalysisResponse(text);
+    return parseAnalysisResponse(await PROVIDERS[ai.provider](formatMetricsForPrompt(metrics), ai.key));
   } catch (error) {
-    console.error('Gemini API error:', error);
+    // Log the status only: an axios error carries the key in its request config.
+    console.error(`${ai.provider} API error:`, axios.isAxiosError(error) ? error.response?.status : 'failed');
     return getMockAnalysis();
   }
 }

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Globe, Clock, AlertTriangle } from "lucide-react";
 import { hasData } from "@/lib/useMetrics";
 import type { MetricsPage } from "@/lib/metricsHistory";
+import { formatDuration } from "@/lib/formatDuration";
 
 export function HubMetrics({ pages }: { pages: MetricsPage[] }) {
   const live = pages.filter(hasData);
@@ -13,7 +14,7 @@ export function HubMetrics({ pages }: { pages: MetricsPage[] }) {
 
   const metrics = [
     { label: "Pages Reporting", value: `${live.length} of ${pages.length}`, icon: <Globe className="h-4 w-4 text-[#3ee0a1]" /> },
-    { label: "Avg Load Time", value: avgLoad === null ? "No data yet" : `${Math.round(avgLoad)}ms`, icon: <Clock className="h-4 w-4 text-[#06b6d4]" /> },
+    { label: "Avg Load Time", value: avgLoad === null ? "No data yet" : formatDuration(avgLoad), icon: <Clock className="h-4 w-4 text-[#06b6d4]" /> },
     { label: "Open Errors", value: live.length || errors ? String(errors) : "No data yet", icon: <AlertTriangle className="h-4 w-4 text-[#ef4444]" /> },
   ];
 

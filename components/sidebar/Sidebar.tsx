@@ -4,15 +4,8 @@ import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Layers,
-  Bell,
-  Box,
   BarChart2,
-  Link,
-  Mail,
-  Users,
   Settings,
-  LogOut,
   Hexagon,
 } from "lucide-react";
 
@@ -85,36 +78,6 @@ export function AppSidebar() {
             >
               <Settings className="!h-5 !w-5" />
               {isMobile && <span>Settings</span>}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              tooltip="Log out"
-              className={isMobile
-                ? "w-full justify-start gap-4 p-3 rounded-lg text-red-400 hover:bg-red-400/10 hover:text-red-400 text-base"
-                : "h-10 w-10 justify-center rounded-lg text-red-400 hover:bg-red-400/10 hover:text-red-400"}
-            >
-              <LogOut className="!h-5 !w-5" />
-              {isMobile && <span>Log out</span>}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              tooltip="Profile"
-              className={isMobile
-                ? "w-full justify-start gap-4 p-3 rounded-lg hover:bg-white/10 text-base mt-2"
-                : "h-10 w-10 justify-center p-0 overflow-hidden rounded-full border border-gray-700 mt-2"}
-            >
-              {isMobile ? (
-                <>
-                  <div className="h-8 w-8 overflow-hidden rounded-full border border-gray-700">
-                    <img src="https://i.pravatar.cc/150?img=11" alt="Avatar" className="h-full w-full object-cover" />
-                  </div>
-                  <span className="text-white">Profile</span>
-                </>
-              ) : (
-                <img src="https://i.pravatar.cc/150?img=11" alt="Avatar" className="h-full w-full object-cover" />
-              )}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

@@ -14,6 +14,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { hasData } from "@/lib/useMetrics";
 import type { MetricsPage } from "@/lib/metricsHistory";
+import { formatDuration } from "@/lib/formatDuration";
 
 export function HubTable({ pages }: { pages: MetricsPage[] }) {
   const router = useRouter();
@@ -48,7 +49,7 @@ export function HubTable({ pages }: { pages: MetricsPage[] }) {
                   <TableCell className="font-medium text-white">{page.name}</TableCell>
                   <TableCell className="text-gray-500 font-mono text-xs">{page.url}</TableCell>
                   <TableCell className="text-gray-400">{live ? page.visitors : "—"}</TableCell>
-                  <TableCell className="text-gray-400">{live ? `${Math.round(page.newRelic.loadTime)}ms` : "—"}</TableCell>
+                  <TableCell className="text-gray-400">{live ? formatDuration(page.newRelic.loadTime) : "—"}</TableCell>
                   <TableCell className="text-gray-400">{live ? page.sentry.errorCount : "—"}</TableCell>
                   <TableCell className="text-right">
                     {!live ? (

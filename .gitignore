@@ -45,3 +45,9 @@ next-env.d.ts
 # cypress artifacts (live runs capture real data)
 /cypress/screenshots/
 /cypress/videos/
+
+# shared dashboard settings
+.metricflow-settings.json*
+
+# shared dashboard settings
+.metricflow-settings.json*

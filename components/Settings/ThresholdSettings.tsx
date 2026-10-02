@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import { setThresholds, useThresholds } from "@/lib/useThresholds";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Activity } from "lucide-react";
 
 export function ThresholdSettings() {
-  const [loadThreshold, setLoadThreshold] = useState([1.5]);
-  const [errorThreshold, setErrorThreshold] = useState([2]);
-  const [uptimeSLA, setUptimeSLA] = useState([99.9]);
+  const t = useThresholds();
+  const loadThreshold = [t.loadSeconds];
+  const errorThreshold = [t.errorPercent];
+  const uptimeSLA = [t.uptimeSLA];
 
   return (
     <Card className="border-[#2d3748] bg-[#1a202c] shadow-md">
@@ -30,7 +32,7 @@ export function ThresholdSettings() {
           </div>
           <Slider 
             value={loadThreshold} 
-            onValueChange={(val) => setLoadThreshold(val as number[])} 
+            onValueChange={(val) => setThresholds({ loadSeconds: (val as number[])[0] })} 
             max={5} 
             step={0.1}
             className="cursor-pointer"
@@ -45,7 +47,7 @@ export function ThresholdSettings() {
           </div>
           <Slider 
             value={errorThreshold} 
-            onValueChange={(val) => setErrorThreshold(val as number[])} 
+            onValueChange={(val) => setThresholds({ errorPercent: (val as number[])[0] })} 
             max={10} 
             step={0.5}
             className="cursor-pointer"
@@ -60,7 +62,7 @@ export function ThresholdSettings() {
           </div>
           <Slider 
             value={uptimeSLA} 
-            onValueChange={(val) => setUptimeSLA(val as number[])} 
+            onValueChange={(val) => setThresholds({ uptimeSLA: (val as number[])[0] })} 
             min={90}
             max={100} 
             step={0.01}

@@ -1,16 +1,15 @@
 import { analyzeMetrics } from '@/lib/aiAnalysis';
 import { recordTiming } from '@/lib/apiTimingStore';
+import { AI_PROVIDERS, activeAi } from '@/lib/env';
 
 export async function POST(request: Request) {
   try {
     const data = await request.json();
 
-    const geminiStart = performance.now();
-    const analysis = await analyzeMetrics(
-      data.metrics,
-      process.env.GEMINI_API_KEY ?? ''
-    );
-    recordTiming('Gemini: analyze', performance.now() - geminiStart);
+    const ai = activeAi();
+    const start = performance.now();
+    const analysis = await analyzeMetrics(data.metrics, ai);
+    recordTiming(`${ai ? AI_PROVIDERS[ai.provider].label : 'AI'}: analyze`, performance.now() - start);
 
     return Response.json(analysis);
   } catch (error) {
