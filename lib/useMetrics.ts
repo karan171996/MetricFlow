@@ -8,7 +8,7 @@ import { useThresholds } from "@/lib/useThresholds";
 export type MetricsState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; configured: boolean; pages: MetricsPage[] };
+  | { status: "ready"; configured: boolean; pages: MetricsPage[]; project?: string; timestamp?: string };
 
 /** A page that has never reported has no beacon hit: show "No data yet", never 0ms/Healthy. */
 export function hasData(p: MetricsPage): boolean {
@@ -25,7 +25,7 @@ export function useMetrics() {
       .then(async (res) => {
         const body = await res.json();
         if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
-        if (!cancelled) setState({ status: "ready", configured: body.configured, pages: body.pages });
+        if (!cancelled) setState({ status: "ready", configured: body.configured, pages: body.pages, project: body.project, timestamp: body.timestamp });
       })
       .catch((e) => {
         if (!cancelled) setState({ status: "error", message: e instanceof Error ? e.message : "Request failed" });

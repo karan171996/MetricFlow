@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import net from "node:net";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { helpText, out, wantsHelp, wantsJson, wantsVersion } from "./output.mjs";
 
@@ -41,6 +41,10 @@ for (const f of [".env.local", ".env"]) {
   if (existsSync(f)) process.loadEnvFile(f);
 }
 
+// Dashboard title: the name of the project this is run in (its package.json name, else the folder name).
+let projectName = basename(process.cwd());
+try { projectName = JSON.parse(readFileSync("package.json", "utf8")).name || projectName; } catch { /* no package.json here */ }
+
 if (!existsSync(join(root, ".next"))) {
   out.error("No build found.", { code: "no_build", hint: "Run `npm run build` first (published packages include it)." });
   process.exit(1);
@@ -53,6 +57,7 @@ const server = spawn(process.execPath, [nextBin, "start", "-p", port, "-H", host
   stdio: ["inherit", wantsJson ? 2 : "inherit", "inherit"], // keep stdout clean for --json
   // Pass --no-color/--json down so Next's own output matches.
   env: {
+    METRICFLOW_PROJECT_NAME: projectName, // set it yourself to override the title
     ...process.env,
     ...(loopback ? {} : { METRICFLOW_EXPOSED: "1" }), // app's isLocalRequest honors this
     ...(process.argv.includes("--no-color") || wantsJson ? { FORCE_COLOR: undefined, NO_COLOR: "1" } : {}),

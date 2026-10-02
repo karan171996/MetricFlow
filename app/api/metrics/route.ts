@@ -1,3 +1,4 @@
+import { basename } from 'node:path';
 import { getNewRelicMetrics, discoverPages, type NewRelicPageMetrics } from '@/lib/newrelic';
 import { getSentryErrorsByPath, EMPTY_SENTRY_DATA } from '@/lib/sentry';
 import { env, isConfigured } from '@/lib/env';
@@ -7,7 +8,7 @@ import type { PageStatus } from '@/types';
 
 export async function GET() {
   if (!isConfigured()) {
-    return Response.json({ configured: false, pages: [], history: [], timestamp: new Date().toISOString() });
+    return Response.json({ configured: false, project: projectName(), pages: [], history: [], timestamp: new Date().toISOString() });
   }
 
   try {
@@ -18,7 +19,7 @@ export async function GET() {
       env('NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID')
     );
     if (trackedPages.length === 0) {
-      return Response.json({ configured: true, pages: [], history: getHistory(), timestamp: new Date().toISOString() });
+      return Response.json({ configured: true, project: projectName(), pages: [], history: getHistory(), timestamp: new Date().toISOString() });
     }
 
     // New Relic (1 call, 3 queries) and Sentry (1 events call) are independent, so run them concurrently.
@@ -62,7 +63,7 @@ export async function GET() {
 
     recordSnapshot(pages);
 
-    return Response.json({ configured: true, pages, history: getHistory(), timestamp: new Date().toISOString() });
+    return Response.json({ configured: true, project: projectName(), pages, history: getHistory(), timestamp: new Date().toISOString() });
   } catch (error) {
     console.error('Metrics API error:', error);
     return Response.json(
@@ -88,6 +89,11 @@ function deriveStatus(newRelic: NewRelicPageMetrics): PageStatus {
   if (newRelic.errorRate > 5) return 'Critical';
   if (newRelic.errorRate > 1 || newRelic.apdexScore < 0.9) return 'Warning';
   return 'Healthy';
+}
+
+/** Header title: the host project's package.json name, passed in by bin/cli.mjs. Under `next dev` it is this folder's name. */
+function projectName(): string {
+  return env('METRICFLOW_PROJECT_NAME') || basename(process.cwd());
 }
 
 function formatVisitors(throughput: number): string {
