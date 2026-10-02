@@ -17,11 +17,11 @@ MetricFlow is a local web dashboard that pulls page-performance data from New Re
 
 ### Dashboard
 
-![Dashboard](docs/images/dashboard.png)
+![Dashboard](https://raw.githubusercontent.com/karan171996/MetricFlow/main/docs/images/dashboard.png)
 
 ### Performance hub
 
-![Performance hub](docs/images/performance.png)
+![Performance hub](https://raw.githubusercontent.com/karan171996/MetricFlow/main/docs/images/performance.png)
 
 _Screenshots use sample data, not real New Relic or Sentry numbers._
 
@@ -116,7 +116,7 @@ $ performance-dashboard        # before `npm run build`
   → Run `npm run build` first (published packages include it).
 ```
 
-Human text goes to stdout; errors, warnings and spinners go to stderr. Full spec: [CLI_OUTPUT.md](CLI_OUTPUT.md).
+Human text goes to stdout; errors, warnings and spinners go to stderr. Full spec: [CLI_OUTPUT.md](https://github.com/karan171996/MetricFlow/blob/main/CLI_OUTPUT.md).
 
 ## Project structure
 
