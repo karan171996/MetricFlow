@@ -1,6 +1,7 @@
 {
   "name": "@karan171996/metricflow",
-  "version": "0.1.2",
+  "version": "0.1.3",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/karan171996/MetricFlow.git"
@@ -59,7 +60,8 @@
     "!.next/dev",
     "!.next/cache",
     "!.next/types",
-    "!.next/diagnostics"
+    "!.next/diagnostics",
+    "!.next/**/*.map"
   ],
   "engines": {
     "node": ">=20.12"
