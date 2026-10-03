@@ -1,7 +1,13 @@
+import { readFileSync } from "node:fs";
+
 export async function GET() {
-    return Response.json({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      version: '1.0.0'
-    });
-  }
+  const packageJson = JSON.parse(
+    readFileSync(new URL("../../../package.json", import.meta.url), "utf8")
+  );
+
+  return Response.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    version: packageJson.version
+  });
+}
