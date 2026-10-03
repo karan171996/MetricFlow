@@ -12,6 +12,15 @@ export const SETUP_KEYS = [
 export type SetupKey = (typeof SETUP_KEYS)[number];
 /** Sends events from your site (Ingest - License key). Not needed to read data; set on /connect. */
 export const INSERT_KEY = 'NEWRELIC_INSERT_KEY';
+/** 'eu' for EU data-centre accounts; anything else = US. Auto-detected on /setup. */
+export const REGION_KEY = 'NEWRELIC_REGION';
+
+const NR_HOSTS = {
+  us: { graphql: 'https://api.newrelic.com/graphql', ingest: 'https://insights-collector.newrelic.com' },
+  eu: { graphql: 'https://api.eu.newrelic.com/graphql', ingest: 'https://insights-collector.eu01.nr-data.net' }
+} as const;
+export type NrRegion = keyof typeof NR_HOSTS;
+export const nrHosts = (region: NrRegion = process.env[REGION_KEY] === 'eu' ? 'eu' : 'us') => NR_HOSTS[region];
 
 /** Optional AI provider for suggestions. Key = env var holding that provider's API key. */
 export const AI_PROVIDERS = {
@@ -51,7 +60,7 @@ export function envFilePath(): string {
 }
 
 /** Merges `values` into .env.local, keeping unrelated lines, and updates process.env so no restart is needed. */
-export function writeEnvLocal(values: Partial<Record<SetupKey | typeof INSERT_KEY | typeof AI_PROVIDER_KEY | (typeof AI_PROVIDERS)[AiProvider]['key'], string>>, path = envFilePath()): void {
+export function writeEnvLocal(values: Partial<Record<SetupKey | typeof INSERT_KEY | typeof REGION_KEY | typeof AI_PROVIDER_KEY | (typeof AI_PROVIDERS)[AiProvider]['key'], string>>, path = envFilePath()): void {
   const existing = existsSync(path) ? readFileSync(path, 'utf8').split('\n') : [];
   const pending = new Map(Object.entries(values));
   const lines = existing.map(line => {

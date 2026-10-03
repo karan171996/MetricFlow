@@ -1,7 +1,7 @@
 import axios from 'axios';
-import type { SetupKey } from '@/lib/env';
+import { nrHosts, type NrRegion, type SetupKey } from '@/lib/env';
 
-export type KeyResult = { ok: true } | { ok: false; error: string };
+export type KeyResult = { ok: true; region?: NrRegion } | { ok: false; error: string };
 export type SetupInput = Record<SetupKey, string>;
 
 // Never include the thrown axios error: its config carries the key in headers.
@@ -17,20 +17,37 @@ async function checkNewRelic(key: string, accountId: string): Promise<Record<str
     return { NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: { ok: false, error: 'Account ID must be a number.' } };
   }
   try {
-    const res = await axios.post(
-      'https://api.newrelic.com/graphql',
-      { query: `{ actor { user { id } account(id: ${accountId}) { id } } }` },
-      { headers: { 'API-Key': key }, timeout: 8000 }
-    );
+    const ask = (region: NrRegion) =>
+      axios.post(
+        nrHosts(region).graphql,
+        { query: `{ actor { user { id } account(id: ${accountId}) { id } } }` },
+        { headers: { 'API-Key': key }, timeout: 8000 }
+      );
+    // A key only works on its own data centre: try US, and if it is rejected there, EU.
+    let region: NrRegion = 'us';
+    let res;
+    try {
+      res = await ask('us');
+      if (!res.data?.data?.actor?.user?.id) throw new Error('rejected');
+    } catch (usError) {
+      try {
+        res = await ask('eu');
+        if (!res.data?.data?.actor?.user?.id) throw usError;
+        region = 'eu';
+      } catch {
+        throw usError;
+      }
+    }
+    const regionTag = region === 'eu' ? { region } : {};
     const actor = res.data?.data?.actor;
     if (!actor?.user?.id) return { NEWRELIC_API_KEY: { ok: false, error: 'New Relic User key was rejected.' } };
     if (!actor.account?.id) {
       return {
-        NEWRELIC_API_KEY: { ok: true },
+        NEWRELIC_API_KEY: { ok: true, ...regionTag },
         NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: { ok: false, error: 'This key cannot see that account ID.' }
       };
     }
-    return { NEWRELIC_API_KEY: { ok: true }, NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: { ok: true } };
+    return { NEWRELIC_API_KEY: { ok: true, ...regionTag }, NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: { ok: true } };
   } catch (e) {
     return { NEWRELIC_API_KEY: { ok: false, error: describe(e, 'New Relic') } };
   }
