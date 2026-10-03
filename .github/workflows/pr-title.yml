@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Title follows "type(scope): description"
+      - name: 'Title follows "type(scope): description"'
         run: node .githooks/check-commit-message.mjs --text "$PR_TITLE"
         # Title goes through env, never interpolated into the shell.
         env:
