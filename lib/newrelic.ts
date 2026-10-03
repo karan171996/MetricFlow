@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { nrHosts } from '@/lib/env';
+import { nrGraphql } from '@/lib/nrRequest';
 import { buildPages, normalizePath, type DiscoveredPage } from '@/lib/discoverPages';
 
 
@@ -56,7 +55,7 @@ export async function getNewRelicMetrics(
 
   let data: NewRelicGraphQLResponse;
   try {
-    data = (await axios.post(nrHosts().graphql, { query }, { headers: { 'API-Key': apiKey, 'Content-Type': 'application/json' }, timeout: 15000 })).data;
+    data = await nrGraphql<NewRelicGraphQLResponse>(apiKey, query, 15000);
   } catch {
     throw new Error('Could not reach New Relic to load metrics.');
   }
@@ -154,7 +153,7 @@ async function queryDiscoveredPages(apiKey: string, accountId: string): Promise<
   `;
   let data: NewRelicGraphQLResponse;
   try {
-    data = (await axios.post(nrHosts().graphql, { query }, { headers: { 'API-Key': apiKey, 'Content-Type': 'application/json' }, timeout: 10000 })).data;
+    data = await nrGraphql<NewRelicGraphQLResponse>(apiKey, query, 10000);
   } catch {
     throw new Error('Could not reach New Relic to discover pages.');
   }
