@@ -15,7 +15,7 @@ beforeEach(() => {
   handler = (m, u) => (u.includes("newrelic") ? validNr : { data: {} });
   envFile = tmpEnvFile();
   process.env.METRICFLOW_ENV_FILE = envFile;
-  for (const k of [...Object.keys(FAKE), "NEWRELIC_INSERT_KEY"]) delete process.env[k];
+  for (const k of [...Object.keys(FAKE), "NEWRELIC_INSERT_KEY", "NEWRELIC_REGION"]) delete process.env[k];
 });
 const post = (body, headers) => POST(req("http://localhost:3000/api/setup", { method: "POST", body, headers }));
 const text = async (res) => JSON.stringify(await res.clone().json());
@@ -138,4 +138,34 @@ test("Insert key: needs finished setup, rejects whitespace, saves alone afterwar
 test("validateKeys makes one read call per source", async () => {
   await validateKeys(FAKE);
   assert.equal(calls.filter((c) => c.url.includes("newrelic")).length, 1);
+});
+
+test("US key: one call to the US endpoint, region saved as us", async () => {
+  assert.equal((await post(FAKE)).status, 200);
+  assert.deepEqual(calls.filter((c) => c.url.includes("newrelic")).map((c) => c.url), ["https://api.newrelic.com/graphql"]);
+  assert.match(readFileSync(envFile, "utf8"), /NEWRELIC_REGION=us/);
+});
+
+test("EU key: rejected by US, accepted by EU, region saved as eu and later calls use the EU host", async () => {
+  handler = (m, u) => {
+    if (u === "https://api.newrelic.com/graphql") throw httpError(401);
+    return u.includes("newrelic") ? validNr : { data: {} };
+  };
+  assert.equal((await post(FAKE)).status, 200);
+  assert.deepEqual(calls.filter((c) => c.url.includes("newrelic")).map((c) => c.url), ["https://api.newrelic.com/graphql", "https://api.eu.newrelic.com/graphql"]);
+  assert.match(readFileSync(envFile, "utf8"), /NEWRELIC_REGION=eu/);
+  assert.equal(process.env.NEWRELIC_REGION, "eu");
+
+  const { nrHosts } = await load("lib/env.ts");
+  assert.equal(nrHosts().graphql, "https://api.eu.newrelic.com/graphql");
+  assert.match(nrHosts().ingest, /eu01\.nr-data\.net/);
+});
+
+test("key rejected in both regions: 422, nothing saved", async () => {
+  handler = (m, u) => {
+    if (u.includes("newrelic")) throw httpError(401);
+    return { data: {} };
+  };
+  assert.equal((await post(FAKE)).status, 422);
+  assert.ok(!existsSync(envFile));
 });

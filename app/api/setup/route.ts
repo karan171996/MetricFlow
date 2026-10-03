@@ -1,4 +1,4 @@
-import { INSERT_KEY, SETUP_KEYS, env, isConfigured, writeEnvLocal, type SetupKey } from '@/lib/env';
+import { INSERT_KEY, REGION_KEY, SETUP_KEYS, env, isConfigured, writeEnvLocal, type SetupKey } from '@/lib/env';
 import { isLocalRequest, REFUSAL_MESSAGE } from '@/lib/localRequest';
 import { validateKeys, type SetupInput } from '@/lib/validateKeys';
 
@@ -54,7 +54,8 @@ export async function POST(request: Request) {
   if (Object.values(checked).some(r => !r.ok)) return Response.json({ saved: false, results: checked }, { status: 422 });
 
   try {
-    writeEnvLocal(input);
+    const nr = checked.NEWRELIC_API_KEY;
+    writeEnvLocal({ ...input, [REGION_KEY]: nr.ok && nr.region === 'eu' ? 'eu' : 'us' });
   } catch {
     return Response.json({ saved: false, error: 'Keys are valid but .env.local could not be written. Check folder permissions.' }, { status: 500 });
   }

@@ -1,8 +1,7 @@
 import axios from 'axios';
+import { nrHosts } from '@/lib/env';
 import { buildPages, normalizePath, type DiscoveredPage } from '@/lib/discoverPages';
 
-// US accounts only (EU needs api.eu.newrelic.com).
-const NEWRELIC_API_URL = 'https://api.newrelic.com/graphql';
 
 export interface NewRelicPageMetrics {
   loadTime: number;
@@ -57,7 +56,7 @@ export async function getNewRelicMetrics(
 
   let data: NewRelicGraphQLResponse;
   try {
-    data = (await axios.post(NEWRELIC_API_URL, { query }, { headers: { 'API-Key': apiKey, 'Content-Type': 'application/json' }, timeout: 15000 })).data;
+    data = (await axios.post(nrHosts().graphql, { query }, { headers: { 'API-Key': apiKey, 'Content-Type': 'application/json' }, timeout: 15000 })).data;
   } catch {
     throw new Error('Could not reach New Relic to load metrics.');
   }
@@ -155,7 +154,7 @@ async function queryDiscoveredPages(apiKey: string, accountId: string): Promise<
   `;
   let data: NewRelicGraphQLResponse;
   try {
-    data = (await axios.post(NEWRELIC_API_URL, { query }, { headers: { 'API-Key': apiKey, 'Content-Type': 'application/json' }, timeout: 10000 })).data;
+    data = (await axios.post(nrHosts().graphql, { query }, { headers: { 'API-Key': apiKey, 'Content-Type': 'application/json' }, timeout: 10000 })).data;
   } catch {
     throw new Error('Could not reach New Relic to discover pages.');
   }

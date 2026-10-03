@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const NR_GRAPHQL = 'https://api.newrelic.com/graphql';
+import { nrHosts } from '@/lib/env';
 
 export interface SourceStatus {
   /** Events seen in the last 5 minutes, or null if the source could not be read. */
@@ -12,7 +11,7 @@ export interface SourceStatus {
 
 async function nrql(apiKey: string, accountId: string, query: string): Promise<Record<string, unknown>> {
   const gql = `{ actor { account(id: ${Number(accountId)}) { nrql(query: "${query}") { results } } } }`;
-  const res = await axios.post(NR_GRAPHQL, { query: gql }, { headers: { 'API-Key': apiKey }, timeout: 8000 });
+  const res = await axios.post(nrHosts().graphql, { query: gql }, { headers: { 'API-Key': apiKey }, timeout: 8000 });
   const row = res.data?.data?.actor?.account?.nrql?.results?.[0];
   if (!row) throw new Error('no result');
   return row;
@@ -47,7 +46,7 @@ export async function sentryStatus(token: string, org: string, project: string):
 export async function sendTestEvent(insertKey: string, accountId: string): Promise<string | null> {
   try {
     const res = await axios.post(
-      `https://insights-collector.newrelic.com/v1/accounts/${Number(accountId)}/events`,
+      `${nrHosts().ingest}/v1/accounts/${Number(accountId)}/events`,
       [{ eventType: 'MetricFlowEvent', name: 'test', value: 1, source: 'connect-page' }],
       { headers: { 'Api-Key': insertKey }, timeout: 8000 }
     );
