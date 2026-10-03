@@ -34,8 +34,8 @@ test(".gitignore: example env is tracked-able, real env files stay ignored", () 
   assert.equal(ignored(".env"), true);
 });
 
-test("npm run lint has 0 errors", () => {
-  const r = spawnSync("npm", ["run", "lint"], { cwd: root, encoding: "utf8" });
+test("pnpm run lint has 0 errors", () => {
+  const r = spawnSync("pnpm", ["run", "lint"], { cwd: root, encoding: "utf8" });
   assert.equal(r.status, 0, r.stdout.slice(-800));
 });
 

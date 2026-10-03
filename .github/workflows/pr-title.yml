@@ -1,0 +1,19 @@
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-title:
+    name: pr-title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Title follows "type(scope): description"
+        run: node .githooks/check-commit-message.mjs --text "$PR_TITLE"
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }} # via env, never interpolated into the shell

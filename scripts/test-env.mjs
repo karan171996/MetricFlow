@@ -35,7 +35,7 @@ const specs = mode === "real"
   ? ["cypress/e2e/live-metrics.cy.ts"]
   : readdirSync(join(root, "cypress/e2e")).filter((s) => s !== "live-metrics.cy.ts").map((s) => `cypress/e2e/${s}`);
 
-if (run("npx", ["next", "build"])) process.exit(1);
+if (run("pnpm", ["exec", "next", "build"])) process.exit(1);
 const port = await new Promise((res) => { const s = net.createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => res(p)); }); });
 const server = spawn(process.execPath, ["bin/cli.mjs", "--no-open", String(port)], { cwd: root, env: { ...env, PORT: String(port) }, stdio: "inherit" });
 let code = 1;
@@ -45,6 +45,6 @@ try {
     if (i > 60) throw new Error("server did not become healthy in 60s");
     await new Promise((r) => setTimeout(r, 1000));
   }
-  code = run("npx", ["cypress", "run", `--config=baseUrl=http://localhost:${port}`, `--spec=${specs.join(",")}`]);
+  code = run("pnpm", ["exec", "cypress", "run",`--config=baseUrl=http://localhost:${port}`, `--spec=${specs.join(",")}`]);
 } catch (e) { console.error(e.message); } finally { server.kill("SIGTERM"); }
 process.exit(code);

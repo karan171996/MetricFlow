@@ -179,8 +179,8 @@ Human text goes to stdout; errors, warnings and spinners go to stderr. Full spec
 | `SENTRY_API_KEY`, `SENTRY_ORG_SLUG`, `SENTRY_PROJECT_ID` | Read errors from Sentry (required) |
 | `GEMINI_API_KEY`, `CLAUDE_API_KEY`, `OPENAI_API_KEY` | AI suggestions (optional, any one) |
 | `AI_PROVIDER` | `gemini`, `claude` or `openai`; picks the AI key when several are set |
-| `NEWRELIC_INSERT_KEY` | Only for **Send test event** on `/connect` and `npm run send-test-data` |
-| `SENTRY_DSN` | Only for `npm run send-test-data` |
+| `NEWRELIC_INSERT_KEY` | Only for **Send test event** on `/connect` and `pnpm send-test-data` |
+| `SENTRY_DSN` | Only for `pnpm send-test-data` |
 | `METRICFLOW_PROJECT_NAME` | Overrides the project name in the header |
 
 ## Develop from source
@@ -188,30 +188,32 @@ Human text goes to stdout; errors, warnings and spinners go to stderr. Full spec
 ```bash
 git clone https://github.com/karan171996/MetricFlow.git
 cd MetricFlow
-npm install
+pnpm install
 cp .env.local.example .env.local   # then fill in your keys
-npm run dev                        # http://127.0.0.1:3000
+pnpm dev                           # http://127.0.0.1:3000
 ```
+
+This repo uses [pnpm](https://pnpm.io) (`corepack enable` picks the pinned version). Install scripts are allowed only for the packages listed in `pnpm-workspace.yaml` (Cypress and `unrs-resolver`).
 
 Run the production build through the CLI:
 
 ```bash
-npm run build
+pnpm build
 node bin/cli.mjs
 ```
 
 ### Tests
 
 ```bash
-npm test               # all tests, fake keys, no network
-npm run test:cli       # node:test suite only
-npm run test:real      # against your real accounts (.env.local)
-npm run cy:run         # Cypress tests (app must be running)
-npm run lint
-npm run send-test-data # one dummy event to Sentry and New Relic
+pnpm test              # all tests, fake keys, no network
+pnpm test:cli          # node:test suite only
+pnpm test:real         # against your real accounts (.env.local)
+pnpm cy:run            # Cypress tests (app must be running)
+pnpm lint
+pnpm send-test-data    # one dummy event to Sentry and New Relic
 ```
 
-`npm test` uses fake keys from `.env.test.example` and never reads `.env.local`. `npm run test:real` reads `.env.local` and never prints the keys. `send-test-data` needs `SENTRY_DSN` and `NEWRELIC_INSERT_KEY`.
+`pnpm test` uses fake keys from `.env.test.example` and never reads `.env.local`. `pnpm test:real` reads `.env.local` and never prints the keys. `send-test-data` needs `SENTRY_DSN` and `NEWRELIC_INSERT_KEY`.
 
 ### Project structure
 
@@ -228,7 +230,6 @@ docs/images/    README screenshots (not shipped in the npm package)
 
 ## Contributing
 
-1. Fork the repo and branch from `main`.
-2. Run `npm run lint` and `npm test` before opening a pull request.
-3. Keep CLI output going through `bin/output.mjs` (`out.ok/info/warn/error/kv/spinner`), never `console.log`.
-4. This project uses a recent Next.js with breaking changes; read `node_modules/next/dist/docs/` before changing framework code.
+Nobody pushes straight to `main`: fork, branch, and open a pull request. Commit messages and PR titles use the `type(scope): description` format, for example `fix(api): handle an empty New Relic response` or `feat(ui): add a Sentry page`. Types are `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore` and `revert`.
+
+Full steps, the commit format and the PR checklist are in [CONTRIBUTING.md](CONTRIBUTING.md).

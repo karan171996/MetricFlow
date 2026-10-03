@@ -18,7 +18,7 @@ test("basic glob never reaches test/live", () => {
 test("scripts: test and test:basic are basic, test:real is separate", () => {
   assert.equal(pkg.scripts["test:basic"], "node scripts/test-env.mjs basic");
   assert.equal(pkg.scripts["test:real"], "node scripts/test-env.mjs real");
-  assert.equal(pkg.scripts.test, "npm run test:basic");
+  assert.equal(pkg.scripts.test, "pnpm run test:basic");
   assert.equal(pkg.scripts["test:live"], undefined);
 });
 
