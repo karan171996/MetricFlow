@@ -22,12 +22,12 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Build (generates Next's route types and the app the CLI tests start)
+        run: npx next build --webpack
       - name: Type check
         run: pnpm exec tsc --noEmit
       - name: Lint
         run: pnpm lint
-      - name: Build (the CLI tests start the built app)
-        run: npx next build --webpack
       - name: Tests
         run: pnpm run test:cli
       - name: Audit production dependencies
