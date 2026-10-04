@@ -125,7 +125,10 @@ test("real start: prints running banner, serves /api/health", { skip: !built && 
     assert.deepEqual(first, { event: "ok", message: "Dashboard is running", url: `http://localhost:${port}`, host: "127.0.0.1", port: +port });
     const h = await (await fetch(`http://localhost:${port}/api/health`)).json();
     assert.equal(h.status, "ok");
-    assert.ok(!out.includes('"event":"warn"'), "default (loopback) start must print no exposure warning");
+    // Match the exposure warning itself, not any warn: a normal start may also warn about
+    // missing keys or New Relic receiving nothing, and whether that lands before this line
+    // depends on whether .env.local exists (it races the /api/connect self-check).
+    assert.ok(!/anyone on your network|while the dashboard is exposed/.test(out), "default (loopback) start must print no exposure warning");
     // Next adds x-forwarded-for=<socket address> to every request; /api/setup must still answer a real local browser.
     const setup = await fetch(`http://127.0.0.1:${port}/api/setup`);
     assert.equal(setup.status, 200, "/api/setup refuses genuine localhost requests on a real server");

@@ -71,6 +71,34 @@ server.on("exit", (code) => {
 });
 for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => server.kill(s));
 
+/**
+ * Prints the chain from the user's site to the dashboard, so "no data" says which
+ * link is broken. Reuses /api/connect rather than re-implementing the checks.
+ */
+async function printConnection() {
+  let s;
+  try {
+    s = await fetch(`http://${loopback || wildcard ? "127.0.0.1" : host}:${port}/api/connect`).then((r) => r.json());
+  } catch {
+    return; // the dashboard is up; a failed self-check should never hold up startup
+  }
+  if (!s?.configured) return out.warn("No keys yet. Open /setup to add them.", { configured: false });
+
+  const rows = [
+    ["Reading New Relic", s.accountId ? `account ${s.accountId}` : "no account id"],
+    ["Browser app", s.setup?.appCount > 0 ? `${s.setup.appName} (application ID ${s.setup.applicationId})` : "none - create one: New Relic > Add data > Browser monitoring"],
+    ["Browser key", s.setup?.browserKey ?? "could not read (copy the key VALUE, not the ID beside it)"],
+    ["Site sending data", s.browser?.recent > 0 ? "yes, page views arriving" : "no page views yet"],
+    ["Custom events", s.custom?.recent > 0 ? "yes" : "none yet"],
+    ["Sentry", s.sentry?.error ? s.sentry.error : s.sentry?.recent > 0 ? "errors arriving" : "no errors in the last 5 min"],
+  ];
+  out.kv(rows, { event: "connection", ...s });
+  if (!(s.browser?.recent > 0)) {
+    if (!(s.setup?.appCount > 0)) out.warn("New Relic is not receiving data: no Browser app exists yet, so your site has no application ID to send to.", { reason: "no_browser_app" });
+    else out.warn("New Relic is not receiving data. Load your site, then check for blocked requests to nr-data.net - ad and privacy blockers drop them silently.", { reason: "no_page_views" });
+  }
+}
+
 // Open the browser once the port accepts connections.
 const open = () => {
   const [cmd, ...args] =
@@ -82,6 +110,6 @@ const open = () => {
   out.kv([["URL", url], ["Stop", "Ctrl+C"]]);
 };
 const poll = () =>
-  net.connect(+port, wildcard ? "127.0.0.1" : host).on("connect", function () { this.end(); open(); })
+  net.connect(+port, wildcard ? "127.0.0.1" : host).on("connect", function () { this.end(); open(); printConnection(); })
     .on("error", () => setTimeout(poll, 300));
 poll();
