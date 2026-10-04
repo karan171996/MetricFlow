@@ -36,6 +36,7 @@ test("GET: 'events received' per source; 'none yet' when empty; never returns ke
   const body = await (await get()).json();
   assert.equal(body.configured, true);
   assert.equal(body.insertKeySet, false);
+  assert.equal(body.accountId, process.env.NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID); // an all-empty panel must say which account it read
   assert.deepEqual(body.browser, { recent: 0, lastEventAt: null });
   assert.deepEqual(body.custom, { recent: 0, lastEventAt: null });
   assert.equal(body.sentry.recent, 0);
