@@ -1,17 +1,26 @@
 // Placeholders only. Never put a real key in these strings.
-export const BROWSER_SNIPPET = `// Step 0 - create the Browser app first: New Relic > Add data > Browser monitoring.
+export interface SnippetValues {
+  accountId?: string | null;
+  applicationId?: string | null;
+  browserKey?: string | null;
+}
+
+/** Real values when the dashboard could read them from New Relic, placeholders otherwise. */
+export const browserSnippet = ({ accountId, applicationId, browserKey }: SnippetValues = {}) => `// Step 0 - create the Browser app first: New Relic > Add data > Browser monitoring.
 // Without it there is no ingest key and no application ID to copy.
 // That page gives you both:
 //   ingest key      starts with NRJS-   (NOT your NRAK- User API key from Setup)
 //   application ID  a plain number      (NOT your account ID - they look identical)
+// Copy the key VALUE, not the ID shown beside it in the key list: an ID is
+// accepted by the form but rejected by the beacon, and nothing is logged.
 // npm i @newrelic/browser-agent
 
 // .env.local - NEXT_PUBLIC_* values are inlined into your public JavaScript.
 // Only the NRJS- ingest key belongs here. An NRAK- User key would be published
 // to every visitor as a full-account read/write credential.
-// NEXT_PUBLIC_NEWRELIC_BROWSER_KEY=NRJS-xxxxxxxxxxxxxxxxxxx
-// NEXT_PUBLIC_NEWRELIC_APP_ID=123456789
-// NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID=1234567
+// NEXT_PUBLIC_NEWRELIC_BROWSER_KEY=${browserKey ?? 'NRJS-xxxxxxxxxxxxxxxxxxx'}
+// NEXT_PUBLIC_NEWRELIC_APP_ID=${applicationId ?? '123456789'}
+// NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID=${accountId ?? '1234567'}
 
 // newrelic.ts
 import { BrowserAgent } from '@newrelic/browser-agent/loaders/browser-agent';
