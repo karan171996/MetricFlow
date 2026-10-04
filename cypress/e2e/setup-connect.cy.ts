@@ -83,7 +83,9 @@ describe("/connect", () => {
     cy.get("pre").eq(2).should("contain", "<YOUR_SENTRY_DSN>");
     cy.contains("User API key").should("be.visible");
     cy.contains("Ingest - License key").should("be.visible");
-    cy.get("pre").each(($p) => expect($p.text()).not.to.match(/NRAK-|FAKE-|sntry[su]_/));
+    // The snippet names these prefixes on purpose ("NOT your NRAK- User API key"), so match a
+    // key-SHAPED value, not the bare prefix. Thresholds mirror .githooks/secret-scan.sh.
+    cy.get("pre").each(($p) => expect($p.text()).not.to.match(/NRAK-[A-Z0-9]{10,}|FAKE-|sntry[su]_[A-Za-z0-9]{10,}/));
   });
 
   it("fills snippet 1 with the real application id and browser key once New Relic reports them", () => {
