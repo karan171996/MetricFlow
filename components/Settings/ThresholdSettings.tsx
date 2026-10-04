@@ -7,6 +7,9 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Activity } from "lucide-react";
 
+// Slider may report a number or a one-item array depending on the interaction.
+const num = (v: number | readonly number[]) => (typeof v === "number" ? v : v[0]);
+
 export function ThresholdSettings() {
   const t = useThresholds();
   const loadThreshold = [t.loadSeconds];
@@ -32,7 +35,7 @@ export function ThresholdSettings() {
           </div>
           <Slider 
             value={loadThreshold} 
-            onValueChange={(val) => setThresholds({ loadSeconds: (val as number[])[0] })} 
+            onValueChange={(val) => setThresholds({ loadSeconds: num(val) })} 
             max={5} 
             step={0.1}
             className="cursor-pointer"
@@ -47,7 +50,7 @@ export function ThresholdSettings() {
           </div>
           <Slider 
             value={errorThreshold} 
-            onValueChange={(val) => setThresholds({ errorPercent: (val as number[])[0] })} 
+            onValueChange={(val) => setThresholds({ errorPercent: num(val) })} 
             max={10} 
             step={0.5}
             className="cursor-pointer"
@@ -62,7 +65,7 @@ export function ThresholdSettings() {
           </div>
           <Slider 
             value={uptimeSLA} 
-            onValueChange={(val) => setThresholds({ uptimeSLA: (val as number[])[0] })} 
+            onValueChange={(val) => setThresholds({ uptimeSLA: num(val) })} 
             min={90}
             max={100} 
             step={0.01}

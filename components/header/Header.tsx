@@ -4,6 +4,7 @@ import { Search, Bell } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Logo } from "@/components/Logo";
+import { ThresholdAlert } from "./ThresholdAlert";
 import { useMetrics, hasData, type MetricsState } from "@/lib/useMetrics";
 
 /** Live facts about the monitored project; says so plainly when there is nothing to show yet. */
@@ -23,6 +24,7 @@ export function Header() {
   const { state } = useMetrics();
 
   return (
+    <>
     <header className="flex h-16 shrink-0 items-center gap-2 border-b border-gray-800 bg-[#0f1419] px-4 md:px-6">
       {/* Title & Subtitle */}
       <div className="hidden md:block flex flex-col gap-0.5">
@@ -67,5 +69,7 @@ export function Header() {
         </button>
       </div>
     </header>
+    <ThresholdAlert />
+    </>
   );
 }

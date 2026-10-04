@@ -44,11 +44,22 @@ describe("/performance states", () => {
 
   it("row click opens that page's detail", () => {
     stub({ configured: true, pages: [page("blog", { nr: { loadTime: 1200, throughput: 5 } }), page("docs", { nr: { loadTime: 700, throughput: 9 } })] });
-    cy.visit("/performance");
+    // The threshold alert also names these pages, so switch it off here to keep cy.contains unambiguous.
+    cy.visit("/performance", { onBeforeLoad: (w) => w.localStorage.setItem("notification-prefs", JSON.stringify({ alert: false })) });
     cy.contains("FAKE docs").click();
     cy.location("pathname").should("eq", "/performance/docs");
     cy.contains("FAKE docs").should("be.visible");
     cy.contains("FAKE blog").should("not.exist");
+  });
+});
+
+describe("threshold alert", () => {
+  it("shows when a page breaches a threshold, names it, and Dismiss hides it", () => {
+    stub({ configured: true, pages: [page("slow", { nr: { loadTime: 9000, throughput: 5 } })] });
+    cy.visit("/performance");
+    cy.get('[data-slot="alert"]').should("contain", "Critical").and("contain", "FAKE slow");
+    cy.contains('[data-slot="alert-action"] button', "Dismiss").click();
+    cy.get('[data-slot="alert"]').should("not.exist");
   });
 });
 

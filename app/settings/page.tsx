@@ -6,8 +6,8 @@ import {
   ApiKeys,
   ExportSettings,
   ThresholdSettings,
-  NotificationPrefs,
-  TeamMembers
+  NotificationPrefs
+  // TeamMembers, // later: team access feature
 } from "@/components/Settings";
 
 export default function SettingsPage() {
@@ -46,7 +46,9 @@ export default function SettingsPage() {
 
             <TabsContent value="team" className="space-y-6 mt-0">
               <NotificationPrefs />
+              {/* Later: team access feature
               <TeamMembers />
+              */}
             </TabsContent>
           </Tabs>
         </div>
