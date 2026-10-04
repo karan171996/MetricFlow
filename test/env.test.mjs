@@ -4,13 +4,27 @@ import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { FAKE, load, tmpEnvFile } from "./helpers.mjs";
 
-const { writeEnvLocal, envFilePath, isConfigured, SETUP_KEYS } = await load("lib/env.ts");
+const { writeEnvLocal, envFilePath, projectDir, isConfigured, SETUP_KEYS } = await load("lib/env.ts");
 
 test("METRICFLOW_ENV_FILE overrides the target path", () => {
   process.env.METRICFLOW_ENV_FILE = "/tmp/x/.env.fake";
   assert.equal(envFilePath(), "/tmp/x/.env.fake");
   delete process.env.METRICFLOW_ENV_FILE;
   assert.equal(envFilePath(), join(process.cwd(), ".env.local"));
+});
+
+test("writes go to the folder the CLI was run in, not the installed package", () => {
+  // The server's cwd is the package dir, so without this the keys land in node_modules.
+  process.env.METRICFLOW_PROJECT_DIR = "/tmp/user-project";
+  assert.equal(projectDir(), "/tmp/user-project");
+  assert.equal(envFilePath(), "/tmp/user-project/.env.local");
+  delete process.env.METRICFLOW_PROJECT_DIR;
+  assert.equal(envFilePath(), join(process.cwd(), ".env.local"));
+});
+
+test("cli hands the server its invocation cwd", () => {
+  const cli = readFileSync(join(import.meta.dirname, "../bin/cli.mjs"), "utf8");
+  assert.match(cli, /METRICFLOW_PROJECT_DIR:\s*process\.cwd\(\)/);
 });
 
 test("writeEnvLocal creates the file with mode 0600, no temp file left, process.env updated", () => {

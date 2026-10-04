@@ -53,9 +53,18 @@ export function isConfigured(): boolean {
   return SETUP_KEYS.every(k => env(k));
 }
 
+/**
+ * The folder the user ran the CLI in. The server's own cwd is the installed
+ * package, so writes keyed off cwd would land in node_modules (or the npx
+ * cache) instead of the user's project - and ship their keys with the package.
+ */
+export function projectDir(): string {
+  return process.env.METRICFLOW_PROJECT_DIR || process.cwd();
+}
+
 /** METRICFLOW_ENV_FILE overrides the target (used by tests so they never touch a real .env.local). */
 export function envFilePath(): string {
-  return process.env.METRICFLOW_ENV_FILE || join(process.cwd(), '.env.local');
+  return process.env.METRICFLOW_ENV_FILE || join(projectDir(), '.env.local');
 }
 
 /** Merges `values` into .env.local, keeping unrelated lines, and updates process.env so no restart is needed. */
