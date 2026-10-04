@@ -72,16 +72,42 @@ describe("/connect", () => {
     cy.get('a[href="/setup"]').should("be.visible");
   });
 
-  it("shows placeholder-only snippets and explains User vs Insert key", () => {
+  it("no lookup data: snippet documents the env vars, with a shaped example and no real key", () => {
     cy.intercept("GET", "/api/connect", { configured: true, insertKeySet: false, browser: src(0), custom: src(0), sentry: src(0) });
     cy.visit("/connect");
     cy.get("pre").should("have.length", 3);
-    cy.get("pre").eq(0).invoke("text").should("match", /<[A-Z_]+>/); // placeholders, not real keys
+    // The snippet names the variables to set. It used to carry <ANGLE_BRACKET> placeholders,
+    // which read as "any value fits" and sent users hunting for the wrong one.
+    cy.get("pre").eq(0).invoke("text").should("match", /NEXT_PUBLIC_NEWRELIC_BROWSER_KEY=NRJS-x+/);
     cy.get("pre").eq(1).should("contain", "emitMetric");
     cy.get("pre").eq(2).should("contain", "<YOUR_SENTRY_DSN>");
     cy.contains("User API key").should("be.visible");
     cy.contains("Ingest - License key").should("be.visible");
     cy.get("pre").each(($p) => expect($p.text()).not.to.match(/NRAK-|FAKE-|sntry[su]_/));
+  });
+
+  it("fills snippet 1 with the real application id and browser key once New Relic reports them", () => {
+    cy.intercept("GET", "/api/connect", {
+      configured: true, accountId: "1234567", insertKeySet: false,
+      browser: src(0), custom: src(0), sentry: src(0),
+      setup: { appCount: 1, appName: "example-site", applicationId: "111111111", browserKey: "NRJS-examplebrowserkey" },
+    });
+    cy.visit("/connect");
+    // Nothing left to copy by hand: this is what stops an ID being pasted instead of a key.
+    cy.get("pre").eq(0).invoke("text").should("contain", "NEXT_PUBLIC_NEWRELIC_APP_ID=111111111");
+    cy.get("pre").eq(0).invoke("text").should("contain", "NEXT_PUBLIC_NEWRELIC_BROWSER_KEY=NRJS-examplebrowserkey");
+    cy.contains("application ID 111111111").should("be.visible");
+  });
+
+  it("no Browser app: the chain names that link instead of showing empty rows", () => {
+    cy.intercept("GET", "/api/connect", {
+      configured: true, accountId: "1234567", insertKeySet: false,
+      browser: src(0), custom: src(0), sentry: src(0),
+      setup: { appCount: 0, appName: null, applicationId: null, browserKey: null },
+    });
+    cy.visit("/connect");
+    cy.contains("Add data > Browser monitoring").should("be.visible");
+    cy.contains("Querying New Relic account").should("be.visible");
   });
 
   it("'events received' says 'None yet' when empty and updates without a page reload", () => {
