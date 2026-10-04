@@ -15,6 +15,7 @@ interface Source {
 interface Status {
   error?: string;
   configured: boolean;
+  accountId?: string;
   insertKeySet?: boolean;
   browser?: Source;
   custom?: Source;
@@ -169,7 +170,10 @@ export function ConnectPage() {
       <Card className={cardCls}>
         <CardHeader>
           <CardTitle className="text-base font-bold text-white">Events received (last 5 minutes)</CardTitle>
-          <CardDescription className="text-sm text-gray-400">Updates every few seconds.</CardDescription>
+          <CardDescription className="text-sm text-gray-400">
+            {status?.accountId ? <>Querying New Relic account <span className="font-mono text-gray-200">{status.accountId}</span>. </> : null}
+            Updates every few seconds. All rows empty? Check this is the account your site sends to.
+          </CardDescription>
         </CardHeader>
         <CardContent aria-live="polite">
           <StatusRow label="Browser agent (page views)" s={status?.browser} />
@@ -220,8 +224,13 @@ export function ConnectPage() {
         </CardContent>
       </Card>
 
-      <CopyBlock n={1} title="1. New Relic Browser agent" help="Gives page views, load timing and Core Web Vitals. Replace the placeholders with values from New Relic." code={BROWSER_SNIPPET} />
-      <CopyBlock n={2} title="2. emitMetric() helper" help="Send your own numbers from your site. Uses the Browser agent above, so no key goes in your code." code={EMIT_SNIPPET} />
+      <Card className={cardCls}>
+        <CardContent className="p-4 text-sm text-[#f87171] border-l-2 border-[#f87171]">
+          <strong>Snippet 1 runs in the browser, so its key is public.</strong> Use the <strong>Ingest - Browser</strong> key (starts <span className="font-mono">NRJS-</span>), never your <span className="font-mono">NRAK-</span> User key from Setup - that one would hand every visitor full read/write access to your account. The application ID is also not your account ID.
+        </CardContent>
+      </Card>
+      <CopyBlock n={1} title="1. New Relic Browser agent" help="Gives page views, load timing and Core Web Vitals. Create the Browser app in New Relic first (Add data > Browser monitoring) - that is where the NRJS- key and the application ID come from." code={BROWSER_SNIPPET} />
+      <CopyBlock n={2} title="2. emitMetric() helper" help="Send your own numbers from your site. Uses the agent from snippet 1, so no key goes in your code." code={EMIT_SNIPPET} />
       <CopyBlock n={3} title="3. Sentry errors" help="Send JavaScript errors to Sentry. Use your project's DSN." code={SENTRY_SNIPPET} />
       <Card className={cardCls}>
         <CardHeader>

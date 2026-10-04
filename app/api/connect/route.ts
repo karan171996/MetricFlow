@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     newRelicStatus(nrKey, acct, 'MetricFlowEvent'),
     sentryStatus(env('SENTRY_API_KEY'), env('SENTRY_DSN'))
   ]);
-  return Response.json({ configured: true, insertKeySet: Boolean(env(INSERT_KEY)), browser, custom, sentry });
+  return Response.json({ configured: true, accountId: acct, insertKeySet: Boolean(env(INSERT_KEY)), browser, custom, sentry });
 }
 
 /** Sends one test event so the user can watch it arrive. */

@@ -125,10 +125,14 @@ test("write failure: valid keys but unwritable folder -> 500 with a clear messag
   assert.ok(!s.includes("FAKE-"));
 });
 
-test("Insert key: needs finished setup, rejects whitespace, saves alone afterwards", async () => {
+test("Insert key: needs finished setup, rejects whitespace and a User key, saves alone afterwards", async () => {
   assert.equal((await post({ NEWRELIC_INSERT_KEY: "FAKE-INSERT" })).status, 400); // not configured
   Object.assign(process.env, FAKE);
   assert.equal((await post({ NEWRELIC_INSERT_KEY: "FAKE INSERT" })).status, 400);
+  const userKey = await post({ NEWRELIC_INSERT_KEY: "NRAK-FAKEUSERKEY" });
+  assert.equal(userKey.status, 400);
+  assert.match(await text(userKey), /User API key/);
+  assert.ok(!existsSync(envFile));
   const ok = await post({ NEWRELIC_INSERT_KEY: "FAKE-INSERT" });
   assert.equal(ok.status, 200);
   assert.match(readFileSync(envFile, "utf8"), /NEWRELIC_INSERT_KEY=FAKE-INSERT/);
