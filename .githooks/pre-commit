@@ -2,4 +2,10 @@
 cd "$(git rev-parse --show-toplevel)" || exit 1
 .githooks/secret-scan.sh || exit 1
 node .githooks/check-markdown.mjs || exit 1
+# Code that can break the app (ts/tsx/js/jsx/mjs/cjs, config, package.json, lockfile): type check and lint first.
+if git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(tsx?|jsx?|mjs|cjs)$|^package\.json$|^pnpm-lock\.yaml$|^tsconfig\.json$' >/dev/null; then
+  pnpm exec tsc --noEmit || { echo "BLOCKED: type errors"; exit 1; }
+  pnpm run -s lint || { echo "BLOCKED: lint failed"; exit 1; }
+fi
+# Tests run on every commit, whatever changed.
 .githooks/run-tests.sh || exit 1

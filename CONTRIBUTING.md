@@ -68,7 +68,7 @@ Not accepted: `Readme updated`, `fix:gitIgnore update` (no space after the colon
 
 ### How this is enforced
 
-- **Your commits:** the `commit-msg` hook rejects a message in the wrong format (turned on by the `git config core.hooksPath` line above). It also runs the secret scan, the tests and, on push, type checks and lint.
+- **Your commits:** the `commit-msg` hook rejects a message in the wrong format (turned on by the `git config core.hooksPath` line above). It also runs the secret scan and the tests on every commit. When a commit touches code that can break the app (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `package.json`, the lockfile or `tsconfig.json`), the `pre-commit` hook runs the type check and lint before the tests. On push it runs them again, plus the dependency audit. If the tests fail with ".next is older than app/ sources", run `npx next build --webpack` and commit again.
 - **Your PR:** a `pr-title` check on GitHub fails if the PR title isn't in this format. Edit the title and it re-runs.
 
 ## Versions and the `fix-pr` agent
