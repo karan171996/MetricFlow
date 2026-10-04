@@ -11,6 +11,9 @@ export interface DiscoveredPage {
 
 export const MAX_PAGES = 20;
 
+/** NRQL clause: only page loads from a local dev server, so prod/staging data in the same account is ignored. */
+export const LOCAL_ONLY_NRQL = `WHERE (pageUrl LIKE 'http%://localhost%' OR pageUrl LIKE 'http%://127.0.0.1%')`;
+
 /** "https://site.com/Blog/?utm=1#x" -> "/blog"; "/" stays "/". Returns null if unusable. */
 export function normalizePath(raw: string): string | null {
   if (typeof raw !== 'string' || !raw.trim()) return null;

@@ -1,6 +1,7 @@
 import { basename } from 'node:path';
-import { getNewRelicMetrics, discoverPages, type NewRelicPageMetrics } from '@/lib/newrelic';
-import { getSentryErrorsByPath, EMPTY_SENTRY_DATA } from '@/lib/sentry';
+import { discoverPages } from '@/lib/newrelic';
+import { NewRelicAnalytics, type NewRelicPageMetrics } from '@/lib/analytics/NewRelicAnalytics';
+import { SentryAnalytics, type SentryPageErrors } from '@/lib/analytics/SentryAnalytics';
 import { env, isConfigured } from '@/lib/env';
 import { recordSnapshot, getHistory } from '@/lib/metricsHistory';
 import { recordTiming } from '@/lib/apiTimingStore';
@@ -24,16 +25,16 @@ export async function GET() {
 
     // New Relic (1 call, 3 queries) and Sentry (1 events call) are independent, so run them concurrently.
     const newRelicStart = performance.now();
-    const newRelicPromise = getNewRelicMetrics(
+    const newRelicPromise = new NewRelicAnalytics(
       env('NEWRELIC_API_KEY'),
       env('NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID')
-    ).then(result => {
+    ).byPath().then(result => {
       recordTiming('New Relic: metrics', performance.now() - newRelicStart);
       return result;
     });
 
     const sentryStart = performance.now();
-    const sentryPromise = getSentryErrorsByPath(env('SENTRY_API_KEY'), env('SENTRY_DSN')).then(result => {
+    const sentryPromise = new SentryAnalytics(env('SENTRY_API_KEY'), env('SENTRY_DSN')).byPath().then(result => {
       recordTiming('Sentry: events', performance.now() - sentryStart);
       return result;
     });
@@ -79,6 +80,13 @@ const EMPTY_NEWRELIC_METRICS: NewRelicPageMetrics = {
   errorRate: 0,
   throughput: 0,
   apdexScore: 0
+};
+
+const EMPTY_SENTRY_DATA: SentryPageErrors = {
+  errorCount: 0,
+  errorRate: 0,
+  warningCount: 0,
+  latestErrors: []
 };
 
 function deriveStatus(newRelic: NewRelicPageMetrics): PageStatus {
