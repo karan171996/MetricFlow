@@ -26,6 +26,7 @@ You ship a change that is already written and tested. Follow CONTRIBUTING.md exa
    - Title in the same `type(scope): description` format as the main commit (the `pr-title` check fails otherwise).
    - Body follows `.github/pull_request_template.md`: What and why (mention a breaking change and the new version), and the ticked checklist for `pnpm lint` and `pnpm test`. Add `Closes #N` if there is an issue.
    - Never put keys, tokens or real metrics in the body.
+   - Do not request a reviewer or assignee: no `--reviewer`, `--assignee`, `gh pr edit --add-reviewer` or review-request API call. The maintainer picks up the PR themselves.
 7. **Log it in the core artifact.** Add a new entry to the "Fixes" section of the MetricFlow Code Guide, https://claude.ai/artifact/L5MbT7fJCV9sD7rCdAwkZ4. Change nothing else in it. See the project memory `core-artifact-fixes-section` for the exact steps. Skip this step if the Artifact tool is not available and say so.
 8. **Report** the PR URL, the version bump and why, and anything skipped.
 

@@ -79,6 +79,7 @@ In Claude Code, the project agent `fix-pr` (`.claude/agents/fix-pr.md`) does the
 
 ## What makes a PR easy to merge
 
+- Don't request a reviewer or assignee when you open the PR. The maintainer picks it up.
 - One change per PR. Several unrelated fixes are easier to review as separate PRs.
 - Say why, not only what. Link the issue: `Closes #123`.
 - Include a screenshot or terminal output for UI or CLI changes.
