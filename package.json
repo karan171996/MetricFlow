@@ -101,7 +101,8 @@
     "!.next/cache",
     "!.next/types",
     "!.next/diagnostics",
-    "!.next/**/*.map"
+    "!.next/**/*.map",
+    "!**/.env*"
   ],
   "engines": {
     "node": ">=20.12"

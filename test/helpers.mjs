@@ -8,6 +8,16 @@ export const root = resolve(import.meta.dirname, "..");
 export const load = (rel) => import(pathToFileURL(join(root, rel)).href);
 export const tmpEnvFile = () => join(mkdtempSync(join(tmpdir(), "mf-env-")), ".env.local");
 
+/**
+ * process.env minus the GIT_* vars. Hooks run with GIT_INDEX_FILE/GIT_DIR set,
+ * and a throwaway repo that inherits them runs `git add` against the real
+ * repo's index - which wipes it. Tests that shell out to git must use this.
+ */
+export const gitlessEnv = (extra = {}) => ({
+  ...Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("GIT_"))),
+  ...extra,
+});
+
 // Fake keys only. Marked so a leak is greppable.
 export const FAKE = {
   NEWRELIC_API_KEY: "FAKE-NRAK-0000", NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: "1234567",

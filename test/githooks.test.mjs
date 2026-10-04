@@ -5,10 +5,10 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { root } from "./helpers.mjs";
+import { gitlessEnv, root } from "./helpers.mjs";
 
 const scan = join(root, ".githooks/secret-scan.sh");
-const sh = (cwd, cmd) => spawnSync("sh", ["-c", cmd], { cwd, encoding: "utf8" });
+const sh = (cwd, cmd) => spawnSync("sh", ["-c", cmd], { cwd, encoding: "utf8", env: gitlessEnv() });
 function stage(files) {
   const dir = mkdtempSync(join(tmpdir(), "mf-hook-"));
   sh(dir, "git init -q && git config user.email t@t && git config user.name t");
@@ -17,7 +17,7 @@ function stage(files) {
     writeFileSync(join(dir, name), content);
   }
   sh(dir, "git add -A");
-  return spawnSync("sh", [scan], { cwd: dir, encoding: "utf8" });
+  return spawnSync("sh", [scan], { cwd: dir, encoding: "utf8", env: gitlessEnv() });
 }
 const FAKE_GH = "ghp_" + "a1B2".repeat(9);
 const FAKE_NR = "NRAK-" + "A1B2C3D4E5".repeat(3);

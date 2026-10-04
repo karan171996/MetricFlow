@@ -1,10 +1,11 @@
 import { readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isLocalRequest, REFUSAL_MESSAGE } from '@/lib/localRequest';
+import { projectDir } from '@/lib/env';
 import { DEFAULT_THRESHOLDS, type Thresholds } from '@/lib/thresholds';
 
 // ponytail: single JSON file = one shared config per host. Use a DB/KV on serverless (no persistent disk).
-const file = () => process.env.METRICFLOW_SETTINGS_FILE || join(process.cwd(), '.metricflow-settings.json');
+const file = () => process.env.METRICFLOW_SETTINGS_FILE || join(projectDir(), '.metricflow-settings.json');
 
 const RANGES: Record<keyof Thresholds, [number, number]> = {
   loadSeconds: [0.1, 30],

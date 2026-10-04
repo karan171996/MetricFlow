@@ -5,10 +5,10 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { root } from "./helpers.mjs";
+import { gitlessEnv, root } from "./helpers.mjs";
 
 const PLACEHOLDER = "zz-throwaway-" + "q9X7".repeat(4); // not a real key; assembled so this file never contains it whole
-const sh = (cwd, cmd, env = {}) => spawnSync("sh", ["-c", cmd], { cwd, encoding: "utf8", env: { ...process.env, ...env } });
+const sh = (cwd, cmd, env = {}) => spawnSync("sh", ["-c", cmd], { cwd, encoding: "utf8", env: gitlessEnv(env) });
 function repo(files, envFile = `API_KEY=${PLACEHOLDER}\nORG_SLUG=acme\n`) {
   const dir = mkdtempSync(join(tmpdir(), "mf-guard-"));
   sh(dir, "git init -q && git config user.email t@t && git config user.name t");
