@@ -10,8 +10,7 @@ const FIELDS = [
   { name: "NEWRELIC_API_KEY", label: "New Relic User API key", secret: true, help: "READS your data (starts NRAK-). Create it under API keys > key type \"User\"." },
   { name: "NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID", label: "New Relic account ID", secret: false, help: "A plain number, shown next to your keys in New Relic." },
   { name: "SENTRY_API_KEY", label: "Sentry auth token", secret: true, help: "Lets the dashboard read issues (scopes: project:read, event:read)." },
-  { name: "SENTRY_ORG_SLUG", label: "Sentry organization slug", secret: false, help: "The name in your Sentry URL: sentry.io/organizations/<slug>/." },
-  { name: "SENTRY_PROJECT_ID", label: "Sentry project slug", secret: false, help: "The project's slug from Project settings." },
+  { name: "SENTRY_DSN", label: "Sentry DSN", secret: false, help: "Project settings, then Client Keys (DSN). The project and host are read from it." },
 ] as const;
 
 type Result = { ok: true } | { ok: false; error: string };

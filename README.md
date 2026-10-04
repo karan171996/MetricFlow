@@ -73,8 +73,7 @@ Save them in one of two ways:
   NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID=1234567
   NEWRELIC_API_KEY=NRAK-...
   SENTRY_API_KEY=sntrys_...
-  SENTRY_ORG_SLUG=your-org
-  SENTRY_PROJECT_ID=your-project
+  SENTRY_DSN=https://<key>@o123.ingest.sentry.io/456
   ```
 
   Restart the dashboard after editing the file.
@@ -176,7 +175,7 @@ Human text goes to stdout; errors, warnings and spinners go to stderr. Full spec
 | Variable | Purpose |
 | --- | --- |
 | `NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID`, `NEWRELIC_API_KEY` | Read metrics from New Relic (required) |
-| `SENTRY_API_KEY`, `SENTRY_ORG_SLUG`, `SENTRY_PROJECT_ID` | Read errors from Sentry (required) |
+| `SENTRY_API_KEY`, `SENTRY_DSN` | Read errors from Sentry (required). The DSN gives the project and region; the org is looked up with the token |
 | `GEMINI_API_KEY`, `CLAUDE_API_KEY`, `OPENAI_API_KEY` | AI suggestions (optional, any one) |
 | `AI_PROVIDER` | `gemini`, `claude` or `openai`; picks the AI key when several are set |
 | `NEWRELIC_INSERT_KEY` | Only for **Send test event** on `/connect` and `pnpm send-test-data` |

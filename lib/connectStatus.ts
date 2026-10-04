@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { nrGraphql, withRegion } from '@/lib/nrRequest';
+import { orgSlugForDsn, parseSentryDsn } from '@/lib/sentryDsn';
 
 export interface SourceStatus {
   /** Events seen in the last 5 minutes, or null if the source could not be read. */
@@ -28,11 +29,15 @@ export async function newRelicStatus(apiKey: string, accountId: string, eventTyp
   }
 }
 
-export async function sentryStatus(token: string, org: string, project: string): Promise<SourceStatus> {
+export async function sentryStatus(token: string, dsn: string): Promise<SourceStatus> {
+  const parsed = parseSentryDsn(dsn);
+  if (!parsed.ok) return { recent: null, lastEventAt: null, error: 'Could not read from Sentry.' };
   try {
+    const slug = await orgSlugForDsn(token, parsed);
+    if (!slug) return { recent: null, lastEventAt: null, error: 'Could not read from Sentry.' };
     const res = await axios.get(
-      `https://sentry.io/api/0/projects/${encodeURIComponent(org)}/${encodeURIComponent(project)}/issues/`,
-      { headers: { Authorization: `Bearer ${token}` }, params: { sort: 'date', limit: 1, statsPeriod: '24h' }, timeout: 8000 }
+      `${parsed.apiBase}/organizations/${encodeURIComponent(slug)}/issues/`,
+      { headers: { Authorization: `Bearer ${token}` }, params: { project: parsed.projectId, sort: 'date', limit: 1, statsPeriod: '24h' }, timeout: 8000 }
     );
     const last: string | undefined = res.data?.[0]?.lastSeen;
     const recent = last && Date.now() - new Date(last).getTime() < 5 * 60_000 ? 1 : 0;

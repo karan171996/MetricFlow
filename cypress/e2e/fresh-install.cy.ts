@@ -19,7 +19,8 @@ it("fresh install: setup prompt -> save keys -> empty state -> test event -> dat
   cy.get('a[href="/setup"]').first().click();
   cy.location("pathname").should("eq", "/setup");
 
-  ["NEWRELIC_API_KEY", "NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID", "SENTRY_API_KEY", "SENTRY_ORG_SLUG", "SENTRY_PROJECT_ID"].forEach((k) => cy.get(`#${k}`).type("FAKE-1"));
+  ["NEWRELIC_API_KEY", "NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID", "SENTRY_API_KEY"].forEach((k) => cy.get(`#${k}`).type("FAKE-1"));
+  cy.get("#SENTRY_DSN").type("https://fakekey@o1.ingest.sentry.io/1");
   cy.contains("button", "Check and save").click();
   cy.contains("No restart needed").should("be.visible");
 

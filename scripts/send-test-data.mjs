@@ -20,7 +20,7 @@ async function sendToSentry() {
   });
   const flushed = await Sentry.flush(2000);
   console.log(`Sentry: flushed=${flushed} eventId=${eventId}`);
-  console.log(`Sentry: check https://sentry.io/organizations/${process.env.SENTRY_ORG_SLUG}/issues/?query=${encodeURIComponent(eventId)}`);
+  console.log(`Sentry: search issues for event id ${eventId}`);
 }
 
 async function sendToNewRelic() {
