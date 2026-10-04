@@ -38,7 +38,7 @@ describe("/performance states", () => {
     cy.contains("FAKE upstream down").should("be.visible");
     stub({ configured: true, pages: [page("blog", { nr: { loadTime: 1200, throughput: 5 } })] });
     cy.contains("button", "Retry").click();
-    cy.contains("Could not load metrics").should("not.exist");
+    cy.contains("button", "Retry").should("not.exist"); // not the banner text: the header subtitle shows the same error and has its own fetch
     cy.contains("FAKE blog").should("be.visible");
   });
 
