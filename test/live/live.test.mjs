@@ -7,7 +7,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { load, root } from "../helpers.mjs";
 
-const REQUIRED = ["NEWRELIC_API_KEY", "NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID", "SENTRY_API_KEY", "SENTRY_ORG_SLUG", "SENTRY_PROJECT_ID"];
+const REQUIRED = ["NEWRELIC_API_KEY", "NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID", "SENTRY_API_KEY", "SENTRY_DSN"];
 const file = join(root, ".env.local");
 if (existsSync(file)) process.loadEnvFile(file); // read-only: nothing is ever written back
 const missing = !existsSync(file) ? ".env.local not found" : REQUIRED.filter((k) => !process.env[k]).length ? "a required key is empty in .env.local" : false;
@@ -39,13 +39,11 @@ test("a wrong New Relic key is rejected with a message that never contains a rea
   assert.ok(!leaks(r) && !JSON.stringify(r).includes(bad));
 });
 
-test("a wrong Sentry org or project is reported on that field", T, async () => {
+test("a DSN the token cannot see is reported on that field", T, async () => {
   needKeys();
-  const org = await validate.validateKeys({ ...real, SENTRY_ORG_SLUG: "fake-org-does-not-exist-xyz" });
-  assert.equal(org.SENTRY_ORG_SLUG.ok, false);
-  const proj = await validate.validateKeys({ ...real, SENTRY_PROJECT_ID: "fake-project-does-not-exist-xyz" });
-  assert.equal(proj.SENTRY_PROJECT_ID.ok, false);
-  assert.ok(!leaks([org, proj]));
+  const bad = await validate.validateKeys({ ...real, SENTRY_DSN: "https://public@o1.ingest.sentry.io/1" });
+  assert.equal(bad.SENTRY_DSN.ok, false);
+  assert.ok(!leaks(bad));
 });
 
 test("New Relic: discovered pages are unique, normalised, max 20; metrics are sane numbers", T, async () => {
@@ -61,7 +59,7 @@ test("New Relic: discovered pages are unique, normalised, max 20; metrics are sa
 
 test("Sentry: errors by path have the documented shape", T, async () => {
   needKeys();
-  const byPath = await sentry.getSentryErrorsByPath(real.SENTRY_API_KEY, real.SENTRY_ORG_SLUG, real.SENTRY_PROJECT_ID);
+  const byPath = await sentry.getSentryErrorsByPath(real.SENTRY_API_KEY, real.SENTRY_DSN);
   for (const [path, e] of Object.entries(byPath)) {
     assert.match(path, /^\//);
     assert.ok(Number.isFinite(e.errorCount) && e.errorCount >= 0);

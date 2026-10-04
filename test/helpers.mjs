@@ -11,7 +11,7 @@ export const tmpEnvFile = () => join(mkdtempSync(join(tmpdir(), "mf-env-")), ".e
 // Fake keys only. Marked so a leak is greppable.
 export const FAKE = {
   NEWRELIC_API_KEY: "FAKE-NRAK-0000", NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: "1234567",
-  SENTRY_API_KEY: "FAKE-SENTRY-0000", SENTRY_ORG_SLUG: "fake-org", SENTRY_PROJECT_ID: "fake-project",
+  SENTRY_API_KEY: "FAKE-SENTRY-0000", SENTRY_DSN: "https://public@o123.ingest.sentry.io/456",
 };
 
 /** Replace axios for modules loaded after this call. `handler(method, url, body)` returns {data} or throws {response:{status}}. */

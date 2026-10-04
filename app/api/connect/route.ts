@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const [browser, custom, sentry] = await Promise.all([
     newRelicStatus(nrKey, acct, 'PageView'),
     newRelicStatus(nrKey, acct, 'MetricFlowEvent'),
-    sentryStatus(env('SENTRY_API_KEY'), env('SENTRY_ORG_SLUG'), env('SENTRY_PROJECT_ID'))
+    sentryStatus(env('SENTRY_API_KEY'), env('SENTRY_DSN'))
   ]);
   return Response.json({ configured: true, insertKeySet: Boolean(env(INSERT_KEY)), browser, custom, sentry });
 }

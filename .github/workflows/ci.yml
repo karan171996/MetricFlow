@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    env:
+      CYPRESS_INSTALL_BINARY: "0" # e2e specs are not part of this job
+    steps:
+      - uses: actions/checkout@v4
+      - run: corepack enable # installs the pnpm version pinned in package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build (generates Next's route types and the app the CLI tests start)
+        run: npx next build --webpack
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+      - name: Lint
+        run: pnpm lint
+      - name: Tests
+        run: pnpm run test:cli
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level=high

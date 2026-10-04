@@ -1,6 +1,6 @@
 export {}; // make this file a module so top-level names do not clash across specs
 // /setup and /connect with the APIs stubbed. Fake keys only (prefixed FAKE-).
-const KEYS = { NEWRELIC_API_KEY: "FAKE-NR", NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: "1234567", SENTRY_API_KEY: "FAKE-SENTRY", SENTRY_ORG_SLUG: "fake-org", SENTRY_PROJECT_ID: "fake-proj" };
+const KEYS = { NEWRELIC_API_KEY: "FAKE-NR", NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: "1234567", SENTRY_API_KEY: "FAKE-SENTRY", SENTRY_DSN: "https://fakekey@o1.ingest.sentry.io/1" };
 const fill = () => Object.entries(KEYS).forEach(([k, v]) => cy.get(`#${k}`).type(v));
 const allSet = Object.fromEntries(Object.keys(KEYS).map((k) => [k, true]));
 
@@ -13,7 +13,7 @@ describe("/setup", () => {
     cy.contains("Ingest - License").should("be.visible");
     cy.get("#NEWRELIC_API_KEY").should("have.attr", "type", "password");
     cy.get("#SENTRY_API_KEY").should("have.attr", "type", "password");
-    cy.get("#SENTRY_ORG_SLUG").should("have.attr", "type", "text");
+    cy.get("#SENTRY_DSN").should("have.attr", "type", "text");
   });
 
   it("empty submit: every field marked Required, nothing saved", () => {

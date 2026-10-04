@@ -1,6 +1,6 @@
 {
   "name": "@karan171996/metricflow",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "description": "Local performance dashboard: New Relic page metrics and Sentry errors per page, with AI suggestions. Run with one npx command.",
   "keywords": [
     "performance",
@@ -61,7 +61,8 @@
     "test:cli": "node --experimental-test-module-mocks --import ./test/register.mjs --test test/*.test.mjs",
     "test:basic": "node scripts/test-env.mjs basic",
     "test:real": "node scripts/test-env.mjs real",
-    "test": "pnpm run test:basic"
+    "test": "pnpm run test:basic",
+    "release:bump": "node scripts/bump-version.mjs"
   },
   "dependencies": {
     "axios": "^1.20.0",

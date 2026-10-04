@@ -6,8 +6,7 @@ export const SETUP_KEYS = [
   'NEWRELIC_API_KEY',
   'NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID',
   'SENTRY_API_KEY',
-  'SENTRY_ORG_SLUG',
-  'SENTRY_PROJECT_ID'
+  'SENTRY_DSN'
 ] as const;
 export type SetupKey = (typeof SETUP_KEYS)[number];
 /** Sends events from your site (Ingest - License key). Not needed to read data; set on /connect. */

@@ -34,7 +34,7 @@ test(".env.test.example has every key of .env.local.example, all placeholders", 
   for (const k of real) assert.ok(k in fake, `${k} missing from .env.test.example`);
   for (const [k, v] of Object.entries(fake)) {
     if (k.startsWith("NEXT_PUBLIC_")) continue; // ids and urls, not secrets
-    assert.match(v, /^FAKE-/, `${k} must be a FAKE- placeholder`);
+    assert.match(v, /^(https:\/\/)?FAKE-/, `${k} must be a FAKE- placeholder`);
   }
 });
 

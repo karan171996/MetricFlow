@@ -4,7 +4,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { FAKE, httpError, load, mockAxios, req, tmpEnvFile } from "./helpers.mjs";
 
 const validNr = { data: { data: { actor: { user: { id: 1 }, account: { id: 1234567 } } } } };
-let handler = (method, url) => (url.includes("newrelic") ? validNr : { data: {} });
+const sentryOrgs = { data: [{ id: "123", slug: "from-token" }] };
+let handler = (method, url) => (url.includes("newrelic") ? validNr : sentryOrgs);
 const calls = mockAxios((m, u, c) => handler(m, u, c));
 const { GET, POST } = await load("app/api/setup/route.ts");
 const { validateKeys } = await load("lib/validateKeys.ts");
@@ -12,7 +13,7 @@ const { validateKeys } = await load("lib/validateKeys.ts");
 let envFile;
 beforeEach(() => {
   calls.length = 0;
-  handler = (m, u) => (u.includes("newrelic") ? validNr : { data: {} });
+  handler = (m, u) => (u.includes("newrelic") ? validNr : sentryOrgs);
   envFile = tmpEnvFile();
   process.env.METRICFLOW_ENV_FILE = envFile;
   for (const k of [...Object.keys(FAKE), "NEWRELIC_INSERT_KEY", "NEWRELIC_REGION"]) delete process.env[k];
@@ -41,11 +42,11 @@ test("empty input: 400, every field 'Required.', no external call, no file", asy
 });
 
 test("whitespace-only, newline/NUL and .env-special characters are rejected before any call", async () => {
-  assert.equal((await post({ ...FAKE, SENTRY_ORG_SLUG: "   " })).status, 400);
+  assert.equal((await post({ ...FAKE, SENTRY_DSN: "   " })).status, 400);
   for (const bad of ["org\nEVIL=1", "a b", "a#b", 'a"b', "a'b", "a`b", "a$b", "a\\b"]) {
-    const res = await post({ ...FAKE, SENTRY_ORG_SLUG: bad });
+    const res = await post({ ...FAKE, SENTRY_DSN: bad });
     assert.equal(res.status, 400, JSON.stringify(bad));
-    const r = (await res.json()).results.SENTRY_ORG_SLUG;
+    const r = (await res.json()).results.SENTRY_DSN;
     assert.equal(r.ok, false);
     assert.ok(r.error.length > 0);
   }
@@ -54,7 +55,7 @@ test("whitespace-only, newline/NUL and .env-special characters are rejected befo
 });
 
 test("a NUL byte in a value is rejected (regressed when UNSAFE replaced the \\0 check)", async () => {
-  const res = await post({ ...FAKE, SENTRY_ORG_SLUG: "org\0x" });
+  const res = await post({ ...FAKE, SENTRY_DSN: "org\0x" });
   assert.equal(res.status, 400);
   assert.equal(calls.length, 0);
 });
@@ -82,13 +83,11 @@ test("non-numeric account id, and account the key cannot see, name the account f
   assert.equal(r.results.NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID.ok, false);
 });
 
-test("Sentry: unknown org, unknown project, rejected token each name the right field", async () => {
-  handler = (m, u) => { if (u.includes("sentry")) throw httpError(404); return validNr; };
-  assert.equal((await (await post(FAKE)).json()).results.SENTRY_ORG_SLUG.ok, false);
-  handler = (m, u) => { if (u.includes("/projects/")) throw httpError(404); return u.includes("newrelic") ? validNr : { data: {} }; };
-  const p = (await (await post(FAKE)).json()).results;
-  assert.equal(p.SENTRY_PROJECT_ID.ok, false);
-  assert.equal(p.SENTRY_ORG_SLUG.ok, true);
+test("Sentry: bad DSN, unseen project, and rejected token each name the right field", async () => {
+  const bad = await (await post({ ...FAKE, SENTRY_DSN: "not-a-dsn" })).json();
+  assert.match(bad.results.SENTRY_DSN.error, /not a valid URL/);
+  handler = (m, u) => (u.includes("newrelic") ? validNr : { data: [] });
+  assert.equal((await (await post(FAKE)).json()).results.SENTRY_DSN.ok, false);
   handler = (m, u) => { if (u.includes("sentry")) throw httpError(401); return validNr; };
   assert.match((await (await post(FAKE)).json()).results.SENTRY_API_KEY.error, /Sentry token was rejected/);
 });
@@ -110,7 +109,7 @@ test("valid keys: 200 saved, written to METRICFLOW_ENV_FILE (0600), unrelated li
   const file = readFileSync(envFile, "utf8");
   assert.match(file, /^KEEP_ME=1\n/);
   for (const [k, v] of Object.entries(FAKE)) assert.ok(file.includes(`${k}=${v}`), k);
-  assert.equal(process.env.SENTRY_ORG_SLUG, "fake-org"); // live without restart
+  assert.equal(process.env.SENTRY_DSN, FAKE.SENTRY_DSN); // live without restart
   const status = await (await GET(req("http://localhost:3000/api/setup"))).json();
   assert.equal(status.configured, true);
   assert.ok(!JSON.stringify(status).includes("FAKE-"), "GET returned key values");
@@ -149,7 +148,7 @@ test("US key: one call to the US endpoint, region saved as us", async () => {
 test("EU key: rejected by US, accepted by EU, region saved as eu and later calls use the EU host", async () => {
   handler = (m, u) => {
     if (u === "https://api.newrelic.com/graphql") throw httpError(401);
-    return u.includes("newrelic") ? validNr : { data: {} };
+    return u.includes("newrelic") ? validNr : sentryOrgs;
   };
   assert.equal((await post(FAKE)).status, 200);
   assert.deepEqual(calls.filter((c) => c.url.includes("newrelic")).map((c) => c.url), ["https://api.newrelic.com/graphql", "https://api.eu.newrelic.com/graphql"]);

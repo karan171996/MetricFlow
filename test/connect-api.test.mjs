@@ -4,6 +4,8 @@ import { FAKE, httpError, load, mockAxios, req } from "./helpers.mjs";
 
 let handler = () => ({ data: {} });
 const calls = mockAxios((m, u, c) => handler(m, u, c));
+// org lookup returns the DSN's org; the issues call returns none
+const sentry = (u) => ({ data: u.endsWith("/organizations/") ? [{ id: "123", slug: "from-token" }] : [] });
 const { GET, POST } = await load("app/api/connect/route.ts");
 
 beforeEach(() => {
@@ -29,7 +31,7 @@ test("GET: 'events received' per source; 'none yet' when empty; never returns ke
   Object.assign(process.env, FAKE);
   handler = (m, u) => {
     if (u.includes("newrelic")) return { data: { data: { actor: { account: { nrql: { results: [{ n: 0 }] } } } } } };
-    return { data: [] };
+    return sentry(u);
   };
   const body = await (await get()).json();
   assert.equal(body.configured, true);
@@ -38,7 +40,7 @@ test("GET: 'events received' per source; 'none yet' when empty; never returns ke
   assert.deepEqual(body.custom, { recent: 0, lastEventAt: null });
   assert.equal(body.sentry.recent, 0);
   assert.ok(!JSON.stringify(body).includes("FAKE-"));
-  handler = (m, u) => (u.includes("newrelic") ? { data: { data: { actor: { account: { nrql: { results: [{ n: 3, t: Date.now() }] } } } } } } : { data: [] });
+  handler = (m, u) => (u.includes("newrelic") ? { data: { data: { actor: { account: { nrql: { results: [{ n: 3, t: Date.now() }] } } } } } } : sentry(u));
   const next = await (await get()).json();
   assert.equal(next.custom.recent, 3);
   assert.ok(next.custom.lastEventAt);

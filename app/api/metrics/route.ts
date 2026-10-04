@@ -33,11 +33,7 @@ export async function GET() {
     });
 
     const sentryStart = performance.now();
-    const sentryPromise = getSentryErrorsByPath(
-      env('SENTRY_API_KEY'),
-      env('SENTRY_ORG_SLUG'),
-      env('SENTRY_PROJECT_ID')
-    ).then(result => {
+    const sentryPromise = getSentryErrorsByPath(env('SENTRY_API_KEY'), env('SENTRY_DSN')).then(result => {
       recordTiming('Sentry: events', performance.now() - sentryStart);
       return result;
     });

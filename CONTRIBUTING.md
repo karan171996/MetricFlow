@@ -68,11 +68,18 @@ Not accepted: `Readme updated`, `fix:gitIgnore update` (no space after the colon
 
 ### How this is enforced
 
-- **Your commits:** the `commit-msg` hook rejects a message in the wrong format (turned on by the `git config core.hooksPath` line above). It also runs the secret scan, the tests and, on push, type checks and lint.
-- **Your PR:** a `pr-title` check on GitHub fails if the PR title isn't in this format. Edit the title and it re-runs.
+- **Your commits:** the `commit-msg` hook rejects a message in the wrong format (turned on by the `git config core.hooksPath` line above). It also runs the secret scan and the tests on every commit. When a commit touches code that can break the app (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `package.json`, the lockfile or `tsconfig.json`), the `pre-commit` hook runs the type check and lint before the tests. On push it runs them again, plus the dependency audit. If the tests fail with ".next is older than app/ sources", run `npx next build --webpack` and commit again.
+- **Your PR:** a `check` job on GitHub runs the type check, lint, build, tests and dependency audit, so skipping the local hooks does not skip the checks. A `pr-title` check on GitHub fails if the PR title isn't in this format. Edit the title and it re-runs.
+
+## Versions and the `fix-pr` agent
+
+Every fix or feature raises the `package.json` version, picked from the commit types: breaking (`!`) is a major bump (minor while the version is 0.x), `feat` is minor, `fix`/`perf`/`refactor`/`build` is patch, and docs/test/ci/chore-only changes do not bump. `pnpm release:bump` (`scripts/bump-version.mjs`) works it out and writes it; run it with `--dry` to preview.
+
+In Claude Code, the project agent `fix-pr` (`.claude/agents/fix-pr.md`) does the whole hand-off after a change is written: check, commit, bump, push and open the PR. Nobody needs to push by hand. Only the maintainer merges.
 
 ## What makes a PR easy to merge
 
+- Don't request a reviewer or assignee when you open the PR. The maintainer picks it up.
 - One change per PR. Several unrelated fixes are easier to review as separate PRs.
 - Say why, not only what. Link the issue: `Closes #123`.
 - Include a screenshot or terminal output for UI or CLI changes.

@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { normalizePath } from '@/lib/discoverPages';
-
-const SENTRY_API_URL = 'https://sentry.io/api/0';
+import { orgSlugForDsn, parseSentryDsn } from '@/lib/sentryDsn';
 
 export interface SentryPageErrors {
   errorCount: number;
@@ -19,43 +18,25 @@ export const EMPTY_SENTRY_DATA: SentryPageErrors = {
 
 const sentryHeaders = (token: string) => ({ Authorization: `Bearer ${token}` });
 
-// ponytail: in-process memo of slug -> numeric id (the events API wants the numeric id).
-const projectIdCache = new Map<string, string>();
-
-async function numericProjectId(token: string, org: string, project: string): Promise<string> {
-  const k = `${org}/${project}`;
-  const hit = projectIdCache.get(k);
-  if (hit) return hit;
-  const res = await axios.get(`${SENTRY_API_URL}/projects/${encodeURIComponent(org)}/${encodeURIComponent(project)}/`, {
-    headers: sentryHeaders(token),
-    timeout: 8000
-  });
-  const id = String(res.data?.id ?? '');
-  if (!id) throw new Error('no project id');
-  projectIdCache.set(k, id);
-  return id;
-}
-
 /**
  * ONE org-level events call (last 24h, errors only) grouped by url + title,
  * summed per normalized page path. Replaces one call per page (rate limits).
  * Pages with no matching events are simply absent from the result.
  * Warnings are not counted here (only event.type:error is queried).
+ * Project id and API host come from the DSN. The org slug is resolved per call and not stored.
  */
-export async function getSentryErrorsByPath(
-  apiKey: string,
-  orgSlug: string,
-  project: string
-): Promise<Record<string, SentryPageErrors>> {
-  if (!apiKey || !orgSlug || !project) return {};
+export async function getSentryErrorsByPath(apiKey: string, dsn: string): Promise<Record<string, SentryPageErrors>> {
+  const parsed = apiKey && dsn ? parseSentryDsn(dsn) : null;
+  if (!apiKey || !parsed?.ok) return {};
 
   try {
-    const id = await numericProjectId(apiKey, orgSlug, project);
-    const res = await axios.get(`${SENTRY_API_URL}/organizations/${encodeURIComponent(orgSlug)}/events/`, {
+    const slug = await orgSlugForDsn(apiKey, parsed);
+    if (!slug) return {};
+    const res = await axios.get(`${parsed.apiBase}/organizations/${encodeURIComponent(slug)}/events/`, {
       headers: sentryHeaders(apiKey),
       timeout: 10000,
       params: {
-        project: id,
+        project: parsed.projectId,
         field: ['url', 'title', 'count()', 'last_seen()'],
         query: 'event.type:error',
         statsPeriod: '24h',

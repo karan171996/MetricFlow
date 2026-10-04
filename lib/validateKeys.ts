@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { nrHosts, type NrRegion, type SetupKey } from '@/lib/env';
+import { orgSlugForDsn, parseSentryDsn } from '@/lib/sentryDsn';
 
 export type KeyResult = { ok: true; region?: NrRegion } | { ok: false; error: string };
 export type SetupInput = Record<SetupKey, string>;
@@ -53,30 +54,23 @@ async function checkNewRelic(key: string, accountId: string): Promise<Record<str
   }
 }
 
-async function checkSentry(token: string, org: string, project: string): Promise<Record<string, KeyResult>> {
-  const headers = { Authorization: `Bearer ${token}` };
-  const base = `https://sentry.io/api/0`;
+async function checkSentry(token: string, dsn: string): Promise<Record<string, KeyResult>> {
+  const parsed = parseSentryDsn(dsn);
+  if (!parsed.ok) return { SENTRY_DSN: { ok: false, error: parsed.error } };
   try {
-    await axios.get(`${base}/organizations/${encodeURIComponent(org)}/`, { headers, timeout: 8000 });
+    const slug = await orgSlugForDsn(token, parsed);
+    if (!slug) return { SENTRY_API_KEY: { ok: true }, SENTRY_DSN: { ok: false, error: 'This DSN does not match a project the token can read.' } };
+    return { SENTRY_API_KEY: { ok: true }, SENTRY_DSN: { ok: true } };
   } catch (e) {
-    const status = axios.isAxiosError(e) ? e.response?.status : undefined;
-    return status === 404
-      ? { SENTRY_ORG_SLUG: { ok: false, error: 'Sentry organization slug was not found.' } }
-      : { SENTRY_API_KEY: { ok: false, error: describe(e, 'Sentry token') } };
+    return { SENTRY_API_KEY: { ok: false, error: describe(e, 'Sentry token') } };
   }
-  try {
-    await axios.get(`${base}/projects/${encodeURIComponent(org)}/${encodeURIComponent(project)}/`, { headers, timeout: 8000 });
-  } catch (e) {
-    return { SENTRY_API_KEY: { ok: true }, SENTRY_ORG_SLUG: { ok: true }, SENTRY_PROJECT_ID: { ok: false, error: describe(e, 'Sentry project') } };
-  }
-  return { SENTRY_API_KEY: { ok: true }, SENTRY_ORG_SLUG: { ok: true }, SENTRY_PROJECT_ID: { ok: true } };
 }
 
 /** One read call per source; returns a pass/fail per field, never the values. */
 export async function validateKeys(input: SetupInput): Promise<Record<string, KeyResult>> {
   const [nr, sentry] = await Promise.all([
     checkNewRelic(input.NEWRELIC_API_KEY, input.NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID),
-    checkSentry(input.SENTRY_API_KEY, input.SENTRY_ORG_SLUG, input.SENTRY_PROJECT_ID)
+    checkSentry(input.SENTRY_API_KEY, input.SENTRY_DSN)
   ]);
   return { ...nr, ...sentry };
 }
