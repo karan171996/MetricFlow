@@ -184,7 +184,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground p-0 w-64 max-h-screen h-full"
+          className="bg-sidebar text-sidebar-foreground p-0 w-64 max-w-[calc(100vw-1rem)] max-h-screen h-full"
         >
           <DrawerHeader className="sr-only">
             <DrawerTitle>Sidebar</DrawerTitle>

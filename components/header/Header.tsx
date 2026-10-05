@@ -1,9 +1,8 @@
 "use client";
 
-import { Search, Bell } from "lucide-react";
+import { Search, Bell, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useSidebar } from "@/components/ui/sidebar";
-import { Logo } from "@/components/Logo";
 import { useMetrics, hasData, type MetricsState } from "@/lib/useMetrics";
 
 /** Live facts about the monitored project; says so plainly when there is nothing to show yet. */
@@ -34,12 +33,13 @@ export function Header() {
         </p>
       </div>
 
-      <button 
-        onClick={toggleSidebar}
-        className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg bg-[#3ee0a1] text-black hover:bg-[#3ee0a1]/90 transition-colors"
-      >
-        <Logo className="h-7 w-7" />
-      </button>
+     <button
+  onClick={toggleSidebar}
+  aria-label="Open navigation menu"
+  className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg bg-[#3ee0a1] text-black hover:bg-[#3ee0a1]/90 transition-colors"
+>
+  <Menu className="h-6 w-6" />
+</button>
 
       {/* Spacer */}
       <div className="flex-1" />
