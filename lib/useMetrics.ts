@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { MetricsPage } from "@/lib/metricsHistory";
+import type { MetricsPage, Sources } from "@/lib/metricsHistory";
+import type { Capability } from "@/lib/tools";
 import { deriveStatus } from "@/lib/thresholds";
 import { useThresholds } from "@/lib/useThresholds";
 
@@ -12,6 +13,10 @@ export type MetricsState =
 
 /** Sentry parts show only when Sentry is connected and its last load worked (a failed load shows "Could not load", never zeros). */
 export const showsSentry = (s: { tools: string[]; failed: string[] }): boolean => s.tools.includes("sentry") && !s.failed.includes("sentry");
+
+/** True when a connected tool supplies the capability and its last load worked (a failed load shows "Could not load", never zeros). */
+export const provides = (s: { sources: Sources; failed: string[] }, cap: Capability): boolean =>
+  s.sources[cap] !== undefined && !s.failed.includes(s.sources[cap]!);
 
 /** EmptyState props for Sentry-only: pages are listed from New Relic, so no screen has rows yet (Sentry-only page list is PR 2). */
 export const NEEDS_NEW_RELIC = {
