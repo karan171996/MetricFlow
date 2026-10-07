@@ -19,7 +19,7 @@ async function nrql(apiKey: string, accountId: string, query: string): Promise<R
 }
 
 /** Events sent with emitMetric()/the test button, or the browser agent's PageView events. */
-export async function newRelicStatus(apiKey: string, accountId: string, eventType: 'MetricFlowEvent' | 'PageView'): Promise<SourceStatus> {
+export async function newRelicStatus(apiKey: string, accountId: string, eventType: 'MetricFlowEvent' | 'PageView' | 'AjaxRequest'): Promise<SourceStatus> {
   try {
     const row = await nrql(apiKey, accountId, `SELECT count(*) AS n, latest(timestamp) AS t FROM ${eventType} SINCE 5 minutes ago`);
     const n = Number(row.n ?? 0);

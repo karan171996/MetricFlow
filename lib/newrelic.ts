@@ -9,6 +9,10 @@ export interface NewRelicPageMetrics {
   cls: number;
   inp?: number;
   fid: number;
+  /** AjaxRequest average duration in ms; absent when the page made no API calls. */
+  ajaxLatency?: number;
+  /** Share of AjaxRequest calls that failed (HTTP 4xx/5xx or no response), 0-100. */
+  ajaxFailRate?: number;
   errorRate: number;
   throughput: number;
   apdexScore: number;
@@ -35,7 +39,7 @@ const WINDOW = 'SINCE 24 hours ago';
 
 /**
  * Real-user metrics per page path from New Relic's native browser events
- * (PageView, PageViewTiming, JavaScriptError), 75th percentiles, last 24h.
+ * (PageView, PageViewTiming, JavaScriptError, AjaxRequest), 75th percentiles, last 24h.
  * Keyed by normalized path. Unit note: PageView durations and
  * LCP are seconds, converted to ms; INP/FID are already ms (unconfirmed). A path missing from the result has no events yet.
  * Throws on API failure so callers can show an error, not empty data.
@@ -51,6 +55,7 @@ export async function getNewRelicMetrics(
     views: ${q(`SELECT percentile(duration, 75) AS loadTime, percentile(backendDuration, 75) AS ttfb, count(*) AS views, apdex(duration, t: 2) AS apdex FROM PageView FACET pageUrl ${WINDOW} LIMIT 200`)}
     timing: ${q(`SELECT percentile(largestContentfulPaint, 75) AS lcp, percentile(cumulativeLayoutShift, 75) AS cls, percentile(interactionToNextPaint, 75) AS inp, percentile(firstInputDelay, 75) AS fid FROM PageViewTiming FACET pageUrl ${WINDOW} LIMIT 200`)}
     errors: ${q(`SELECT count(*) AS errors FROM JavaScriptError FACET pageUrl ${WINDOW} LIMIT 200`)}
+    ajax: ${q(`SELECT average(duration) AS ajaxLatency, count(*) AS ajaxCalls, filter(count(*), WHERE httpResponseCode >= 400 OR httpResponseCode = 0) AS ajaxFailed FROM AjaxRequest FACET pageUrl ${WINDOW} LIMIT 200`)}
   } } }`;
 
   let data: NewRelicGraphQLResponse;
@@ -73,9 +78,9 @@ export function aggregateMetrics(account: NrAccount): Record<string, NewRelicPag
 
   // Merge query-string variants: sum counts, view-weighted average of percentiles
   // (ponytail: averaging p75s is an approximation; exact merge needs NRQL on a normalized attribute).
-  type Acc = { views: number; loadTime: number; ttfb: number; apdex: number; lcp: number; cls: number; inp: number; fid: number; errors: number };
+  type Acc = { views: number; loadTime: number; ttfb: number; apdex: number; lcp: number; cls: number; inp: number; fid: number; errors: number; ajaxCalls: number; ajaxLatency: number; ajaxFailed: number };
   const acc: Record<string, Acc> = {};
-  const get = (p: string) => (acc[p] ??= { views: 0, loadTime: 0, ttfb: 0, apdex: 0, lcp: 0, cls: 0, inp: 0, fid: 0, errors: 0 });
+  const get = (p: string) => (acc[p] ??= { views: 0, loadTime: 0, ttfb: 0, apdex: 0, lcp: 0, cls: 0, inp: 0, fid: 0, errors: 0, ajaxCalls: 0, ajaxLatency: 0, ajaxFailed: 0 });
 
   for (const r of account.views.results) {
     const p = key(r);
@@ -100,6 +105,15 @@ export function aggregateMetrics(account: NrAccount): Record<string, NewRelicPag
     if (p !== null && acc[p]) acc[p].errors += num(r.errors);
   }
 
+  for (const r of account.ajax?.results ?? []) {
+    const p = key(r);
+    if (p === null || !acc[p]) continue;
+    const a = acc[p], c = num(r.ajaxCalls);
+    a.ajaxCalls += c;
+    a.ajaxLatency += num(r.ajaxLatency) * 1000 * c; // AjaxRequest duration is seconds
+    a.ajaxFailed += num(r.ajaxFailed);
+  }
+
   const byPage: Record<string, NewRelicPageMetrics> = {};
   for (const [p, a] of Object.entries(acc)) {
     const w = a.views || 1;
@@ -112,7 +126,8 @@ export function aggregateMetrics(account: NrAccount): Record<string, NewRelicPag
       fid: a.fid / w,
       errorRate: a.views ? (a.errors / a.views) * 100 : 0,
       throughput: a.views,
-      apdexScore: a.apdex / w
+      apdexScore: a.apdex / w,
+      ...(a.ajaxCalls > 0 && { ajaxLatency: a.ajaxLatency / a.ajaxCalls, ajaxFailRate: (a.ajaxFailed / a.ajaxCalls) * 100 })
     };
   }
   return byPage;

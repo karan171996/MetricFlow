@@ -11,13 +11,14 @@ export async function GET(request: Request) {
 
   const nrKey = env('NEWRELIC_API_KEY');
   const acct = env('NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID');
-  const [browser, custom, sentry, setup] = await Promise.all([
+  const [browser, ajax, custom, sentry, setup] = await Promise.all([
     newRelicStatus(nrKey, acct, 'PageView'),
+    newRelicStatus(nrKey, acct, 'AjaxRequest'),
     newRelicStatus(nrKey, acct, 'MetricFlowEvent'),
     sentryStatus(env('SENTRY_API_KEY'), env('SENTRY_DSN')),
     browserSetup(nrKey, acct)
   ]);
-  return Response.json({ configured: true, accountId: acct, insertKeySet: Boolean(env(INSERT_KEY)), browser, custom, sentry, setup });
+  return Response.json({ configured: true, accountId: acct, insertKeySet: Boolean(env(INSERT_KEY)), browser, ajax, custom, sentry, setup });
 }
 
 /** Sends one test event so the user can watch it arrive. */
