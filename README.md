@@ -64,6 +64,13 @@ You need five values. Where to find each one:
 | Sentry **organization slug** | The name in your Sentry URL: `sentry.io/organizations/<slug>/`. |
 | Sentry **project slug** | Sentry → Project settings. |
 
+Two more values are needed only to send data *from* your site (the snippets on `/connect`):
+
+| Value | Where to find it |
+| --- | --- |
+| New Relic **Ingest - Browser key** | New Relic → **Add data → Browser monitoring** (create the Browser app first). Starts with `NRJS-`. Not the `NRAK-` User key — this one is public in your page's JavaScript. |
+| New Relic **application ID** | Shown on the same Browser monitoring page. A plain number, and **not** your account ID. |
+
 Save them in one of two ways:
 
 - **On the Setup page.** Click **Set up keys** on the dashboard (or open `/setup`), paste the values and save. MetricFlow checks each key with New Relic and Sentry before saving it.

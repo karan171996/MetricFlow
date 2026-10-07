@@ -32,3 +32,30 @@ jobs:
         run: pnpm run test:cli
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level=high
+
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Cache Cypress binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm exec cypress install
+      - name: Build (the CLI test refuses a stale or missing .next)
+        run: npx next build --webpack
+      - name: Tests (node + Cypress, fake keys, no network)
+        run: pnpm test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots

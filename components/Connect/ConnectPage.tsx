@@ -5,16 +5,25 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BROWSER_SNIPPET, EMIT_SNIPPET, SENTRY_SNIPPET } from "./snippets";
+import { browserSnippet, EMIT_SNIPPET, SENTRY_SNIPPET } from "./snippets";
 
 interface Source {
   recent: number | null;
   lastEventAt: string | null;
   error?: string;
 }
+interface BrowserSetup {
+  appCount: number;
+  appName: string | null;
+  applicationId: string | null;
+  browserKey: string | null;
+  error?: string;
+}
 interface Status {
   error?: string;
   configured: boolean;
+  accountId?: string;
+  setup?: BrowserSetup;
   insertKeySet?: boolean;
   browser?: Source;
   custom?: Source;
@@ -54,6 +63,21 @@ function CopyBlock({ n, title, help, code }: { n: number; title: string; help: s
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+
+/** One row per link in the chain, so "nothing works" becomes "this link is broken". */
+function ChainRow({ label, state, detail }: { label: string; state: "ok" | "bad" | "wait"; detail: string }) {
+  const mark = state === "ok" ? "\u2713" : state === "bad" ? "\u2717" : "\u2026";
+  const tone = state === "ok" ? "text-[#3ee0a1]" : state === "bad" ? "text-[#f87171]" : "text-gray-400";
+  return (
+    <div className="flex items-start gap-3 border-b border-[#2d3748] py-2 last:border-0">
+      <span className={`font-mono text-sm ${tone}`} aria-hidden>{mark}</span>
+      <span className="sr-only">{state === "ok" ? "working" : state === "bad" ? "not working" : "checking"}</span>
+      <span className="text-sm text-gray-300 w-56 shrink-0">{label}</span>
+      <span className={`min-w-0 text-sm ${tone}`}>{detail}</span>
+    </div>
   );
 }
 
@@ -168,8 +192,49 @@ export function ConnectPage() {
     <div className="flex flex-col gap-6 max-w-3xl">
       <Card className={cardCls}>
         <CardHeader>
+          <CardTitle className="text-base font-bold text-white">Connection</CardTitle>
+          <CardDescription className="text-sm text-gray-400">Each link in the chain from your site to this dashboard. Fix the first \u2717.</CardDescription>
+        </CardHeader>
+        <CardContent aria-live="polite">
+          <ChainRow
+            label="Keys for reading"
+            state={status ? "ok" : "wait"}
+            detail={status?.accountId ? `Reading New Relic account ${status.accountId}` : "Checking\u2026"} />
+          <ChainRow
+            label="Browser app in New Relic"
+            state={!status?.setup ? "wait" : status.setup.error ? "bad" : status.setup.appCount > 0 ? "ok" : "bad"}
+            detail={
+              !status?.setup ? "Checking\u2026"
+              : status.setup.error ? status.setup.error
+              : status.setup.appCount > 0 ? `${status.setup.appName} \u00b7 application ID ${status.setup.applicationId}`
+              : "None yet. Create one: New Relic > Add data > Browser monitoring. Until then your site has no application ID to send to."
+            } />
+          <ChainRow
+            label="Browser key"
+            state={!status?.setup ? "wait" : status.setup.browserKey ? "ok" : "bad"}
+            detail={
+              !status?.setup ? "Checking\u2026"
+              : status.setup.browserKey ? `${status.setup.browserKey} \u00b7 already filled into snippet 1 below`
+              : "Could not read it. Copy the key VALUE from New Relic > API keys (type Ingest - Browser), not the ID beside it."
+            } />
+          <ChainRow
+            label="Your site sending data"
+            state={!status?.browser ? "wait" : (status.browser.recent ?? 0) > 0 ? "ok" : "bad"}
+            detail={
+              !status?.browser ? "Checking\u2026"
+              : (status.browser.recent ?? 0) > 0 ? "New Relic is receiving page views"
+              : "No page views yet. Load your site, then check for blocked requests to nr-data.net - ad and privacy blockers drop them silently."
+            } />
+        </CardContent>
+      </Card>
+
+      <Card className={cardCls}>
+        <CardHeader>
           <CardTitle className="text-base font-bold text-white">Events received (last 5 minutes)</CardTitle>
-          <CardDescription className="text-sm text-gray-400">Updates every few seconds.</CardDescription>
+          <CardDescription className="text-sm text-gray-400">
+            {status?.accountId ? <>Querying New Relic account <span className="font-mono text-gray-200">{status.accountId}</span>. </> : null}
+            Updates every few seconds. All rows empty? Check this is the account your site sends to.
+          </CardDescription>
         </CardHeader>
         <CardContent aria-live="polite">
           <StatusRow label="Browser agent (page views)" s={status?.browser} />
@@ -220,8 +285,13 @@ export function ConnectPage() {
         </CardContent>
       </Card>
 
-      <CopyBlock n={1} title="1. New Relic Browser agent" help="Gives page views, load timing and Core Web Vitals. Replace the placeholders with values from New Relic." code={BROWSER_SNIPPET} />
-      <CopyBlock n={2} title="2. emitMetric() helper" help="Send your own numbers from your site. Uses the Browser agent above, so no key goes in your code." code={EMIT_SNIPPET} />
+      <Card className={cardCls}>
+        <CardContent className="p-4 text-sm text-[#f87171] border-l-2 border-[#f87171]">
+          <strong>Snippet 1 runs in the browser, so its key is public.</strong> Use the <strong>Ingest - Browser</strong> key (starts <span className="font-mono">NRJS-</span>), never your <span className="font-mono">NRAK-</span> User key from Setup - that one would hand every visitor full read/write access to your account. The application ID is also not your account ID.
+        </CardContent>
+      </Card>
+      <CopyBlock n={1} title="1. New Relic Browser agent" help="Gives page views, load timing and Core Web Vitals. Create the Browser app in New Relic first (Add data > Browser monitoring) - that is where the NRJS- key and the application ID come from." code={browserSnippet({ accountId: status?.accountId, applicationId: status?.setup?.applicationId, browserKey: status?.setup?.browserKey })} />
+      <CopyBlock n={2} title="2. emitMetric() helper" help="Send your own numbers from your site. Uses the agent from snippet 1, so no key goes in your code." code={EMIT_SNIPPET} />
       <CopyBlock n={3} title="3. Sentry errors" help="Send JavaScript errors to Sentry. Use your project's DSN." code={SENTRY_SNIPPET} />
       <Card className={cardCls}>
         <CardHeader>

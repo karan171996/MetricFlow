@@ -5,6 +5,8 @@ import { validateKeys, type SetupInput } from '@/lib/validateKeys';
 // Values are written unquoted to .env.local, so anything a dotenv parser treats specially is rejected.
 const UNSAFE = /[\s\0#"'`\\$]/;
 const UNSAFE_MSG = 'Contains spaces or special characters (# " \' ` $ \\). Paste the value without them.';
+// An NRAK- User key in an ingest field is the most common setup mistake; a prefix check kills the whole class.
+const USER_KEY_MSG = 'That is a User API key (starts NRAK-), which reads data. The Insert key sends data: New Relic > API keys > create key, type "Ingest - License".';
 
 const refuse = () => Response.json({ error: REFUSAL_MESSAGE() }, { status: 403 });
 
@@ -31,7 +33,8 @@ export async function POST(request: Request) {
   const insert = typeof body[INSERT_KEY] === 'string' ? (body[INSERT_KEY] as string).trim() : '';
   if (insert && SETUP_KEYS.every(k => !body[k])) {
     if (!isConfigured()) return Response.json({ saved: false, error: 'Finish setup first.' }, { status: 400 });
-    if (UNSAFE.test(insert)) return Response.json({ saved: false, results: { [INSERT_KEY]: { ok: false, error: UNSAFE_MSG } } }, { status: 400 });
+    const bad = UNSAFE.test(insert) ? UNSAFE_MSG : /^NRAK-/i.test(insert) ? USER_KEY_MSG : null;
+    if (bad) return Response.json({ saved: false, results: { [INSERT_KEY]: { ok: false, error: bad } } }, { status: 400 });
     try {
       writeEnvLocal({ [INSERT_KEY]: insert });
     } catch {

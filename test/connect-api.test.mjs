@@ -36,6 +36,7 @@ test("GET: 'events received' per source; 'none yet' when empty; never returns ke
   const body = await (await get()).json();
   assert.equal(body.configured, true);
   assert.equal(body.insertKeySet, false);
+  assert.equal(body.accountId, process.env.NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID); // an all-empty panel must say which account it read
   assert.deepEqual(body.browser, { recent: 0, lastEventAt: null });
   assert.deepEqual(body.custom, { recent: 0, lastEventAt: null });
   assert.equal(body.sentry.recent, 0);
@@ -85,4 +86,42 @@ test("POST test event failures show the exact reason: rejected key, bad account,
   }
   handler = () => ({ data: { success: false } });
   assert.match((await (await post()).json()).error, /did not accept/);
+});
+
+test("setup lookup: hands back the real app ID and browser key, so the user copies neither by hand", async () => {
+  Object.assign(process.env, FAKE);
+  handler = (m, u) => {
+    if (!u.includes("newrelic")) return sentry(u);
+    return { data: { data: { actor: {
+      account: { nrql: { results: [{ n: 0 }] } },
+      entitySearch: { count: 1, results: { entities: [{ name: "mf-demo", applicationId: 653450140 }] } },
+      // New Relic lists an ID beside each key; only the `key` value works at the beacon.
+      apiAccess: { keySearch: { keys: [
+        { ingestType: "LICENSE", key: "FAKE-LICENSE-40-CHARS" },
+        { ingestType: "BROWSER", key: "NRJS-FAKEBROWSERKEY" }
+      ] } }
+    } } } };
+  };
+  const body = await (await get()).json();
+  assert.equal(body.setup.appCount, 1);
+  assert.equal(body.setup.appName, "mf-demo");
+  assert.equal(body.setup.applicationId, "653450140"); // a string, ready to paste into .env.local
+  assert.equal(body.setup.browserKey, "NRJS-FAKEBROWSERKEY");
+});
+
+test("setup lookup: no Browser app is reported as such, not as a read failure", async () => {
+  Object.assign(process.env, FAKE);
+  handler = (m, u) => {
+    if (!u.includes("newrelic")) return sentry(u);
+    return { data: { data: { actor: {
+      account: { nrql: { results: [{ n: 0 }] } },
+      entitySearch: { count: 0, results: { entities: [] } },
+      apiAccess: { keySearch: { keys: [] } }
+    } } } };
+  };
+  const body = await (await get()).json();
+  assert.equal(body.setup.appCount, 0);
+  assert.equal(body.setup.applicationId, null);
+  assert.equal(body.setup.browserKey, null);
+  assert.equal(body.setup.error, undefined); // "none created" is a state, not an error
 });

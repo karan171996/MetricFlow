@@ -19,7 +19,7 @@ async function nrql(apiKey: string, accountId: string, query: string): Promise<R
 }
 
 /** Events sent with emitMetric()/the test button, or the browser agent's PageView events. */
-export async function newRelicStatus(apiKey: string, accountId: string, eventType: 'MetricFlowEvent' | 'PageView'): Promise<SourceStatus> {
+export async function newRelicStatus(apiKey: string, accountId: string, eventType: 'MetricFlowEvent' | 'PageView' | 'AjaxRequest'): Promise<SourceStatus> {
   try {
     const row = await nrql(apiKey, accountId, `SELECT count(*) AS n, latest(timestamp) AS t FROM ${eventType} SINCE 5 minutes ago`);
     const n = Number(row.n ?? 0);
@@ -63,5 +63,52 @@ export async function sendTestEvent(insertKey: string, accountId: string): Promi
     if (status === 401 || status === 403) return 'New Relic rejected the Insert key. It must be an "Ingest - License" key for this account.';
     if (status === 404) return 'New Relic did not recognise the account ID.';
     return 'Could not reach New Relic to send the test event.';
+  }
+}
+
+export interface BrowserSetup {
+  /** Browser apps in the account. 0 = none created yet, which is the usual blocker. */
+  appCount: number;
+  appName: string | null;
+  /** Paste-ready value for NEXT_PUBLIC_NEWRELIC_APP_ID. Not the account ID. */
+  applicationId: string | null;
+  /** The account's "Ingest - Browser" key. Public by design: it ships in the page's JS. */
+  browserKey: string | null;
+  error?: string;
+}
+
+/**
+ * Looks up what the browser snippet needs, so the user never has to find it.
+ * New Relic's key list shows an ID next to each key; pasting that ID instead of
+ * the key value fails silently (the beacon 403s and nothing is logged), so we
+ * read the real values with the User key the dashboard already has.
+ */
+export async function browserSetup(apiKey: string, accountId: string): Promise<BrowserSetup> {
+  const empty: BrowserSetup = { appCount: 0, appName: null, applicationId: null, browserKey: null };
+  const id = Number(accountId);
+  const gql = `{ actor {
+    entitySearch(query: "domain='BROWSER' AND accountId=${id}") { count results { entities { name ... on BrowserApplicationEntityOutline { applicationId } } } }
+    apiAccess { keySearch(query: { types: INGEST, scope: { accountIds: [${id}] } }) { keys { ... on ApiAccessIngestKey { ingestType key } } } }
+  } }`;
+  try {
+    type Body = {
+      data?: { actor?: {
+        entitySearch?: { count?: number; results?: { entities?: { name?: string; applicationId?: number }[] } };
+        apiAccess?: { keySearch?: { keys?: { ingestType?: string; key?: string }[] } };
+      } };
+    };
+    const body = await nrGraphql<Body>(apiKey, gql, 10000);
+    const search = body?.data?.actor?.entitySearch;
+    const app = search?.results?.entities?.[0];
+    // keySearch needs extra permissions; a key without them still gives us the app.
+    const browserKey = body?.data?.actor?.apiAccess?.keySearch?.keys?.find(k => k.ingestType === 'BROWSER')?.key ?? null;
+    return {
+      appCount: search?.count ?? 0,
+      appName: app?.name ?? null,
+      applicationId: app?.applicationId ? String(app.applicationId) : null,
+      browserKey
+    };
+  } catch {
+    return { ...empty, error: 'Could not read your Browser app from New Relic.' };
   }
 }

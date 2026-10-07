@@ -1,6 +1,6 @@
 import { INSERT_KEY, env, isConfigured } from '@/lib/env';
 import { isLocalRequest, REFUSAL_MESSAGE } from '@/lib/localRequest';
-import { newRelicStatus, sendTestEvent, sentryStatus } from '@/lib/connectStatus';
+import { browserSetup, newRelicStatus, sendTestEvent, sentryStatus } from '@/lib/connectStatus';
 
 const refuse = () => Response.json({ error: REFUSAL_MESSAGE() }, { status: 403 });
 
@@ -11,12 +11,14 @@ export async function GET(request: Request) {
 
   const nrKey = env('NEWRELIC_API_KEY');
   const acct = env('NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID');
-  const [browser, custom, sentry] = await Promise.all([
+  const [browser, ajax, custom, sentry, setup] = await Promise.all([
     newRelicStatus(nrKey, acct, 'PageView'),
+    newRelicStatus(nrKey, acct, 'AjaxRequest'),
     newRelicStatus(nrKey, acct, 'MetricFlowEvent'),
-    sentryStatus(env('SENTRY_API_KEY'), env('SENTRY_DSN'))
+    sentryStatus(env('SENTRY_API_KEY'), env('SENTRY_DSN')),
+    browserSetup(nrKey, acct)
   ]);
-  return Response.json({ configured: true, insertKeySet: Boolean(env(INSERT_KEY)), browser, custom, sentry });
+  return Response.json({ configured: true, accountId: acct, insertKeySet: Boolean(env(INSERT_KEY)), browser, ajax, custom, sentry, setup });
 }
 
 /** Sends one test event so the user can watch it arrive. */
