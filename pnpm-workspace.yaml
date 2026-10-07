@@ -1,3 +1,8 @@
 allowBuilds:
   cypress: true
   unrs-resolver: true
+
+# Patched versions of next's transitive deps (GHSA-68fv-2mgg-jv7q, GHSA-wq5f-xc86-pv6w). Drop once next ships them.
+overrides:
+  source-map-js: ^1.2.2
+  sharp: ^0.35.5
