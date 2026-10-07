@@ -72,5 +72,6 @@ import * as Sentry from '@sentry/browser';
 
 Sentry.init({
   dsn: '<YOUR_SENTRY_DSN>',   // Sentry > Project settings > Client Keys (DSN)
-  tracesSampleRate: 0.1,
+  integrations: [Sentry.browserTracingIntegration()],   // records page loads and web vitals (LCP, CLS, INP, TTFB)
+  tracesSampleRate: 0.1,   // share of page loads recorded; raise it on low-traffic sites
 });`;

@@ -1,4 +1,4 @@
-import { INSERT_KEY, env, isConfigured } from '@/lib/env';
+import { INSERT_KEY, connectedTools, env, isToolConnected } from '@/lib/env';
 import { isLocalRequest, REFUSAL_MESSAGE } from '@/lib/localRequest';
 import { browserSetup, newRelicStatus, sendTestEvent, sentryStatus } from '@/lib/connectStatus';
 
@@ -7,18 +7,22 @@ const refuse = () => Response.json({ error: REFUSAL_MESSAGE() }, { status: 403 }
 /** Per-source "events received" status. Never returns key values. */
 export async function GET(request: Request) {
   if (!isLocalRequest(request)) return refuse();
-  if (!isConfigured()) return Response.json({ configured: false });
+  const tools = connectedTools();
+  if (!tools.length) return Response.json({ configured: false });
 
+  // Only the connected tools are asked: a New Relic-only user never triggers a Sentry call, and the reverse.
+  const nr = isToolConnected('new-relic');
+  const sentry = isToolConnected('sentry');
   const nrKey = env('NEWRELIC_API_KEY');
   const acct = env('NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID');
-  const [browser, ajax, custom, sentry, setup] = await Promise.all([
-    newRelicStatus(nrKey, acct, 'PageView'),
-    newRelicStatus(nrKey, acct, 'AjaxRequest'),
-    newRelicStatus(nrKey, acct, 'MetricFlowEvent'),
-    sentryStatus(env('SENTRY_API_KEY'), env('SENTRY_DSN')),
-    browserSetup(nrKey, acct)
+  const [browser, ajax, custom, sentryStatusResult, setup] = await Promise.all([
+    nr ? newRelicStatus(nrKey, acct, 'PageView') : undefined,
+    nr ? newRelicStatus(nrKey, acct, 'AjaxRequest') : undefined,
+    nr ? newRelicStatus(nrKey, acct, 'MetricFlowEvent') : undefined,
+    sentry ? sentryStatus(env('SENTRY_API_KEY'), env('SENTRY_DSN')) : undefined,
+    nr ? browserSetup(nrKey, acct) : undefined
   ]);
-  return Response.json({ configured: true, accountId: acct, insertKeySet: Boolean(env(INSERT_KEY)), browser, ajax, custom, sentry, setup });
+  return Response.json({ configured: true, tools, accountId: nr ? acct : undefined, insertKeySet: Boolean(env(INSERT_KEY)), browser, ajax, custom, sentry: sentryStatusResult, setup });
 }
 
 /** Sends one test event so the user can watch it arrive. */

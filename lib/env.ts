@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { TOOLS, TOOL_IDS, type ToolId } from '@/lib/tools';
 
 /** Key name -> label shown on /setup. Order = form order. */
 export const SETUP_KEYS = [
@@ -49,9 +50,11 @@ export function env(name: string): string {
   return process.env[name] ?? '';
 }
 
-export function isConfigured(): boolean {
-  return SETUP_KEYS.every(k => env(k));
-}
+/** A tool is connected when all its required keys are set. Nothing else decides it. */
+export const isToolConnected = (id: ToolId): boolean => TOOLS[id].keys.required.every(k => env(k));
+export const connectedTools = (): ToolId[] => TOOL_IDS.filter(isToolConnected);
+/** True when at least one tool is connected. */
+export const isConfigured = (): boolean => connectedTools().length > 0;
 
 /**
  * The folder the user ran the CLI in. The server's own cwd is the installed

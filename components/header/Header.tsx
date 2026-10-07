@@ -1,22 +1,29 @@
 "use client";
 
-import { Search, Bell } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Bell } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Logo } from "@/components/Logo";
 import { ThresholdAlert } from "./ThresholdAlert";
-import { useMetrics, hasData, type MetricsState } from "@/lib/useMetrics";
+import { useMetrics, hasData, showsSentry, type MetricsState } from "@/lib/useMetrics";
 
 /** Live facts about the monitored project; says so plainly when there is nothing to show yet. */
 function subtitle(state: MetricsState): string {
   if (state.status === "loading") return "Loading…";
   if (state.status === "error") return "Could not load metrics";
   if (!state.configured) return "Not connected yet";
+  // Sentry-only has no page list yet, so "0 open errors" would be a number nobody measured.
+  if (!state.tools.includes("new-relic")) return "Sentry connected · add New Relic to list pages";
   const live = state.pages.filter(hasData);
   const views = state.pages.reduce((s, p) => s + p.newRelic.throughput, 0);
-  const errors = state.pages.reduce((s, p) => s + p.sentry.errorCount, 0);
-  const updated = state.timestamp ? ` · updated ${new Date(state.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "";
-  return `${live.length} of ${state.pages.length} pages reporting · ${views.toLocaleString()} views in 24h · ${errors} open ${errors === 1 ? "error" : "errors"}${updated}`;
+  const errors = state.pages.reduce((s, p) => s + (p.sentry?.errorCount ?? 0), 0);
+  // Join only the parts that exist, so an unconnected tool leaves no gap or stray separator.
+  return [
+    state.tools.includes("new-relic") && `${live.length} of ${state.pages.length} pages reporting`,
+    state.tools.includes("new-relic") && `${views.toLocaleString()} views in 24h`,
+    showsSentry(state) && `${errors} open ${errors === 1 ? "error" : "errors"}`,
+    state.failed.includes("sentry") && "Could not load Sentry data.",
+    state.timestamp && `updated ${new Date(state.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+  ].filter(Boolean).join(" · ");
 }
 
 export function Header() {
@@ -46,22 +53,8 @@ export function Header() {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Search Bar & Notification Bell */}
+      {/* Notification Bell */}
       <div className="flex items-center gap-2 md:gap-4">
-        <div className="relative hidden sm:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            type="search"
-            placeholder="Search..."
-            className="w-40 md:w-64 bg-[#1a202c] border-none text-sm text-gray-200 placeholder:text-gray-500 pl-10 focus-visible:ring-1 focus-visible:ring-gray-600 rounded-full h-9"
-          />
-        </div>
-
-        {/* Mobile Search Icon Only */}
-        <button className="sm:hidden relative flex h-9 w-9 items-center justify-center rounded-full bg-[#1a202c] text-gray-400 hover:text-white transition-colors">
-          <Search className="h-4 w-4" />
-        </button>
-
         <button className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[#1a202c] text-gray-400 hover:text-white transition-colors">
           <Bell className="h-5 w-5" />
           {/* Notification Dot */}

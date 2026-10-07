@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AlertCircle, Clock } from "lucide-react";
 import type { MetricsPage } from "@/lib/metricsHistory";
 
-export function RelatedErrorsList({ errors }: { errors: MetricsPage["sentry"]["latestErrors"] }) {
+export function RelatedErrorsList({ errors }: { errors: NonNullable<MetricsPage["sentry"]>["latestErrors"] }) {
   return (
     <Card className="border-[#2d3748] bg-[#1a202c] shadow-md w-full lg:w-[400px]">
       <CardHeader>

@@ -5,13 +5,15 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { KEY_LABELS, TOOLS, TOOL_IDS, type ToolId } from "@/lib/tools";
 
 const FIELDS = [
-  { name: "NEWRELIC_API_KEY", label: "New Relic User API key", secret: true, help: "READS your data (starts NRAK-). Create it under API keys > key type \"User\"." },
-  { name: "NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID", label: "New Relic account ID", secret: false, help: "A plain number, shown next to your keys in New Relic." },
-  { name: "SENTRY_API_KEY", label: "Sentry auth token", secret: true, help: "Lets the dashboard read issues (scopes: project:read, event:read)." },
-  { name: "SENTRY_DSN", label: "Sentry DSN", secret: false, help: "Project settings, then Client Keys (DSN). The project and host are read from it." },
-] as const;
+  { name: "NEWRELIC_API_KEY", tool: "new-relic", label: KEY_LABELS.NEWRELIC_API_KEY, secret: true, help: "READS your data (starts NRAK-). Create it under API keys > key type \"User\"." },
+  { name: "NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID", tool: "new-relic", label: KEY_LABELS.NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID, secret: false, help: "A plain number, shown next to your keys in New Relic." },
+  { name: "SENTRY_API_KEY", tool: "sentry", label: KEY_LABELS.SENTRY_API_KEY, secret: true, help: "Lets the dashboard read issues (scopes: project:read, event:read)." },
+  { name: "SENTRY_DSN", tool: "sentry", label: KEY_LABELS.SENTRY_DSN, secret: false, help: "Project settings, then Client Keys (DSN). The project and host are read from it." },
+] as const satisfies readonly { name: string; tool: ToolId; label: string; secret: boolean; help: string }[];
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -22,6 +24,7 @@ export function SetupForm() {
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [connected, setConnected] = useState<ToolId[] | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -29,6 +32,7 @@ export function SetupForm() {
       .then((r) => r.json())
       .then((b) => {
         if (b.keys) setIsSet(b.keys);
+        if (Array.isArray(b.tools)) setConnected(b.tools);
         else if (b.error) setMessage({ ok: false, text: b.error });
       })
       .catch(() => {});
@@ -52,8 +56,12 @@ export function SetupForm() {
       if (body.saved) {
         setSaved(true);
         setValues({});
-        setIsSet(Object.fromEntries(FIELDS.map((f) => [f.name, true])));
-        setMessage({ ok: true, text: "Saved. Your keys are valid and stored in .env.local. No restart needed." });
+        // Only the groups that were filled in are now set; an untouched group stays as it was.
+        const filled = new Set(FIELDS.filter((f) => values[f.name]?.trim()).map((f) => f.tool));
+        setIsSet((prev) => ({ ...prev, ...Object.fromEntries(FIELDS.filter((f) => filled.has(f.tool)).map((f) => [f.name, true])) }));
+        const now = TOOL_IDS.filter((id) => filled.has(id) || connected?.includes(id));
+        setConnected(now);
+        setMessage({ ok: true, text: `Saved. ${now.map((id) => TOOLS[id].label).join(" and ")} ${now.length > 1 ? "are" : "is"} connected. No restart needed.` });
       } else {
         setMessage({ ok: false, text: body.error ?? "Nothing was saved. Fix the fields marked below." });
       }
@@ -67,15 +75,22 @@ export function SetupForm() {
   return (
     <Card className="border-[#2d3748] bg-[#1a202c] shadow-md max-w-2xl">
       <CardHeader>
-        <CardTitle className="text-[18px] font-bold text-white tracking-tight">Connect New Relic and Sentry</CardTitle>
+        <CardTitle className="text-[18px] font-bold text-white tracking-tight">Connect your tools</CardTitle>
         <CardDescription className="text-sm text-gray-400">
-          Keys are checked once, saved to .env.local in this folder, and never shown again. The key that sends events
-          (Ingest - License) is separate and is added later on the Connect page.
+          Add keys for the tools you use. You only need one. Keys are checked once, saved to .env.local in this folder, and never shown again.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form ref={formRef} onSubmit={save} className="flex flex-col gap-5">
-          {FIELDS.map((f) => {
+          {TOOL_IDS.map((id) => (
+            <fieldset key={id} id={id} className="flex flex-col gap-5 rounded-lg border border-[#2d3748] p-4">
+              <legend className="flex items-center gap-2 px-2 text-sm font-semibold text-white">
+                {TOOLS[id].label}
+                {connected?.includes(id)
+                  ? <Badge variant="outline" className="border-[#3ee0a1] text-[#3ee0a1] bg-[#3ee0a1]/10">✓ Connected</Badge>
+                  : <Badge variant="outline" className="border-[#4a5568] text-gray-400">Optional</Badge>}
+              </legend>
+            {FIELDS.filter((f) => f.tool === id).map((f) => {
             const r = results[f.name];
             return (
               <div key={f.name} className="flex flex-col gap-1.5">
@@ -102,10 +117,16 @@ export function SetupForm() {
                 </div>
               </div>
             );
-          })}
+            })}
+              {id === "new-relic" && <p className="text-xs text-gray-400">The key that sends events (Ingest - License) is separate and is added later on the Connect page.</p>}
+            </fieldset>
+          ))}
           <div className="flex items-center gap-4">
-            <Button type="submit" disabled={busy}>{busy ? "Checking…" : "Check and save"}</Button>
+            <Button type="submit" disabled={busy || !FIELDS.some((f) => values[f.name]?.trim())}>{busy ? "Checking…" : "Check and save"}</Button>
             <span aria-live="polite" className={`text-sm ${message?.ok ? "text-[#3ee0a1]" : "text-[#f87171]"}`}>{message?.text}</span>
+            {!FIELDS.some((f) => values[f.name]?.trim()) && !message && !saved && (
+              <span className="text-sm text-gray-400">{connected?.length ? "Type a new key to change what is saved." : "Fill in both fields for at least one tool."}</span>
+            )}
             {saved && <Link href="/connect" className={buttonVariants({ variant: "outline" })}>Next: connect your app</Link>}
           </div>
         </form>

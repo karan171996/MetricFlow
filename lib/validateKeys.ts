@@ -66,11 +66,11 @@ async function checkSentry(token: string, dsn: string): Promise<Record<string, K
   }
 }
 
-/** One read call per source; returns a pass/fail per field, never the values. */
-export async function validateKeys(input: SetupInput): Promise<Record<string, KeyResult>> {
+/** One read call per source that is present; returns a pass/fail per field, never the values. A source is skipped when its keys are absent. */
+export async function validateKeys(input: Partial<SetupInput>): Promise<Record<string, KeyResult>> {
   const [nr, sentry] = await Promise.all([
-    checkNewRelic(input.NEWRELIC_API_KEY, input.NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID),
-    checkSentry(input.SENTRY_API_KEY, input.SENTRY_DSN)
+    input.NEWRELIC_API_KEY && input.NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID ? checkNewRelic(input.NEWRELIC_API_KEY, input.NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID) : {},
+    input.SENTRY_API_KEY && input.SENTRY_DSN ? checkSentry(input.SENTRY_API_KEY, input.SENTRY_DSN) : {}
   ]);
   return { ...nr, ...sentry };
 }

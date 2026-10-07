@@ -2,7 +2,7 @@
 
 import { EmptyState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMetrics, hasData } from "@/lib/useMetrics";
+import { useMetrics, hasData, showsSentry, NEEDS_NEW_RELIC } from "@/lib/useMetrics";
 import { HubMetrics } from "./HubMetrics";
 import { HubTable } from "./HubTable";
 
@@ -14,15 +14,16 @@ export function PerformanceHub() {
     return <EmptyState title="Could not load metrics" reason={state.message} onRetry={retry} />;
   }
   if (!state.configured) {
-    return <EmptyState title="Connect your data" reason="Add your New Relic and Sentry keys to see real numbers." href="/setup" cta="Set up keys" />;
+    return <EmptyState title="Connect your data" reason="Add your New Relic or Sentry keys to see real numbers." href="/setup" cta="Set up keys" />;
   }
+  if (!state.tools.includes("new-relic")) return <EmptyState {...NEEDS_NEW_RELIC} />;
   if (!state.pages.length || !state.pages.some(hasData)) {
     return <EmptyState />;
   }
   return (
     <>
-      <HubMetrics pages={state.pages} />
-      <HubTable pages={state.pages} />
+      <HubMetrics pages={state.pages} showSentry={showsSentry(state)} />
+      <HubTable pages={state.pages} showSentry={showsSentry(state)} />
     </>
   );
 }

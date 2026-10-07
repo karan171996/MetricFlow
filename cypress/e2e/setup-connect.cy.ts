@@ -19,10 +19,8 @@ describe("/setup", () => {
   it("empty submit: every field marked Required, nothing saved", () => {
     cy.intercept("POST", "/api/setup", (req) => req.reply({ statusCode: 400, body: { saved: false, results: Object.fromEntries(Object.keys(KEYS).map((k) => [k, { ok: false, error: "Required." }])) } })).as("save");
     cy.visit("/setup");
-    cy.contains("button", "Check and save").click();
-    cy.get("@save.all").should("have.length", 1);
-    cy.contains("✗ Required.").should("be.visible");
-    cy.contains("Nothing was saved").should("be.visible");
+    cy.contains("button", "Check and save").should("be.disabled"); // nothing entered: cannot submit
+    cy.get("@save.all").should("have.length", 0);
   });
 
   it("bad key: the message names the failing field, other fields stay untouched", () => {

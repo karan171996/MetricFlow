@@ -22,12 +22,13 @@ import {
   alertsToSuggestions
 } from "@/lib/dashboardTransforms";
 import { EmptyState } from "@/components/EmptyState";
-import { hasData } from "@/lib/useMetrics";
+import { hasData, NEEDS_NEW_RELIC } from "@/lib/useMetrics";
 import type { MetricsPage, MetricsSnapshot } from "@/lib/metricsHistory";
 import type { TrafficBarItem } from "@/types";
 
 interface MetricsResponse {
   configured: boolean;
+  tools?: string[];
   pages: MetricsPage[];
   history: MetricsSnapshot[];
   timestamp: string;
@@ -127,9 +128,9 @@ export default function Home() {
           <Header />
           <div className="flex flex-1 flex-col p-6 md:p-8">
             {metrics.configured ? (
-              <EmptyState />
+              <EmptyState {...(metrics.tools?.includes("new-relic") === false ? NEEDS_NEW_RELIC : {})} />
             ) : (
-              <EmptyState title="Connect your data" reason="Add your New Relic and Sentry keys to see real numbers." href="/setup" cta="Set up keys" />
+              <EmptyState title="Connect your data" reason="Add your New Relic or Sentry keys to see real numbers." href="/setup" cta="Set up keys" />
             )}
           </div>
         </SidebarInset>

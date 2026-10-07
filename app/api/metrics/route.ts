@@ -2,14 +2,19 @@ import { basename } from 'node:path';
 import { discoverPages } from '@/lib/newrelic';
 import { NewRelicAnalytics, type NewRelicPageMetrics } from '@/lib/analytics/NewRelicAnalytics';
 import { SentryAnalytics, type SentryPageErrors } from '@/lib/analytics/SentryAnalytics';
-import { env, isConfigured } from '@/lib/env';
+import { connectedTools, env } from '@/lib/env';
 import { recordSnapshot, getHistory } from '@/lib/metricsHistory';
 import { recordTiming } from '@/lib/apiTimingStore';
 import type { PageStatus } from '@/types';
 
 export async function GET() {
-  if (!isConfigured()) {
-    return Response.json({ configured: false, project: projectName(), pages: [], history: [], timestamp: new Date().toISOString() });
+  const tools = connectedTools();
+  if (!tools.length) {
+    return Response.json({ configured: false, tools, project: projectName(), pages: [], history: [], timestamp: new Date().toISOString() });
+  }
+  // The page list comes from New Relic, so without it there is nothing to list yet (a Sentry-only page list is a later change).
+  if (!tools.includes('new-relic')) {
+    return Response.json({ configured: true, tools, project: projectName(), pages: [], history: [], timestamp: new Date().toISOString() });
   }
 
   try {
@@ -20,7 +25,7 @@ export async function GET() {
       env('NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID')
     );
     if (trackedPages.length === 0) {
-      return Response.json({ configured: true, project: projectName(), pages: [], history: getHistory(), timestamp: new Date().toISOString() });
+      return Response.json({ configured: true, tools, project: projectName(), pages: [], history: getHistory(), timestamp: new Date().toISOString() });
     }
 
     // New Relic (1 call, 3 queries) and Sentry (1 events call) are independent, so run them concurrently.
@@ -33,18 +38,23 @@ export async function GET() {
       return result;
     });
 
+    // Sentry is only called when connected. If it fails, New Relic data still shows and `failed` names it.
     const sentryStart = performance.now();
-    const sentryPromise = new SentryAnalytics(env('SENTRY_API_KEY'), env('SENTRY_DSN')).byPath().then(result => {
-      recordTiming('Sentry: events', performance.now() - sentryStart);
-      return result;
-    });
+    const sentryPromise = tools.includes('sentry')
+      ? new SentryAnalytics(env('SENTRY_API_KEY'), env('SENTRY_DSN')).byPath().then(result => {
+          recordTiming('Sentry: events', performance.now() - sentryStart);
+          return result;
+        })
+      : Promise.resolve(null);
 
-    const [newRelicByPage, sentryByPath] = await Promise.all([newRelicPromise, sentryPromise]);
+    const [newRelicByPage, sentrySettled] = await Promise.all([newRelicPromise, sentryPromise.catch(() => undefined)]);
+    const failed = sentrySettled === undefined ? ['sentry'] : [];
+    const sentryByPath = sentrySettled ?? {};
     console.log(`[timing] combined New Relic + Sentry batch: ${Math.round(performance.now() - routeStart)}ms`);
 
     const pages = trackedPages.map(({ name, slug, url, views }) => {
       const newRelic = newRelicByPage[url] ?? EMPTY_NEWRELIC_METRICS;
-      const sentry = sentryByPath[url] ?? EMPTY_SENTRY_DATA;
+      const sentry = tools.includes('sentry') && !failed.length ? (sentryByPath[url] ?? EMPTY_SENTRY_DATA) : undefined;
 
       return {
         name,
@@ -60,7 +70,7 @@ export async function GET() {
 
     recordSnapshot(pages);
 
-    return Response.json({ configured: true, project: projectName(), pages, history: getHistory(), timestamp: new Date().toISOString() });
+    return Response.json({ configured: true, tools, failed, project: projectName(), pages, history: getHistory(), timestamp: new Date().toISOString() });
   } catch (error) {
     console.error('Metrics API error:', error);
     return Response.json(

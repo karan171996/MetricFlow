@@ -29,7 +29,7 @@ const latest = history[history.length - 1];
 describe("README screenshots", () => {
   beforeEach(() => {
     cy.viewport(1280, 720); // headless Electron's window size; a bigger viewport gets cropped
-    cy.intercept("GET", "/api/metrics", { configured: true, project: "acme-storefront", pages: latest.pages, history, timestamp: latest.timestamp });
+    cy.intercept("GET", "/api/metrics", { configured: true, tools: ["new-relic", "sentry"], project: "acme-storefront", pages: latest.pages, history, timestamp: latest.timestamp });
     cy.intercept("GET", "/api/timings", { items: [{ name: "New Relic: metrics", value: 412 }, { name: "Sentry: events", value: 268 }, { name: "New Relic: discover pages", value: 190 }] });
     cy.intercept("POST", "/api/analyze", {
       analysis: "Pricing is the slowest page and Blog has the most errors.",

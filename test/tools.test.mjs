@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { load } from "./helpers.mjs";
 
 const { TOOLS, TOOL_IDS, isToolId } = await load("lib/tools.ts");
+const { SETUP_KEYS } = await load("lib/env.ts");
 
 const page = (name, loadTime, errorCount, latestErrors = []) => ({
   name, slug: name, url: `/${name}`, visitors: "1", status: "Healthy", recordedAt: "",
@@ -23,4 +24,8 @@ test("tools: ids, per-tool stats and cells", () => {
   assert.deepEqual(TOOLS.sentry.stats(pages).map((s) => s.value), ["3", "1 of 2", "docs"]);
   assert.deepEqual(TOOLS.sentry.columns.map((c) => c.cell(pages[1])), ["3", "TypeError: x", "—"]);
   assert.deepEqual(TOOLS.sentry.stats([]).map((s) => s.value), ["0", "0 of 0", "None"]);
+});
+
+test("tools: every required key is a SETUP_KEY", () => {
+  for (const id of TOOL_IDS) for (const k of TOOLS[id].keys.required) assert.ok(SETUP_KEYS.includes(k), `${id}: ${k}`);
 });

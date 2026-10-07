@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   BarChart2,
+  Plus,
   Settings,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -20,25 +21,30 @@ import {
   useSidebar
 } from "@/components/ui/sidebar";
 import { TOOLS, TOOL_IDS } from "@/lib/tools";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useConnectedTools } from "@/lib/useConnectedTools";
 
-const navSections = [
-  {
-    label: "Overview",
-    items: [
-      { icon: LayoutDashboard, label: "Dashboard", href: "/" },
-      { icon: BarChart2, label: "Performance", href: "/performance" },
-    ],
-  },
-  {
-    label: "Tools",
-    items: TOOL_IDS.map((id) => ({ icon: TOOLS[id].icon, label: TOOLS[id].label, href: `/tools/${id}` })),
-  },
-];
+/** Tools section: only connected tools, then "Add a tool" while any tool is missing. `null` = still loading (no items, so nothing pops in and out). */
+function navSections(connected: ReturnType<typeof useConnectedTools>) {
+  const toolItems = (connected ?? []).map((id) => ({ icon: TOOLS[id].icon, label: TOOLS[id].label, href: `/tools/${id}` }));
+  const addTool = connected && connected.length < TOOL_IDS.length ? [{ icon: Plus, label: "Add a tool", href: "/setup" }] : [];
+  return [
+    {
+      label: "Overview",
+      items: [
+        { icon: LayoutDashboard, label: "Dashboard", href: "/" },
+        { icon: BarChart2, label: "Performance", href: "/performance" },
+      ],
+    },
+    { label: "Tools", items: [...toolItems, ...addTool] },
+  ];
+}
 
 export function AppSidebar() {
 
   const { isMobile } = useSidebar()
   const pathname = usePathname()
+  const connected = useConnectedTools()
 
   return (
     <Sidebar collapsible={isMobile ? "offcanvas" : "none"} className="w-[70px] border-r border-[#2d3748] bg-[#131518] text-white sticky top-0 h-screen overflow-y-auto [&::-webkit-scrollbar]:hidden">
@@ -49,7 +55,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className={isMobile ? "p-4" : "flex flex-col items-center justify-start gap-4 pt-6"}>
-        {navSections.map((section, i) => (
+        {navSections(connected).map((section, i) => (
           <div key={section.label} className={isMobile ? "w-full" : "flex w-full flex-col items-center gap-3"}>
             {i > 0 && <div className={isMobile ? "my-3 h-px bg-[#2d3748]" : "h-px w-8 bg-[#2d3748]"} />}
             <span className={isMobile
@@ -58,6 +64,7 @@ export function AppSidebar() {
               {section.label}
             </span>
             <SidebarMenu className={isMobile ? "gap-2" : "flex flex-col items-center gap-4"}>
+              {section.label === "Tools" && !connected && <Skeleton className="h-10 w-10 bg-[#2d3748]" />}
               {section.items.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
