@@ -42,3 +42,14 @@ test("query-string variants merge by view-weighted average; empty input gives em
   assert.equal(m.apdexScore, 0.25);
   assert.deepEqual(aggregateMetrics({ views: { results: [] } }), {});
 });
+
+test("ajax: call-weighted latency in ms and fail rate across query-string variants; absent when a page made no calls", () => {
+  const withAjax = { ...account, ajax: { results: [
+    { pageUrl: "http://localhost:3000/search?x=1", ajaxLatency: 0.2, ajaxCalls: 3, ajaxFailed: 1 },
+    { pageUrl: "http://localhost:3000/search?x=2", ajaxLatency: 0.6, ajaxCalls: 1, ajaxFailed: 0 },
+  ] } };
+  const m = aggregateMetrics(withAjax)["/search"];
+  assert.equal(Math.round(m.ajaxLatency), 300);
+  assert.equal(m.ajaxFailRate, 25);
+  assert.equal("ajaxLatency" in aggregateMetrics(account)["/search"], false);
+});
