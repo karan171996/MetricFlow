@@ -1,10 +1,9 @@
-import { INSERT_KEY, REGION_KEY, SETUP_KEYS, connectedTools, env, isToolConnected, writeEnvLocal, type SetupKey } from '@/lib/env';
+import { INSERT_KEY, REGION_KEY, SETUP_KEYS, UNSAFE, connectedTools, env, isToolConnected, writeEnvLocal } from '@/lib/env';
 import { KEY_LABELS, TOOLS, TOOL_IDS } from '@/lib/tools';
 import { isLocalRequest, REFUSAL_MESSAGE } from '@/lib/localRequest';
 import { validateKeys, type SetupInput } from '@/lib/validateKeys';
 
-// Values are written unquoted to .env.local, so anything a dotenv parser treats specially is rejected.
-const UNSAFE = /[\s\0#"'`\\$]/;
+// writeEnvLocal refuses these too; checking here first gives the message under the field.
 const UNSAFE_MSG = 'Contains spaces or special characters (# " \' ` $ \\). Paste the value without them.';
 // An NRAK- User key in an ingest field is the most common setup mistake; a prefix check kills the whole class.
 const USER_KEY_MSG = 'That is a User API key (starts NRAK-), which reads data. The Insert key sends data: New Relic > API keys > create key, type "Ingest - License".';
@@ -46,11 +45,12 @@ export async function POST(request: Request) {
   }
 
   // Each tool is its own optional group: an untouched group is skipped, a half-filled one is rejected, a full one is checked and saved.
-  const input: Partial<SetupInput> = {};
+  // Only names a tool declares are read from the body; anything else in it is ignored, never written.
+  const input: SetupInput = {};
   const results: Record<string, { ok: false; error: string }> = {};
   let groups = 0;
   for (const id of TOOL_IDS) {
-    const keys = TOOLS[id].keys.required as readonly SetupKey[];
+    const keys: readonly string[] = TOOLS[id].keys.required;
     const typed = keys.filter(k => typeof body[k] === 'string' && (body[k] as string).trim());
     if (!typed.length) continue;
     groups++;
