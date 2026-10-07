@@ -30,13 +30,13 @@ test("non-localhost requests are refused on GET and POST, nothing written, no ex
   assert.equal(calls.length, 0);
 });
 
-test("empty input: 400, every field 'Required.', no external call, no file", async () => {
+test("empty input: 400, asks for at least one tool, no results map, no external call, no file", async () => {
   const res = await post({});
   assert.equal(res.status, 400);
   const body = await res.json();
   assert.equal(body.saved, false);
-  assert.deepEqual(Object.keys(body.results).sort(), Object.keys(FAKE).sort());
-  assert.ok(Object.values(body.results).every((r) => r.error === "Required."));
+  assert.equal(body.error, "Fill in both fields for at least one tool.");
+  assert.equal(body.results, undefined);
   assert.equal(calls.length, 0);
   assert.ok(!existsSync(envFile));
 });

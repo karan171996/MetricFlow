@@ -7,7 +7,7 @@ const page = (slug: string, o: { nr?: object; errors?: object[] } = {}) => ({
   sentry: { errorCount: o.errors?.length ?? 0, errorRate: 0, warningCount: 0, latestErrors: o.errors ?? [] },
   recordedAt: "2026-01-01T00:00:00.000Z",
 });
-const stub = (body: object, statusCode = 200) => cy.intercept("GET", "/api/metrics", { statusCode, body }).as("metrics");
+const stub = (body: object, statusCode = 200) => cy.intercept("GET", "/api/metrics", { statusCode, body: { tools: (body as { configured?: boolean }).configured ? ["new-relic"] : [], ...body } }).as("metrics");
 
 describe("/performance states", () => {
   it("no keys configured: setup prompt linking to /setup, no numbers", () => {
@@ -55,7 +55,7 @@ describe("/performance states", () => {
 
 describe("threshold alert", () => {
   it("shows when a page breaches a threshold, names it, and Dismiss hides it", () => {
-    stub({ configured: true, pages: [page("slow", { nr: { loadTime: 9000, throughput: 5 } })] });
+    stub({ configured: true, tools: ["new-relic"], pages: [page("slow", { nr: { loadTime: 9000, throughput: 5 } })] });
     cy.visit("/performance");
     cy.get('[data-slot="alert"]').should("contain", "Critical").and("contain", "FAKE slow");
     cy.contains('[data-slot="alert-action"] button', "Dismiss").click();

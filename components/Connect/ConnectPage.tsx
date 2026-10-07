@@ -22,6 +22,7 @@ interface BrowserSetup {
 interface Status {
   error?: string;
   configured: boolean;
+  tools?: string[];
   accountId?: string;
   setup?: BrowserSetup;
   insertKeySet?: boolean;
@@ -181,16 +182,21 @@ export function ConnectPage() {
       <Card className={cardCls}>
         <CardContent className="flex flex-col items-center gap-3 p-10 text-center">
           <h3 className="text-lg font-semibold text-white">Set up your keys first</h3>
-          <p className="max-w-md text-sm text-gray-400">Add your New Relic and Sentry keys, then come back to connect your site.</p>
+          <p className="max-w-md text-sm text-gray-400">Add your New Relic or Sentry keys, then come back to connect your site.</p>
           <Link href="/setup" className={buttonVariants()}>Go to setup</Link>
         </CardContent>
       </Card>
     );
   }
 
+  // Show only the connected tools. While status loads, show everything as before so nothing pops in later.
+  const showNr = !status?.tools || status.tools.includes("new-relic");
+  const showSentry = !status?.tools || status.tools.includes("sentry");
+  const verifyN = (showNr ? 2 : 0) + (showSentry ? 1 : 0) + 1;
+
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
-      <Card className={cardCls}>
+      {showNr && <Card className={cardCls}>
         <CardHeader>
           <CardTitle className="text-base font-bold text-white">Connection</CardTitle>
           <CardDescription className="text-sm text-gray-400">Each link in the chain from your site to this dashboard. Fix the first \u2717.</CardDescription>
@@ -226,7 +232,7 @@ export function ConnectPage() {
               : "No page views yet. Load your site, then check for blocked requests to nr-data.net - ad and privacy blockers drop them silently."
             } />
         </CardContent>
-      </Card>
+      </Card>}
 
       <Card className={cardCls}>
         <CardHeader>
@@ -237,13 +243,13 @@ export function ConnectPage() {
           </CardDescription>
         </CardHeader>
         <CardContent aria-live="polite">
-          <StatusRow label="Browser agent (page views)" s={status?.browser} />
-          <StatusRow label="Custom events (emitMetric / test event)" s={status?.custom} />
-          <StatusRow label="Sentry errors" s={status?.sentry} />
+          {showNr && <StatusRow label="Browser agent (page views)" s={status?.browser} />}
+          {showNr && <StatusRow label="Custom events (emitMetric / test event)" s={status?.custom} />}
+          {showSentry && <StatusRow label="Sentry errors" s={status?.sentry} />}
         </CardContent>
       </Card>
 
-      <Card className={cardCls}>
+      {showNr && <Card className={cardCls}>
         <CardHeader>
           <CardTitle className="text-base font-bold text-white">Two different New Relic keys</CardTitle>
           <CardDescription className="text-sm text-gray-400">
@@ -283,20 +289,24 @@ export function ConnectPage() {
             {msg && <span aria-live="polite" className={`text-sm ${msg.ok ? "text-[#3ee0a1]" : "text-[#f87171]"}`}>{msg.text}</span>}
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
-      <Card className={cardCls}>
+      {showNr && <Card className={cardCls}>
         <CardContent className="p-4 text-sm text-[#f87171] border-l-2 border-[#f87171]">
           <strong>Snippet 1 runs in the browser, so its key is public.</strong> Use the <strong>Ingest - Browser</strong> key (starts <span className="font-mono">NRJS-</span>), never your <span className="font-mono">NRAK-</span> User key from Setup - that one would hand every visitor full read/write access to your account. The application ID is also not your account ID.
         </CardContent>
-      </Card>
-      <CopyBlock n={1} title="1. New Relic Browser agent" help="Gives page views, load timing and Core Web Vitals. Create the Browser app in New Relic first (Add data > Browser monitoring) - that is where the NRJS- key and the application ID come from." code={browserSnippet({ accountId: status?.accountId, applicationId: status?.setup?.applicationId, browserKey: status?.setup?.browserKey })} />
-      <CopyBlock n={2} title="2. emitMetric() helper" help="Send your own numbers from your site. Uses the agent from snippet 1, so no key goes in your code." code={EMIT_SNIPPET} />
-      <CopyBlock n={3} title="3. Sentry errors" help="Send JavaScript errors to Sentry. Use your project's DSN." code={SENTRY_SNIPPET} />
+      </Card>}
+      {showNr && <><CopyBlock n={1} title="1. New Relic Browser agent" help="Gives page views, load timing and Core Web Vitals. Create the Browser app in New Relic first (Add data > Browser monitoring) - that is where the NRJS- key and the application ID come from." code={browserSnippet({ accountId: status?.accountId, applicationId: status?.setup?.applicationId, browserKey: status?.setup?.browserKey })} />
+      <CopyBlock n={2} title="2. emitMetric() helper" help="Send your own numbers from your site. Uses the agent from snippet 1, so no key goes in your code." code={EMIT_SNIPPET} /></>}
+      {showSentry && <CopyBlock n={showNr ? 3 : 1} title={`${showNr ? 3 : 1}. Sentry errors and web vitals`} help="Send JavaScript errors, page loads and web vitals to Sentry. Call it once, before anything else on your site runs. Use your project's DSN." code={SENTRY_SNIPPET} />}
       <Card className={cardCls}>
         <CardHeader>
-          <CardTitle className="text-base font-bold text-white">4. Verify</CardTitle>
-          <CardDescription className="text-sm text-gray-400">Reload your site, then watch &quot;Events received&quot; above turn green. Use Send test event to check the custom-event path.</CardDescription>
+          <CardTitle className="text-base font-bold text-white">{verifyN}. Verify</CardTitle>
+          <CardDescription className="text-sm text-gray-400">
+            {showNr
+              ? <>Reload your site, then watch &quot;Events received&quot; above turn green. Use Send test event to check the custom-event path.</>
+              : <>Cause an error on your site, then watch &quot;Sentry errors&quot; above turn green.</>}
+          </CardDescription>
         </CardHeader>
       </Card>
     </div>

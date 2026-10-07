@@ -55,7 +55,8 @@ export class SentryAnalytics extends Analytics<SentryEventRow, SentryPageErrors>
       return res.data?.data ?? [];
     } catch (error) {
       console.error('Sentry API error:', axios.isAxiosError(error) ? error.response?.status : 'request failed');
-      return [];
+      // Let the caller say "Could not load Sentry data" instead of showing a false "no errors".
+      throw new Error('Sentry request failed');
     }
   }
 
@@ -85,7 +86,8 @@ export class SentryAnalytics extends Analytics<SentryEventRow, SentryPageErrors>
     };
   }
 
-  protected onError(error: unknown): void {
-    console.error('Sentry fetch failed:', error);
+  /** Rethrows, so byPath() fails instead of returning an empty (looks-healthy) result. */
+  protected onError(error: unknown): never {
+    throw error;
   }
 }

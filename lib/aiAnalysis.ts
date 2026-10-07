@@ -47,16 +47,20 @@ const PROVIDERS: Record<AiProvider, (prompt: string, key: string) => Promise<str
 };
 
 export async function analyzeMetrics(metrics: Metrics, ai: { provider: AiProvider; key: string } | null) {
+  // No Sentry data went in, so no error-count alert may come out (the sample analysis and a model both can produce one).
+  const hasSentry = metrics.pages?.some((p) => p.sentry);
+  const forTools = <T extends { alerts?: { metric?: string }[] }>(a: T): T =>
+    hasSentry || !Array.isArray(a?.alerts) ? a : { ...a, alerts: a.alerts.filter((x) => x.metric !== 'errorCount') };
   if (!ai) {
-    return getMockAnalysis();
+    return forTools(getMockAnalysis());
   }
 
   try {
-    return parseAnalysisResponse(await PROVIDERS[ai.provider](formatMetricsForPrompt(metrics), ai.key));
+    return forTools(parseAnalysisResponse(await PROVIDERS[ai.provider](formatMetricsForPrompt(metrics), ai.key)));
   } catch (error) {
     // Log the status only: an axios error carries the key in its request config.
     console.error(`${ai.provider} API error:`, axios.isAxiosError(error) ? error.response?.status : 'failed');
-    return getMockAnalysis();
+    return forTools(getMockAnalysis());
   }
 }
 
@@ -65,27 +69,27 @@ function formatMetricsForPrompt(metrics: Metrics) {
 
 `;
 
+  const hasSentry = Boolean(metrics.pages?.some((p) => p.sentry));
   metrics.pages?.forEach((page: PageMetrics) => {
     prompt += `
 Page: ${page.name} (${page.url})
 - Load Time: ${page.newRelic?.loadTime}ms
 - Error Rate: ${page.newRelic?.errorRate}%
-- Errors: ${page.sentry?.errorCount} errors
-
+${page.sentry ? `- Errors: ${page.sentry.errorCount} errors\n` : ''}
 `;
   });
 
   prompt += `
 Please provide:
 1. Which pages have performance issues?
-2. Are there correlations between errors and load time?
+${hasSentry ? '2. Are there correlations between errors and load time?' : '2. Which metrics are furthest from healthy?'}
 3. What are the top 3 recommendations for improvement?
 4. Which pages need immediate attention?
 
 Respond with ONLY raw JSON (no markdown fences) with keys: analysis, alerts, recommendations.
 Each alert must have: severity ("high"|"medium"|"low"), page, message, metric.
 "metric" must be a SHORT single label naming which metric triggered the alert
-(e.g. "loadTime", "lcp", "ttfb", "errorRate", "errorCount", "apdexScore") —
+(e.g. "loadTime", "lcp", "ttfb", "errorRate", ${hasSentry ? '"errorCount", ' : ''}"apdexScore") —
 never a sentence or multiple values.`;
 
   return prompt;

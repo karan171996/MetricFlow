@@ -9,7 +9,8 @@ export interface MetricsPage {
   visitors: string;
   status: PageStatus;
   newRelic: NewRelicPageMetrics;
-  sentry: SentryPageErrors;
+  /** Absent when Sentry is not connected (never a zero), so screens can leave it out. */
+  sentry?: SentryPageErrors;
   recordedAt: string;
 }
 

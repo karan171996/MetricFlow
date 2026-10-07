@@ -7,8 +7,8 @@ const src = (recent: number) => ({ recent, lastEventAt: recent ? new Date().toIS
 
 it("fresh install: setup prompt -> save keys -> empty state -> test event -> data", () => {
   let configured = false, hasData = false, eventSent = false;
-  cy.intercept("GET", "/api/metrics", (req) => req.reply({ configured, pages: hasData ? [pageRow] : [], history: [] }));
-  cy.intercept("GET", "/api/setup", (req) => req.reply({ configured, keys: {} }));
+  cy.intercept("GET", "/api/metrics", (req) => req.reply({ configured, tools: configured ? ["new-relic", "sentry"] : [], pages: hasData ? [pageRow] : [], history: [] }));
+  cy.intercept("GET", "/api/setup", (req) => req.reply({ configured, tools: configured ? ["new-relic", "sentry"] : [], keys: {} }));
   cy.intercept("POST", "/api/setup", (req) => { configured = true; req.reply({ saved: true, results: {} }); });
   cy.intercept("GET", "/api/connect", (req) => req.reply({ configured, insertKeySet: true, browser: src(0), custom: src(eventSent ? 1 : 0), sentry: src(0) }));
   cy.intercept("POST", "/api/connect", (req) => { eventSent = true; hasData = true; req.reply({ sent: true }); });

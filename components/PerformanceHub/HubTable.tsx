@@ -16,7 +16,7 @@ import { hasData } from "@/lib/useMetrics";
 import type { MetricsPage } from "@/lib/metricsHistory";
 import { formatDuration } from "@/lib/formatDuration";
 
-export function HubTable({ pages }: { pages: MetricsPage[] }) {
+export function HubTable({ pages, showSentry: hasSentry }: { pages: MetricsPage[]; showSentry: boolean }) {
   const router = useRouter();
 
   return (
@@ -33,7 +33,7 @@ export function HubTable({ pages }: { pages: MetricsPage[] }) {
                 <TableHead className="text-gray-400">Path</TableHead>
                 <TableHead className="text-gray-400">Visitors (24h)</TableHead>
                 <TableHead className="text-gray-400">Avg Load</TableHead>
-                <TableHead className="text-gray-400">Errors</TableHead>
+                {hasSentry && <TableHead className="text-gray-400">Errors</TableHead>}
                 <TableHead className="text-right text-gray-400">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -50,7 +50,7 @@ export function HubTable({ pages }: { pages: MetricsPage[] }) {
                   <TableCell className="text-gray-500 font-mono text-xs">{page.url}</TableCell>
                   <TableCell className="text-gray-400">{live ? page.visitors : "—"}</TableCell>
                   <TableCell className="text-gray-400">{live ? formatDuration(page.newRelic.loadTime) : "—"}</TableCell>
-                  <TableCell className="text-gray-400">{live ? page.sentry.errorCount : "—"}</TableCell>
+                  {hasSentry && <TableCell className="text-gray-400">{live ? page.sentry?.errorCount : "—"}</TableCell>}
                   <TableCell className="text-right">
                     {!live ? (
                       <Badge variant="outline" className="border-[#4a5568] text-gray-400">No data yet</Badge>
