@@ -1,4 +1,4 @@
-import { INSERT_KEY, connectedTools, env, isToolConnected } from '@/lib/env';
+import { INSERT_KEY, REGION_KEY, connectedTools, env, isToolConnected } from '@/lib/env';
 import { isLocalRequest, requireJson, REFUSAL_MESSAGE } from '@/lib/localRequest';
 import { publicDsn } from '@/lib/sentryDsn';
 import { browserSetup, newRelicStatus, sendTestEvent, sentryStatus } from '@/lib/connectStatus';
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     sentry ? sentryStatus(env('SENTRY_API_KEY'), env('SENTRY_DSN')) : undefined,
     nr ? browserSetup(nrKey, acct) : undefined
   ]);
-  return Response.json({ configured: true, tools, accountId: nr ? acct : undefined, insertKeySet: Boolean(env(INSERT_KEY)), dsn: sentry ? (publicDsn(env('SENTRY_DSN')) ?? undefined) : undefined, browser, ajax, custom, sentry: sentryStatusResult, setup });
+  return Response.json({ configured: true, tools, accountId: nr ? acct : undefined, region: nr && env(REGION_KEY) === 'eu' ? 'eu' : undefined, insertKeySet: Boolean(env(INSERT_KEY)), dsn: sentry ? (publicDsn(env('SENTRY_DSN')) ?? undefined) : undefined, browser, ajax, custom, sentry: sentryStatusResult, setup });
 }
 
 /** Sends one test event so the user can watch it arrive. */

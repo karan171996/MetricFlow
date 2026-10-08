@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { browserSnippet, EMIT_SNIPPET, SENTRY_SNIPPET } from "./snippets";
+import { initSnippet, SEND_SNIPPET } from "./snippets";
 
 interface Source {
   recent: number | null;
@@ -24,6 +24,9 @@ interface Status {
   configured: boolean;
   tools?: string[];
   accountId?: string;
+  region?: string;
+  /** Public DSN, rebuilt by the server. Absent when the saved one cannot be used in a browser. */
+  dsn?: string;
   setup?: BrowserSetup;
   insertKeySet?: boolean;
   browser?: Source;
@@ -192,7 +195,9 @@ export function ConnectPage() {
   // Show only the connected tools. While status loads, show everything as before so nothing pops in later.
   const showNr = !status?.tools || status.tools.includes("new-relic");
   const showSentry = !status?.tools || status.tools.includes("sentry");
-  const verifyN = (showNr ? 2 : 0) + (showSentry ? 1 : 0) + 1;
+  const verifyN = (showNr ? 2 : 1) + 1;
+  // Sentry is connected but its saved DSN has a secret part or is not https, so there is nothing safe to pre-fill.
+  const dsnUnusable = Boolean(status?.tools?.includes("sentry") && !status.dsn);
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
@@ -244,7 +249,7 @@ export function ConnectPage() {
         </CardHeader>
         <CardContent aria-live="polite">
           {showNr && <StatusRow label="Browser agent (page views)" s={status?.browser} />}
-          {showNr && <StatusRow label="Custom events (emitMetric / test event)" s={status?.custom} />}
+          {showNr && <StatusRow label="Custom events (send / test event)" s={status?.custom} />}
           {showSentry && <StatusRow label="Sentry errors" s={status?.sentry} />}
         </CardContent>
       </Card>
@@ -296,9 +301,13 @@ export function ConnectPage() {
           <strong>Snippet 1 runs in the browser, so its key is public.</strong> Use the <strong>Ingest - Browser</strong> key (starts <span className="font-mono">NRJS-</span>), never your <span className="font-mono">NRAK-</span> User key from Setup - that one would hand every visitor full read/write access to your account. The application ID is also not your account ID.
         </CardContent>
       </Card>}
-      {showNr && <><CopyBlock n={1} title="1. New Relic Browser agent" help="Gives page views, load timing and Core Web Vitals. Create the Browser app in New Relic first (Add data > Browser monitoring) - that is where the NRJS- key and the application ID come from." code={browserSnippet({ accountId: status?.accountId, applicationId: status?.setup?.applicationId, browserKey: status?.setup?.browserKey })} />
-      <CopyBlock n={2} title="2. emitMetric() helper" help="Send your own numbers from your site. Uses the agent from snippet 1, so no key goes in your code." code={EMIT_SNIPPET} /></>}
-      {showSentry && <CopyBlock n={showNr ? 3 : 1} title={`${showNr ? 3 : 1}. Sentry errors and web vitals`} help="Send JavaScript errors, page loads and web vitals to Sentry. Call it once, before anything else on your site runs. Use your project's DSN." code={SENTRY_SNIPPET} />}
+      {dsnUnusable && <Card className={cardCls}>
+        <CardContent className="p-4 text-sm text-[#f87171] border-l-2 border-[#f87171]">
+          <strong>Your saved Sentry DSN cannot go in a public page.</strong> It must start with <span className="font-mono">https://</span> and contain no secret part. <Link href="/setup#sentry" className="underline">Replace it on Setup</Link>, then the snippet below fills it in.
+        </CardContent>
+      </Card>}
+      <CopyBlock n={1} title="1. Add MetricFlow to your site" help="One install and one call. It sends page views, load timing, Core Web Vitals and JavaScript errors to the tools you connected. You do not install a New Relic or Sentry package yourself." code={initSnippet({ tools: status?.tools, accountId: status?.accountId, applicationId: status?.setup?.applicationId, browserKey: status?.setup?.browserKey, region: status?.region, dsn: status?.dsn })} />
+      {showNr && <CopyBlock n={2} title="2. Send your own numbers (optional)" help="Record a custom event from anywhere in your site after init. New Relic only." code={SEND_SNIPPET} />}
       <Card className={cardCls}>
         <CardHeader>
           <CardTitle className="text-base font-bold text-white">{verifyN}. Verify</CardTitle>
