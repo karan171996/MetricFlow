@@ -462,7 +462,9 @@ test("send: nothing before init, MetricFlowEvent through New Relic after, never 
 });
 
 test("package.json keeps its consumer README promises: the documented import exists", () => {
-  const readme = readFileSync(join(root, "README.md"), "utf8");
-  assert.ok(readme.includes(`from '${pkg.name}/browser'`), "README shows the import");
+  const landing = readFileSync(join(root, "README.md"), "utf8");
+  assert.ok(landing.includes(`from '${pkg.name}/browser'`), "README shows the import");
+  // The README is the short landing page; the consumer detail lives on its own docs page.
+  const readme = landing + readFileSync(join(root, "docs/sending-data.md"), "utf8");
   for (const text of ["instrumentation-client", "connect-src", "bam.nr-data.net", "after your own Sentry", "location.pathname"]) assert.ok(readme.includes(text), `README mentions ${text}`);
 });
