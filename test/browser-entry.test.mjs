@@ -342,6 +342,22 @@ test("a malformed value is refused: no tool starts (not even the valid one), one
   }
 });
 
+test("a mistyped tool name or an empty call is not silent: one fixed warning, nothing starts, the key is not printed", async () => {
+  const unknown = 'MetricFlow: init was given an option that is not a tool. The tools are "sentry" and "new-relic". No tool was started.';
+  const none = 'MetricFlow: init was not given a tool. Name "sentry", "new-relic" or both. No tool was started.';
+  for (const [options, expected] of [
+    [{ newrelic: NR }, unknown],
+    [{ sentry: { dsn: DSN }, Sentri: { dsn: DSN } }, unknown], // the valid tool does not start either
+    [{}, none],
+    [{ sentry: undefined }, none],
+  ]) {
+    const { init } = await entry();
+    await init(options);
+    assert.ok(nothingStarted());
+    assert.deepEqual(warnings, [expected]);
+  }
+});
+
 test("an SDK that is already on the page is left alone: checked before our import, said once", async () => {
   let m = await entry({ window: { __SENTRY__: {} } });
   await m.init({ sentry: { dsn: DSN }, "new-relic": NR });

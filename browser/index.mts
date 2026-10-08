@@ -72,8 +72,12 @@ export async function init(options: InitOptions): Promise<void> {
       }
     }
 
+    // A mistyped tool name ("newrelic") must not fail silently. The key itself is the caller's text: never printed.
+    if (Object.keys(options).some(key => !Object.hasOwn(LABELS, key))) return warn('init was given an option that is not a tool. The tools are "sentry" and "new-relic". No tool was started.');
+
     // 2. Load only the named tools' own (small) modules. Vendor code is not requested yet.
     const ids = (Object.keys(LABELS) as ToolId[]).filter(id => options[id] !== undefined);
+    if (ids.length === 0) return warn('init was not given a tool. Name "sentry", "new-relic" or both. No tool was started.');
     const loaded: { id: ToolId; tool: BrowserTool<never> }[] = [];
     await Promise.all(ids.map(async id => {
       try { loaded.push({ id, tool: (await LOADERS[id]()).tool }); } catch { warn(`${LABELS[id]} could not be loaded. Your site is not affected.`); }
