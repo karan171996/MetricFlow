@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["ES2022", "DOM"],
+    "types": [],
+    "rootDir": "browser",
+    "outDir": "dist/browser",
+    "declaration": true,
+    "sourceMap": false,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["browser/**/*"]
+}
