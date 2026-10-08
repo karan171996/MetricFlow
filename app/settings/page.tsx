@@ -18,7 +18,7 @@ export default function SettingsPage() {
         <Header />
         <div className="flex flex-1 flex-col p-6 md:p-8 max-w-[1200px] mx-auto w-full">
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-white tracking-tight">Settings</h1>
+            <h1 className="title-enter text-2xl font-bold text-white tracking-tight">Settings</h1>
             <p className="text-sm text-gray-400">Manage your account, team, and dashboard preferences.</p>
           </div>
 

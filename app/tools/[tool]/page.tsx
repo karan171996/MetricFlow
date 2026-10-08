@@ -20,7 +20,7 @@ export default async function ToolPage({ params }: { params: Promise<{ tool: str
       <SidebarInset className="bg-dash-surface">
         <Header />
         <div className="flex flex-1 flex-col p-6 md:p-8 max-w-[1600px] mx-auto w-full">
-          <h1 className="text-2xl font-bold text-white tracking-tight mb-2">{TOOLS[tool].label}</h1>
+          <h1 className="title-enter text-2xl font-bold text-white tracking-tight mb-2">{TOOLS[tool].label}</h1>
           <p className="text-sm text-gray-400">{TOOLS[tool].description}</p>
 
           {isToolConnected(tool) ? (

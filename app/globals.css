@@ -182,3 +182,8 @@
   0%   { background-position: 200% center; }
   100% { background-position: -200% center; }
 }
+
+/* ── Titles: fade + 8px rise once on mount; reduced motion gets the final state ── */
+@utility title-enter {
+  @apply motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-400 motion-safe:ease-out;
+}

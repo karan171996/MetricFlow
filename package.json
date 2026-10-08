@@ -1,6 +1,6 @@
 {
   "name": "@karan171996/metricflow",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Local performance dashboard: New Relic page metrics and Sentry errors per page, with AI suggestions. Run with one npx command.",
   "keywords": [
     "performance",
@@ -87,6 +87,7 @@
     "eslint": "^9",
     "eslint-config-next": "^16.3.8",
     "lucide-react": "^1.47.0",
+    "motion": "^14.0.0",
     "recharts": "^3.10.1",
     "shadcn": "^4.21.0",
     "tailwindcss": "^4",
