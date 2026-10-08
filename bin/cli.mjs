@@ -99,12 +99,12 @@ async function printConnection() {
   }
 }
 
-// Open the browser once the port accepts connections.
+// Open the browser once the port accepts connections (--no-open skips it: tests, CI, remote shells).
 const open = () => {
   const [cmd, ...args] =
     process.platform === "darwin" ? ["open"] :
     process.platform === "win32" ? ["cmd", "/c", "start", ""] : ["xdg-open"];
-  spawn(cmd, [...args, url], { stdio: "ignore", detached: true }).on("error", () => {}).unref();
+  if (!process.argv.includes("--no-open")) spawn(cmd, [...args, url], { stdio: "ignore", detached: true }).on("error", () => {}).unref();
   stopSpinner();
   out.ok("Dashboard is running", { url, host, port: +port });
   out.kv([["URL", url], ["Stop", "Ctrl+C"]]);

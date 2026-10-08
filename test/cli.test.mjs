@@ -142,6 +142,24 @@ test("real start: prints running banner, serves /api/health", { skip: !built && 
   } finally { p.kill("SIGTERM"); }
 });
 
+test("real start --no-open: the browser is not launched (and is without the flag)", { skip: !built && "no .next/BUILD_ID (run npm run build)", timeout: 60000 }, async () => {
+  // Fake `open` that records being called, so the test can tell and no browser ever launches.
+  const start = async (port, flags) => {
+    const bin = mkdtempSync(join(tmpdir(), "fakeopen-"));
+    for (const n of ["open", "xdg-open"]) { writeFileSync(join(bin, n), '#!/bin/sh\ntouch "$0.called"\n'); chmodSync(join(bin, n), 0o755); }
+    const p = spawn(process.execPath, [cli, port, "--json", ...flags], { env: { PATH: `${bin}:${process.env.PATH}` } });
+    let out = "";
+    p.stdout.on("data", (d) => (out += d));
+    try {
+      await new Promise((res, rej) => { const t = setInterval(() => out.includes("\n") && (clearInterval(t), res()), 200); p.on("exit", () => rej(new Error("server exited early"))); });
+      await new Promise((res) => setTimeout(res, 1000)); // the launcher is detached; give it time to run
+      return readdirSync(bin).some((f) => f.endsWith(".called"));
+    } finally { p.kill("SIGTERM"); }
+  };
+  assert.equal(await start("43178", []), true, "control: without --no-open the launcher runs");
+  assert.equal(await start("43179", ["--no-open"]), false, "--no-open still launched the browser");
+});
+
 test("color precedence: FORCE_COLOR beats TERM=dumb; FORCE_COLOR=0 is off", () => {
   assert.ok(run(["abc"], { FORCE_COLOR: "1", TERM: "dumb" }).stderr.includes(ESC));
   assert.ok(!run(["abc"], { FORCE_COLOR: "0" }).stderr.includes(ESC));
