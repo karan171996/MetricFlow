@@ -108,6 +108,19 @@ test("Sentry only, site sends no traces: pages with errors are still listed; not
   assert.deepEqual(body.pages, []);
 });
 
+test("errors on pages not served from this machine are not counted, alone or beside New Relic", async () => {
+  // The same Sentry project also receives production errors: one on a path that exists locally, one on a path that does not.
+  errors = [...errors, { url: "https://example.com/a", title: "Prod error on /a", "count()": 50, "last_seen()": "2026-01-01T09:30:00Z" }, { url: "https://example.com/only-prod", title: "Prod only", "count()": 9, "last_seen()": "2026-01-01T09:40:00Z" }];
+  let { body } = await get(SENTRY);
+  assert.deepEqual(Object.keys(byUrl(body)).sort(), ["/a", "/b", "/c"], "a production-only path is not listed");
+  assert.equal(byUrl(body)["/a"].metrics.errors.count, 2);
+  assert.deepEqual(byUrl(body)["/a"].metrics.errors.latest.map((e) => e.title), ["TypeError: x"]);
+  mock.timers.tick(61_000);
+  ({ body } = await get({ ...NR, ...SENTRY }));
+  assert.equal(body.pages[0].metrics.errors.count, 2, "beside New Relic too");
+  assert.deepEqual(body.pages[0].sentry.latestErrors.map((e) => e.title), ["TypeError: x"]);
+});
+
 test("Sentry only: a failed read is an error naming Sentry, not an empty list", async () => {
   console.error = () => {};
   sentryDown = true;
