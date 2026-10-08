@@ -13,8 +13,9 @@ export function start(dsn: string, tracesSampleRate: number): boolean {
     tracesSampleRate,
     // SDK defaults plus tracing only. No replay, feedback or profiling integration is imported.
     integrations: [browserTracingIntegration({
-      // Pins the page name to the real path so the dashboard can match it. Any ID in the path is sent (see README).
-      beforeStartSpan: ctx => ({ ...ctx, name: window.location.pathname }),
+      // Pins the page-load name to the real path so the dashboard can match it. Any ID in the path is sent (see README).
+      // Page loads only: a navigation span starts before pushState is applied, so the path is still the page being left.
+      beforeStartSpan: ctx => (ctx.op === 'pageload' ? { ...ctx, name: window.location.pathname } : ctx),
     })],
   });
   return true;

@@ -249,6 +249,9 @@ test("both tools start with the privacy defaults and only the needed New Relic f
   assert.equal(s.tracesSampleRate, 1, "localhost default");
   assert.deepEqual(s.integrations, [{ name: "BrowserTracing" }], "tracing only: no replay, feedback or profiling");
   assert.deepEqual(seen.tracing[0].beforeStartSpan({ name: "/posts/[slug]", op: "pageload" }), { name: "/checkout", op: "pageload" });
+  // A navigation span starts while location is still the page being left: its name must not be touched.
+  const navigation = { name: "/orders/8841", op: "navigation" };
+  assert.equal(seen.tracing[0].beforeStartSpan(navigation), navigation);
 
   const [a] = seen.agents;
   assert.equal(a.init.session_replay.enabled, false);
