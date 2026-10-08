@@ -22,17 +22,11 @@ import {
   alertsToSuggestions
 } from "@/lib/dashboardTransforms";
 import { EmptyState } from "@/components/EmptyState";
-import { hasData, NEEDS_NEW_RELIC } from "@/lib/useMetrics";
-import type { MetricsPage, MetricsSnapshot } from "@/lib/metricsHistory";
+import { hasData, provides, NEEDS_NEW_RELIC } from "@/lib/useMetrics";
+import { withNeutralShape } from "@/lib/legacyMetrics";
+import type { MetricsResponse } from "@/lib/metricsHistory";
+import type { Capability } from "@/lib/tools";
 import type { TrafficBarItem } from "@/types";
-
-interface MetricsResponse {
-  configured: boolean;
-  tools?: string[];
-  pages: MetricsPage[];
-  history: MetricsSnapshot[];
-  timestamp: string;
-}
 
 interface AnalysisResponse {
   analysis?: string;
@@ -73,7 +67,7 @@ export default function Home() {
       setRefreshing(true);
 
       const metricsRes = await fetch("/api/metrics");
-      const metricsData: MetricsResponse = await metricsRes.json();
+      const metricsData = withNeutralShape(await metricsRes.json());
       setMetrics(metricsData);
 
       const timingsRes = await fetch("/api/timings");
@@ -128,7 +122,7 @@ export default function Home() {
           <Header />
           <div className="flex flex-1 flex-col p-6 md:p-8">
             {metrics.configured ? (
-              <EmptyState {...(metrics.tools?.includes("new-relic") === false ? NEEDS_NEW_RELIC : {})} />
+              <EmptyState {...(metrics.sources.pages ? {} : NEEDS_NEW_RELIC)} />
             ) : (
               <EmptyState title="Connect your data" reason="Add your New Relic or Sentry keys to see real numbers." href="/setup" cta="Set up keys" />
             )}
@@ -137,11 +131,13 @@ export default function Home() {
       </SidebarProvider>
     );
   }
-  const stats = computeStats(pages, history);
-  const webVitals = computeWebVitals(pages, history);
-  const visibility = computeVisibilityBreakdown(pages, history);
-  const whatMoved = computeWhatMoved(pages, history);
-  const cwvTrend = computeCwvTrend(history);
+  // A card whose capability no connected tool provides is left out, never drawn with zeros.
+  const has = (cap: Capability) => provides(metrics, cap);
+  const stats = computeStats(pages, history, has);
+  const webVitals = computeWebVitals(pages, history, has);
+  const visibility = computeVisibilityBreakdown(pages, history, has);
+  const whatMoved = computeWhatMoved(pages, history, has);
+  const cwvTrend = computeCwvTrend(history, has);
   const suggestions = alertsToSuggestions(analysis);
 
   return (
@@ -174,17 +170,19 @@ export default function Home() {
 
           <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             <div className="flex flex-col gap-6 xl:col-span-2">
-              <div className="grid gap-6 md:grid-cols-3">
-                <WebVitalCard {...webVitals.ttfb} />
-                <WebVitalCard {...webVitals.lcp} />
-                <WebVitalCard {...webVitals.cls} />
-              </div>
-              <WhatMovedCard {...whatMoved} />
-              <LineChartCard {...cwvTrend} />
+              {webVitals && (
+                <div className="grid gap-6 md:grid-cols-3">
+                  <WebVitalCard {...webVitals.ttfb} />
+                  <WebVitalCard {...webVitals.lcp} />
+                  <WebVitalCard {...webVitals.cls} />
+                </div>
+              )}
+              {whatMoved && <WhatMovedCard {...whatMoved} />}
+              {cwvTrend && <LineChartCard {...cwvTrend} />}
             </div>
 
             <div className="flex flex-col gap-6">
-              <VisibilityBreakdownCard {...visibility} />
+              {visibility && <VisibilityBreakdownCard {...visibility} />}
               <AISuggestionsDonutCard suggestions={suggestions} />
               <BarChartCard title="Rankings Moved" items={apiTimings} />
             </div>

@@ -6,14 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { KEY_LABELS, TOOLS, TOOL_IDS, type ToolId } from "@/lib/tools";
+import { KEY_FIELDS, TOOLS, TOOL_IDS, type Tool, type ToolId } from "@/lib/tools";
 
-const FIELDS = [
-  { name: "NEWRELIC_API_KEY", tool: "new-relic", label: KEY_LABELS.NEWRELIC_API_KEY, secret: true, help: "READS your data (starts NRAK-). Create it under API keys > key type \"User\"." },
-  { name: "NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID", tool: "new-relic", label: KEY_LABELS.NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID, secret: false, help: "A plain number, shown next to your keys in New Relic." },
-  { name: "SENTRY_API_KEY", tool: "sentry", label: KEY_LABELS.SENTRY_API_KEY, secret: true, help: "Lets the dashboard read issues (scopes: project:read, event:read)." },
-  { name: "SENTRY_DSN", tool: "sentry", label: KEY_LABELS.SENTRY_DSN, secret: false, help: "Project settings, then Client Keys (DSN). The project and host are read from it." },
-] as const satisfies readonly { name: string; tool: ToolId; label: string; secret: boolean; help: string }[];
+// One field per required key of each tool, in TOOLS order. A tool added to the registry gets its group here with no edit.
+const FIELDS = TOOL_IDS.flatMap((tool) => TOOLS[tool].keys.required.map((name) => ({ name, tool, ...KEY_FIELDS[name] })));
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -118,7 +114,7 @@ export function SetupForm() {
               </div>
             );
             })}
-              {id === "new-relic" && <p className="text-xs text-gray-400">The key that sends events (Ingest - License) is separate and is added later on the Connect page.</p>}
+              {(TOOLS[id] as Tool).setupNote && <p className="text-xs text-gray-400">{(TOOLS[id] as Tool).setupNote}</p>}
             </fieldset>
           ))}
           <div className="flex items-center gap-4">

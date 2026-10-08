@@ -43,8 +43,8 @@ export type Severity = "high" | "medium" | "low" | "Critical" | "Warning" | "Inf
 export interface TimeSeriesPoint {
   /** Label shown on the X-axis (e.g. "JAN", "14:00", "1"). */
   label: string;
-  /** Numeric Y-axis value. */
-  value: number;
+  /** Numeric Y-axis value. `null` = nothing measured at this point; charts draw a gap. */
+  value: number | null;
 }
 
 /** A trend direction indicator. */
@@ -112,8 +112,8 @@ export interface WebVitalCardData {
 export interface CWVTrendPoint {
   /** Month abbreviation shown on X-axis (e.g. "JAN", "FEB"). */
   month: string;
-  /** Aggregate CWV score for that month (0–100). */
-  value: number;
+  /** Aggregate CWV score for that month (0–100). `null` = nothing measured; drawn as a gap. */
+  value: number | null;
 }
 
 /** Full data contract for the LineChartCard component. */
@@ -197,7 +197,7 @@ export interface VisibilityBreakdownCardData {
   scoreDelta: number;
   isPositive: boolean;
   /** Sparkline trend data powering the background chart. */
-  trend: Array<{ value: number }>;
+  trend: Array<{ value: number | null }>;
   /** Summary stat rows rendered below the chart. */
   stats: VisibilityStat[];
 }

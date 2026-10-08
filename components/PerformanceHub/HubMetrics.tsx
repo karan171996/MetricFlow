@@ -5,21 +5,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Globe, Clock, AlertTriangle } from "lucide-react";
 import { hasData } from "@/lib/useMetrics";
 import type { MetricsPage } from "@/lib/metricsHistory";
+import type { Capability } from "@/lib/tools";
 import { formatDuration } from "@/lib/formatDuration";
 
-export function HubMetrics({ pages, showSentry: hasSentry }: { pages: MetricsPage[]; showSentry: boolean }) {
+/** One card per capability; a card nobody provides is left out and the grid closes up. */
+export function HubMetrics({ pages, has }: { pages: MetricsPage[]; has: (cap: Capability) => boolean }) {
   const live = pages.filter(hasData);
-  const avgLoad = live.length ? live.reduce((s, p) => s + p.newRelic.loadTime, 0) / live.length : null;
-  const errors = pages.reduce((s, p) => s + (p.sentry?.errorCount ?? 0), 0);
+  const avgLoad = live.length ? live.reduce((s, p) => s + (p.metrics.loadTime ?? 0), 0) / live.length : null;
+  const errors = pages.reduce((s, p) => s + (p.metrics.errors?.count ?? 0), 0);
 
   const metrics = [
-    { label: "Pages Reporting", value: `${live.length} of ${pages.length}`, icon: <Globe className="h-4 w-4 text-[#3ee0a1]" /> },
-    { label: "Avg Load Time", value: avgLoad === null ? "No data yet" : formatDuration(avgLoad), icon: <Clock className="h-4 w-4 text-[#06b6d4]" /> },
-    ...(hasSentry ? [{ label: "Open Errors", value: live.length || errors ? String(errors) : "No data yet", icon: <AlertTriangle className="h-4 w-4 text-[#ef4444]" /> }] : []),
-  ];
+    { needs: "pages" as const, label: "Pages Reporting", value: `${live.length} of ${pages.length}`, icon: <Globe className="h-4 w-4 text-[#3ee0a1]" /> },
+    { needs: "loadTime" as const, label: "Avg Load Time", value: avgLoad === null ? "No data yet" : formatDuration(avgLoad), icon: <Clock className="h-4 w-4 text-[#06b6d4]" /> },
+    { needs: "errors" as const, label: "Open Errors", value: live.length || errors ? String(errors) : "No data yet", icon: <AlertTriangle className="h-4 w-4 text-[#ef4444]" /> },
+  ].filter((m) => has(m.needs));
 
   return (
-    <div className={`grid gap-6 mb-8 mt-4 ${hasSentry ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+    <div className={`grid gap-6 mb-8 mt-4 ${metrics.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
       {metrics.map((m, i) => (
         <Card key={i} className="border-[#2d3748] bg-[#1a202c] shadow-md">
           <CardContent className="p-6">

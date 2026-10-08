@@ -4,7 +4,8 @@ import { Bell } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Logo } from "@/components/Logo";
 import { ThresholdAlert } from "./ThresholdAlert";
-import { useMetrics, hasData, showsSentry, type MetricsState } from "@/lib/useMetrics";
+import { useMetrics, hasData, provides, type MetricsState } from "@/lib/useMetrics";
+import { TOOLS, isToolId } from "@/lib/tools";
 
 /** Live facts about the monitored project; says so plainly when there is nothing to show yet. */
 function subtitle(state: MetricsState): string {
@@ -12,16 +13,16 @@ function subtitle(state: MetricsState): string {
   if (state.status === "error") return "Could not load metrics";
   if (!state.configured) return "Not connected yet";
   // Sentry-only has no page list yet, so "0 open errors" would be a number nobody measured.
-  if (!state.tools.includes("new-relic")) return "Sentry connected · add New Relic to list pages";
+  if (!state.sources.pages) return "Sentry connected · add New Relic to list pages";
   const live = state.pages.filter(hasData);
-  const views = state.pages.reduce((s, p) => s + p.newRelic.throughput, 0);
-  const errors = state.pages.reduce((s, p) => s + (p.sentry?.errorCount ?? 0), 0);
-  // Join only the parts that exist, so an unconnected tool leaves no gap or stray separator.
+  const views = state.pages.reduce((s, p) => s + (p.metrics.traffic?.count ?? 0), 0);
+  const errors = state.pages.reduce((s, p) => s + (p.metrics.errors?.count ?? 0), 0);
+  // Join only the parts that exist, so a capability nobody provides leaves no gap or stray separator.
   return [
-    state.tools.includes("new-relic") && `${live.length} of ${state.pages.length} pages reporting`,
-    state.tools.includes("new-relic") && `${views.toLocaleString()} views in 24h`,
-    showsSentry(state) && `${errors} open ${errors === 1 ? "error" : "errors"}`,
-    state.failed.includes("sentry") && "Could not load Sentry data.",
+    provides(state, "pages") && `${live.length} of ${state.pages.length} pages reporting`,
+    provides(state, "traffic") && `${views.toLocaleString()} views in 24h`,
+    provides(state, "errors") && `${errors} open ${errors === 1 ? "error" : "errors"}`,
+    ...state.failed.filter(isToolId).map((id) => `Could not load ${TOOLS[id].label} data.`),
     state.timestamp && `updated ${new Date(state.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
   ].filter(Boolean).join(" · ");
 }

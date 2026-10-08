@@ -1,0 +1,250 @@
+[
+  {
+    "body": {
+      "configured": true,
+      "tools": [
+        "new-relic"
+      ],
+      "failed": [],
+      "project": "fake-project",
+      "pages": [
+        {
+          "name": "A",
+          "slug": "a",
+          "url": "/a",
+          "visitors": "1.6k",
+          "status": "Warning",
+          "newRelic": {
+            "loadTime": 900,
+            "lcp": 1781.25,
+            "ttfb": 131.25,
+            "cls": 0.075,
+            "inp": 168.75,
+            "fid": 11.25,
+            "errorRate": 3,
+            "throughput": 1600,
+            "apdexScore": 0.934375,
+            "ajaxLatency": 250,
+            "ajaxFailRate": 3
+          },
+          "recordedAt": "2026-01-01T10:02:02.000Z"
+        },
+        {
+          "name": "B",
+          "slug": "b",
+          "url": "/b",
+          "visitors": "40",
+          "status": "Warning",
+          "newRelic": {
+            "loadTime": 3200,
+            "lcp": 0,
+            "ttfb": 500,
+            "cls": 0,
+            "inp": 0,
+            "fid": 0,
+            "errorRate": 0,
+            "throughput": 40,
+            "apdexScore": 0.6
+          },
+          "recordedAt": "2026-01-01T10:02:02.000Z"
+        },
+        {
+          "name": "C",
+          "slug": "c",
+          "url": "/c",
+          "visitors": "3",
+          "status": "Warning",
+          "newRelic": {
+            "loadTime": 0,
+            "lcp": 0,
+            "ttfb": 0,
+            "cls": 0,
+            "inp": 0,
+            "fid": 0,
+            "errorRate": 0,
+            "throughput": 0,
+            "apdexScore": 0
+          },
+          "recordedAt": "2026-01-01T10:02:02.000Z"
+        }
+      ],
+      "history": [
+        {
+          "timestamp": "2026-01-01T10:02:02.000Z",
+          "pages": [
+            {
+              "name": "A",
+              "slug": "a",
+              "url": "/a",
+              "visitors": "1.6k",
+              "status": "Warning",
+              "newRelic": {
+                "loadTime": 900,
+                "lcp": 1781.25,
+                "ttfb": 131.25,
+                "cls": 0.075,
+                "inp": 168.75,
+                "fid": 11.25,
+                "errorRate": 3,
+                "throughput": 1600,
+                "apdexScore": 0.934375,
+                "ajaxLatency": 250,
+                "ajaxFailRate": 3
+              },
+              "recordedAt": "2026-01-01T10:02:02.000Z"
+            },
+            {
+              "name": "B",
+              "slug": "b",
+              "url": "/b",
+              "visitors": "40",
+              "status": "Warning",
+              "newRelic": {
+                "loadTime": 3200,
+                "lcp": 0,
+                "ttfb": 500,
+                "cls": 0,
+                "inp": 0,
+                "fid": 0,
+                "errorRate": 0,
+                "throughput": 40,
+                "apdexScore": 0.6
+              },
+              "recordedAt": "2026-01-01T10:02:02.000Z"
+            },
+            {
+              "name": "C",
+              "slug": "c",
+              "url": "/c",
+              "visitors": "3",
+              "status": "Warning",
+              "newRelic": {
+                "loadTime": 0,
+                "lcp": 0,
+                "ttfb": 0,
+                "cls": 0,
+                "inp": 0,
+                "fid": 0,
+                "errorRate": 0,
+                "throughput": 0,
+                "apdexScore": 0
+              },
+              "recordedAt": "2026-01-01T10:02:02.000Z"
+            }
+          ]
+        }
+      ],
+      "timestamp": "2026-01-01T10:02:02.000Z"
+    },
+    "transforms": {
+      "stats": [
+        {
+          "label": "Avg Response Time",
+          "value": "1.4s",
+          "change": "No prior data yet",
+          "changeClass": "text-dash-muted"
+        },
+        {
+          "label": "Error Rate",
+          "value": "1.00%",
+          "change": "No prior data yet",
+          "changeClass": "text-dash-muted"
+        },
+        {
+          "label": "Throughput",
+          "value": "1.6k/s",
+          "change": "No prior data yet",
+          "changeClass": "text-dash-muted"
+        },
+        {
+          "label": "Apdex Score",
+          "value": "0.51",
+          "change": "No prior data yet",
+          "changeClass": "text-dash-muted"
+        }
+      ],
+      "webVitals": {
+        "ttfb": {
+          "title": "TTFB",
+          "description": "Time to First Byte",
+          "value": "210ms",
+          "change": "0ms",
+          "isPositive": true,
+          "color": "#3ee0a1",
+          "data": [
+            {
+              "label": "1",
+              "value": 210.41666666666666
+            }
+          ]
+        },
+        "lcp": {
+          "title": "LCP",
+          "description": "Largest Contentful Paint",
+          "value": "594ms",
+          "change": "0ms",
+          "isPositive": true,
+          "color": "#3ee0a1",
+          "data": [
+            {
+              "label": "1",
+              "value": 593.75
+            }
+          ]
+        },
+        "cls": {
+          "title": "CLS",
+          "description": "Cumulative Layout Shift",
+          "value": "0.02",
+          "change": "0.00",
+          "isPositive": true,
+          "color": "#3ee0a1",
+          "data": [
+            {
+              "label": "1",
+              "value": 0.024999999999999998
+            }
+          ]
+        }
+      },
+      "cwvTrend": {
+        "title": "Core Web Vitals Score Trend",
+        "points": [
+          {
+            "month": "10:02 AM",
+            "value": 51
+          }
+        ]
+      },
+      "visibility": {
+        "avgScore": 51.1,
+        "scoreDelta": 0,
+        "isPositive": true,
+        "trend": [
+          {
+            "value": 51.145833333333336
+          }
+        ],
+        "stats": [
+          {
+            "label": "Pages Passing Core Web Vitals",
+            "value": "1/3",
+            "delta": 0,
+            "isPositive": true
+          },
+          {
+            "label": "Pages Within Load Budget",
+            "value": "2/3",
+            "delta": 0,
+            "isPositive": true
+          }
+        ]
+      },
+      "whatMoved": {
+        "improved": [],
+        "regressed": [],
+        "period": "not enough history yet — check back shortly"
+      }
+    }
+  }
+]

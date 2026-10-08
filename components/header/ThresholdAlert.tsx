@@ -22,9 +22,9 @@ export function ThresholdAlert() {
     return () => ch.close();
   }, []);
 
-  // Every threshold is New Relic data, so without New Relic there is nothing to alert on.
-  if (!alert || state.status !== "ready" || !state.tools.includes("new-relic")) return null;
-  const breached = state.pages.filter((p) => hasData(p) && p.status !== "Healthy");
+  // A page has a status only when every threshold input is provided; without one there is nothing to alert on.
+  if (!alert || state.status !== "ready") return null;
+  const breached = state.pages.filter((p) => hasData(p) && p.status && p.status !== "Healthy");
   const signature = breached.map((p) => `${p.slug}:${p.status}`).join(",");
   if (!breached.length || signature === dismissed) return null;
 

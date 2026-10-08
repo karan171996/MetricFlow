@@ -1,5 +1,5 @@
 import type { PageStatus } from "@/types";
-import type { NewRelicPageMetrics } from "@/lib/newrelic";
+import type { PageMetrics } from "@/lib/metricsHistory";
 
 export interface Thresholds {
   loadSeconds: number;
@@ -9,11 +9,12 @@ export interface Thresholds {
 
 export const DEFAULT_THRESHOLDS: Thresholds = { loadSeconds: 1.5, errorPercent: 2, uptimeSLA: 99.9 };
 
-/** Warning above a threshold, Critical above 2x it. */
-export function deriveStatus(nr: NewRelicPageMetrics, t: Thresholds): PageStatus {
-  const loadRatio = nr.loadTime / 1000 / t.loadSeconds;
-  const errRatio = nr.errorRate / t.errorPercent;
+/** Warning above a threshold, Critical above 2x it. No status at all unless load time, error rate and Apdex are all provided. */
+export function deriveStatus(m: PageMetrics, t: Thresholds): PageStatus | undefined {
+  if (m.loadTime === undefined || m.errorRate === undefined || m.apdex === undefined) return undefined;
+  const loadRatio = m.loadTime / 1000 / t.loadSeconds;
+  const errRatio = m.errorRate / t.errorPercent;
   if (loadRatio > 2 || errRatio > 2) return "Critical";
-  if (loadRatio > 1 || errRatio > 1 || nr.apdexScore < 0.9) return "Warning";
+  if (loadRatio > 1 || errRatio > 1 || m.apdex < 0.9) return "Warning";
   return "Healthy";
 }
