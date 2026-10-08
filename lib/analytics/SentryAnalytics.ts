@@ -1,6 +1,8 @@
 import axios from 'axios';
-import { Analytics } from '@/lib/analytics/Analytics';
-import { orgSlugForDsn, parseSentryDsn } from '@/lib/sentryDsn';
+import { Analytics, describeFailure, type KeyResult, type ToolRead, type ToolUpdate } from '@/lib/analytics/Analytics';
+import { env } from '@/lib/env';
+import { sentryToPageMetrics } from '@/lib/legacyMetrics';
+import { orgSlugForDsn, parseSentryDsn, sentryHostNotice } from '@/lib/sentryDsn';
 
 export interface SentryPageErrors {
   errorCount: number;
@@ -21,43 +23,54 @@ interface SentryEventRow extends Record<string, unknown> {
  * grouped by URL. Replaces per-page calls to avoid rate limits.
  */
 export class SentryAnalytics extends Analytics<SentryEventRow, SentryPageErrors> {
-  private apiKey: string;
-  private dsn: string;
+  readonly id = 'sentry';
+  readonly legacyField = 'sentry';
+  protected readonly timingLabel = 'Sentry: events';
 
-  constructor(apiKey: string, dsn: string) {
-    super();
-    this.apiKey = apiKey;
-    this.dsn = dsn;
+  // Read at call time, so one instance can hold the poll memo and a key change on /setup is seen at once.
+  private get apiKey() { return env('SENTRY_API_KEY'); }
+  private get dsn() { return env('SENTRY_DSN'); }
+
+  protected memoKey() { return `${this.apiKey}:${this.dsn}`; }
+
+  emptyPage() {
+    const legacy: SentryPageErrors = { errorCount: 0, errorRate: 0, warningCount: 0, latestErrors: [] };
+    return { metrics: sentryToPageMetrics(legacy), legacy };
+  }
+
+  protected async load(): Promise<ToolRead> {
+    const legacy = this.aggregateRows(await this.fetchRows());
+    return { byPath: Object.fromEntries(Object.entries(legacy).map(([path, s]) => [path, sentryToPageMetrics(s)])), legacy };
+  }
+
+  /** Checks the token against the DSN's project. Also tells the user when the token would go to a host that is not sentry.io. */
+  async update(values: Record<string, string>): Promise<ToolUpdate> {
+    return { results: await checkSentry(values.SENTRY_API_KEY, values.SENTRY_DSN) };
   }
 
   protected async fetchRows(): Promise<SentryEventRow[]> {
-    const parsed = this.apiKey && this.dsn ? parseSentryDsn(this.dsn) : null;
-    if (!this.apiKey || !parsed?.ok) return [];
+    const parsed = parseSentryDsn(this.dsn);
+    // A saved DSN that no longer parses (a legacy one with a secret part) is a failure, not "no errors".
+    if (!parsed.ok) throw new Error('invalid DSN');
 
-    try {
-      const slug = await orgSlugForDsn(this.apiKey, parsed);
-      if (!slug) return [];
+    const slug = await orgSlugForDsn(this.apiKey, parsed);
+    if (!slug) return [];
 
-      const res = await axios.get(`${parsed.apiBase}/organizations/${encodeURIComponent(slug)}/events/`, {
-        headers: { Authorization: `Bearer ${this.apiKey}` },
-        timeout: 10000,
-        params: {
-          project: parsed.projectId,
-          field: ['url', 'title', 'count()', 'last_seen()'],
-          query: 'event.type:error',
-          statsPeriod: '24h',
-          sort: '-last_seen',
-          per_page: 100
-        },
-        paramsSerializer: { indexes: null }
-      });
+    const res = await axios.get(`${parsed.apiBase}/organizations/${encodeURIComponent(slug)}/events/`, {
+      headers: { Authorization: `Bearer ${this.apiKey}` },
+      timeout: 10000,
+      params: {
+        project: parsed.projectId,
+        field: ['url', 'title', 'count()', 'last_seen()'],
+        query: 'event.type:error',
+        statsPeriod: '24h',
+        sort: '-last_seen',
+        per_page: 100
+      },
+      paramsSerializer: { indexes: null }
+    });
 
-      return res.data?.data ?? [];
-    } catch (error) {
-      console.error('Sentry API error:', axios.isAxiosError(error) ? error.response?.status : 'request failed');
-      // Let the caller say "Could not load Sentry data" instead of showing a false "no errors".
-      throw new Error('Sentry request failed');
-    }
+    return res.data?.data ?? [];
   }
 
   protected mergeVariants(rowsForOnePath: SentryEventRow[]): SentryPageErrors | null {
@@ -85,9 +98,17 @@ export class SentryAnalytics extends Analytics<SentryEventRow, SentryPageErrors>
       latestErrors
     };
   }
+}
 
-  /** Rethrows, so byPath() fails instead of returning an empty (looks-healthy) result. */
-  protected onError(error: unknown): never {
-    throw error;
+async function checkSentry(token: string, dsn: string): Promise<Record<string, KeyResult>> {
+  const parsed = parseSentryDsn(dsn);
+  if (!parsed.ok) return { SENTRY_DSN: { ok: false, error: parsed.error } };
+  try {
+    const slug = await orgSlugForDsn(token, parsed);
+    if (!slug) return { SENTRY_API_KEY: { ok: true }, SENTRY_DSN: { ok: false, error: 'This DSN does not match a project the token can read.' } };
+    const notice = sentryHostNotice(parsed.apiBase);
+    return { SENTRY_API_KEY: { ok: true }, SENTRY_DSN: { ok: true, ...(notice && { notice }) } };
+  } catch (e) {
+    return { SENTRY_API_KEY: { ok: false, error: describeFailure(e, 'Sentry token') } };
   }
 }

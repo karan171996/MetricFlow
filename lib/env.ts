@@ -1,11 +1,10 @@
+import 'server-only';
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { TOOLS, TOOL_IDS, type Tool, type ToolId } from '@/lib/tools';
 
 /** Every tool's required keys, in TOOLS order = form order on /setup. */
 export const SETUP_KEYS: readonly string[] = TOOL_IDS.flatMap(id => TOOLS[id].keys.required);
-/** No longer a fixed union: the names come from TOOLS, so writeEnvLocal checks them at run time. */
-export type SetupKey = (typeof SETUP_KEYS)[number];
 /** Sends events from your site (Ingest - License key). Not needed to read data; set on /connect. */
 export const INSERT_KEY = 'NEWRELIC_INSERT_KEY';
 /** 'eu' for EU data-centre accounts; anything else = US. Auto-detected on /setup. */
@@ -77,6 +76,9 @@ const writableKeys = (): Set<string> =>
     AI_PROVIDER_KEY
   ]);
 
+/** writeEnvLocal's own refusal (unsafe value, undeclared name), told apart from a file-system failure. */
+export class EnvWriteRefused extends Error {}
+
 /**
  * Merges `values` into .env.local, keeping unrelated lines, and updates process.env so no restart is needed.
  * The single writer is also the guard: an undeclared name or an unsafe value throws before the file is opened.
@@ -85,8 +87,8 @@ export function writeEnvLocal(values: Record<string, string>, path = envFilePath
   const allowed = writableKeys();
   for (const [name, v] of Object.entries(values)) {
     // Fixed text: the name or value could be something a caller should not echo.
-    if (!allowed.has(name)) throw new Error('Refused to write a key name no tool declares.');
-    if (UNSAFE.test(v)) throw new Error('Refused to write a value with unsafe characters.');
+    if (!allowed.has(name)) throw new EnvWriteRefused('Refused to write a key name no tool declares.');
+    if (UNSAFE.test(v)) throw new EnvWriteRefused('Refused to write a value with unsafe characters.');
   }
   const existing = existsSync(path) ? readFileSync(path, 'utf8').split('\n') : [];
   const pending = new Map(Object.entries(values));

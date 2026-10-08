@@ -38,4 +38,4 @@ export function mockAxios(handler) {
 export const httpError = (status) => Object.assign(new Error("FAKE http error carrying " + FAKE.NEWRELIC_API_KEY), { isAxiosError: true, response: { status } });
 
 export const req = (url, { method = "GET", headers = {}, body } = {}) =>
-  new Request(url, { method, headers: { host: "localhost:3000", ...headers }, body: body === undefined ? undefined : JSON.stringify(body) });
+  new Request(url, { method, headers: { host: "localhost:3000", ...(body === undefined ? {} : { "content-type": "application/json" }), ...headers }, body: body === undefined ? undefined : JSON.stringify(body) });
