@@ -1,6 +1,8 @@
 // C1 proof of "no behaviour change": the /api/metrics body and the home-screen transforms, for fixed
 // upstream answers, must equal what main produced before C1 (test/fixtures/c1-*.json).
 // The fixtures were written by this file on main (297d396): C1_CAPTURE=1 pnpm run test:cli
+// Sentry-only is no longer part of this proof: it changed on purpose when Sentry began to list pages
+// and supply vitals (test/sentry-pages.test.mjs). New Relic only and both tools must still not move.
 import { test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -8,7 +10,6 @@ import { join } from "node:path";
 import { FAKE, httpError, load, mockAxios, root } from "./helpers.mjs";
 
 const NR = { NEWRELIC_API_KEY: FAKE.NEWRELIC_API_KEY, NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: FAKE.NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID };
-const SENTRY = { SENTRY_API_KEY: FAKE.SENTRY_API_KEY, SENTRY_DSN: FAKE.SENTRY_DSN };
 const site = "http://localhost:3001";
 
 // The transforms print clock times; pin locale and zone so the fixtures do not depend on the machine.
@@ -77,7 +78,8 @@ test("C1: /api/metrics legacy fields and every transform output are the same as 
   console.error = () => {}; // the Sentry-down round logs its status
 
   // The history ring lives in the module, so the order matters: later rounds carry the earlier snapshots.
-  const got = { "sentry-only": [await run(SENTRY)], "new-relic-only": [await run(NR)], both: [await run(FAKE)] };
+  mock.timers.tick(61_000); // the fixtures' clock includes the Sentry-only round that used to run first
+  const got = { "new-relic-only": [await run(NR)], both: [await run(FAKE)] };
   round = 1;
   got.both.push(await run(FAKE));
   sentryDown = true;

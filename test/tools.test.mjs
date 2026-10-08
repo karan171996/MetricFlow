@@ -22,7 +22,10 @@ test("tools: ids, per-tool stats and cells", () => {
   assert.equal(TOOLS["new-relic"].columns.find((c) => c.header === "Error Rate").cell(pages[0]), "1.50%");
 
   assert.deepEqual(TOOLS.sentry.stats(pages).map((s) => s.value), ["3", "1 of 2", "docs"]);
-  assert.deepEqual(TOOLS.sentry.columns.map((c) => c.cell(pages[1])), ["3", "TypeError: x", "—"]);
+  // The last five are Sentry's own page loads and vitals: this page carries none, so each is "—", never 0.
+  assert.deepEqual(TOOLS.sentry.columns.map((c) => c.cell(pages[1])), ["3", "TypeError: x", "—", "—", "—", "—", "—", "—"]);
+  const traced = { ...pages[1], byTool: { sentry: { traffic: { count: 1200, sampled: true }, vitals: { lcp: 1900, cls: 0.081, ttfb: 120 } } } };
+  assert.deepEqual(TOOLS.sentry.columns.map((c) => [c.header, c.cell(traced)]).slice(3), [["Page loads (sampled)", (1200).toLocaleString()], ["LCP", "1.9s"], ["TTFB", "120ms"], ["CLS", "0.08"], ["INP", "—"]]);
   assert.deepEqual(TOOLS.sentry.stats([]).map((s) => s.value), ["0", "0 of 0", "None"]);
 });
 

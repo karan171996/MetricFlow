@@ -14,6 +14,15 @@ export const MAX_PAGES = 20;
 /** NRQL clause: only page loads from a local dev server, so prod/staging data in the same account is ignored. */
 export const LOCAL_ONLY_NRQL = `WHERE (pageUrl LIKE 'http%://localhost%' OR pageUrl LIKE 'http%://127.0.0.1%')`;
 
+/** True for a page served from this machine: the same pages LOCAL_ONLY_NRQL keeps. */
+export function isLocalUrl(raw: string): boolean {
+  try {
+    return ['localhost', '127.0.0.1'].includes(new URL(raw).hostname);
+  } catch {
+    return false;
+  }
+}
+
 /** "https://site.com/Blog/?utm=1#x" -> "/blog"; "/" stays "/". Returns null if unusable. */
 export function normalizePath(raw: string): string | null {
   if (typeof raw !== 'string' || !raw.trim()) return null;

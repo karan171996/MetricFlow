@@ -7,7 +7,7 @@ const { deriveStatus, DEFAULT_THRESHOLDS } = await load("lib/thresholds.ts");
 
 test("tools: each entry declares today's capabilities, and every column names one of them", () => {
   assert.deepEqual(TOOLS["new-relic"].capabilities, ["pages", "traffic", "loadTime", "apdex", "vitals", "ajax", "errorRate"]);
-  assert.deepEqual(TOOLS.sentry.capabilities, ["errors"]);
+  assert.deepEqual(TOOLS.sentry.capabilities, ["pages", "traffic", "vitals", "errors"]);
   for (const id of TOOL_IDS) {
     for (const cap of TOOLS[id].capabilities) assert.ok(CAPABILITIES.includes(cap), `${id}: ${cap}`);
     assert.deepEqual(toolColumns(id), TOOLS[id].columns, `${id}: no column is hidden today`);
@@ -20,7 +20,8 @@ test("sourcesFor: first connected tool in TOOLS order that declares the capabili
   assert.deepEqual(sourcesFor(["new-relic", "sentry"]), { ...nr, errors: "sentry" });
   assert.deepEqual(sourcesFor(["sentry", "new-relic"]), { ...nr, errors: "sentry" }, "the order of the argument does not matter");
   assert.deepEqual(sourcesFor(["new-relic"]), nr);
-  assert.deepEqual(sourcesFor(["sentry"]), { errors: "sentry" });
+  // Alone, Sentry lists the pages and supplies sampled traffic and vitals itself. Beside New Relic it keeps only errors.
+  assert.deepEqual(sourcesFor(["sentry"]), { pages: "sentry", traffic: "sentry", vitals: "sentry", errors: "sentry" });
   assert.deepEqual(sourcesFor([]), {});
 });
 

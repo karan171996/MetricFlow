@@ -18,14 +18,6 @@ const REFRESH_INTERVAL_MS = 30000;
 export const provides = (s: { sources: Sources; failed: string[] }, cap: Capability): boolean =>
   s.sources[cap] !== undefined && !s.failed.includes(s.sources[cap]!);
 
-/** EmptyState props when no connected tool lists pages (`sources.pages` is absent). Today that is Sentry-only: pages are listed from New Relic. */
-export const NEEDS_NEW_RELIC = {
-  title: "Sentry is connected",
-  reason: "Pages are listed from New Relic, so there is nothing to show per page yet. Add your New Relic keys to see pages and their errors.",
-  href: "/setup#new-relic",
-  cta: "Add New Relic keys",
-};
-
 /** A page that has never reported has no beacon hit: show "No data yet", never 0ms/Healthy. */
 export function hasData(p: MetricsPage): boolean {
   const m = p.metrics;

@@ -13,6 +13,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { hasData } from "@/lib/useMetrics";
+import { isSampled } from "@/lib/dashboardTransforms";
 import type { MetricsPage } from "@/lib/metricsHistory";
 import type { Capability } from "@/lib/tools";
 import { formatDuration } from "@/lib/formatDuration";
@@ -34,7 +35,7 @@ export function HubTable({ pages, has }: { pages: MetricsPage[]; has: (cap: Capa
               <TableRow className="border-[#2d3748] hover:bg-transparent">
                 <TableHead className="text-gray-400">Page Name</TableHead>
                 <TableHead className="text-gray-400">Path</TableHead>
-                {has("traffic") && <TableHead className="text-gray-400">Visitors (24h)</TableHead>}
+                {has("traffic") && <TableHead className="text-gray-400">{isSampled(pages) ? "Page loads (sampled)" : "Visitors (24h)"}</TableHead>}
                 {has("loadTime") && <TableHead className="text-gray-400">Avg Load</TableHead>}
                 {has("errors") && <TableHead className="text-gray-400">Errors</TableHead>}
                 {hasStatus && <TableHead className="text-right text-gray-400">Status</TableHead>}
@@ -51,7 +52,8 @@ export function HubTable({ pages, has }: { pages: MetricsPage[]; has: (cap: Capa
                 >
                   <TableCell className="font-medium text-white">{page.name}</TableCell>
                   <TableCell className="text-gray-500 font-mono text-xs">{page.url}</TableCell>
-                  {has("traffic") && <TableCell className="text-gray-400">{live ? page.visitors : "—"}</TableCell>}
+                  {/* A page listed only for its errors has no traffic number: that is "—", not 0. */}
+                  {has("traffic") && <TableCell className="text-gray-400">{live && page.metrics.traffic ? page.visitors : "—"}</TableCell>}
                   {has("loadTime") && <TableCell className="text-gray-400">{live && page.metrics.loadTime !== undefined ? formatDuration(page.metrics.loadTime) : "—"}</TableCell>}
                   {has("errors") && <TableCell className="text-gray-400">{live ? page.metrics.errors?.count : "—"}</TableCell>}
                   {hasStatus && <TableCell className="text-right">
