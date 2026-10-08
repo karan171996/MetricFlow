@@ -103,12 +103,14 @@ export class SentryAnalytics extends Analytics<SentryEventRow, SentryPageErrors>
 async function checkSentry(token: string, dsn: string): Promise<Record<string, KeyResult>> {
   const parsed = parseSentryDsn(dsn);
   if (!parsed.ok) return { SENTRY_DSN: { ok: false, error: parsed.error } };
+  // The token goes to the DSN's host in the check itself, so the notice is on every outcome, not only a pass.
+  const notice = sentryHostNotice(parsed.apiBase);
+  const where = notice ? { notice } : {};
   try {
     const slug = await orgSlugForDsn(token, parsed);
-    if (!slug) return { SENTRY_API_KEY: { ok: true }, SENTRY_DSN: { ok: false, error: 'This DSN does not match a project the token can read.' } };
-    const notice = sentryHostNotice(parsed.apiBase);
-    return { SENTRY_API_KEY: { ok: true }, SENTRY_DSN: { ok: true, ...(notice && { notice }) } };
+    if (!slug) return { SENTRY_API_KEY: { ok: true }, SENTRY_DSN: { ok: false, error: 'This DSN does not match a project the token can read.', ...where } };
+    return { SENTRY_API_KEY: { ok: true }, SENTRY_DSN: { ok: true, ...where } };
   } catch (e) {
-    return { SENTRY_API_KEY: { ok: false, error: describeFailure(e, 'Sentry token') } };
+    return { SENTRY_API_KEY: { ok: false, error: describeFailure(e, 'Sentry token'), ...where } };
   }
 }

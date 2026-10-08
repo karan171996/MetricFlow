@@ -6,7 +6,7 @@ import type { NrRegion } from '@/lib/env';
 import type { PageMetrics } from '@/lib/metricsHistory';
 import { TOOLS, type ToolId } from '@/lib/tools';
 
-export type KeyResult = { ok: true; region?: NrRegion; notice?: string } | { ok: false; error: string };
+export type KeyResult = { ok: true; region?: NrRegion; notice?: string } | { ok: false; error: string; notice?: string };
 
 /** One fetch of the last 24h. */
 export interface ToolRead {

@@ -167,6 +167,22 @@ test("/api/setup: a self-hosted DSN is saved and the response carries a notice; 
   let res = await post({ SENTRY_API_KEY: FAKE.SENTRY_API_KEY, SENTRY_DSN: "https://k@sentry.example.com/9" });
   assert.equal(res.status, 200);
   assert.match((await res.json()).results.SENTRY_DSN.notice, /sentry\.example\.com/);
+  const NOTICE = "Your Sentry token will be sent to sentry.example.com, which is not sentry.io. Continue only if that is your own Sentry server.";
+  // A failed check has sent the token too, so it carries the same notice: host only, no token, no DSN key, no error text.
+  handler = () => { throw httpError(401); };
+  res = await post({ SENTRY_API_KEY: FAKE.SENTRY_API_KEY, SENTRY_DSN: "https://k@sentry.example.com/9" });
+  assert.equal(res.status, 422);
+  let failed = (await res.json()).results;
+  assert.equal(failed.SENTRY_API_KEY.ok, false);
+  assert.equal(failed.SENTRY_API_KEY.notice, NOTICE);
+  handler = () => ({ data: [] }); // reachable, but no such project
+  res = await post({ SENTRY_API_KEY: FAKE.SENTRY_API_KEY, SENTRY_DSN: "https://k@sentry.example.com/9" });
+  failed = (await res.json()).results;
+  assert.equal(failed.SENTRY_DSN.ok, false);
+  assert.equal(failed.SENTRY_DSN.notice, NOTICE);
+  handler = () => { throw httpError(401); };
+  res = await post({ SENTRY_API_KEY: FAKE.SENTRY_API_KEY, SENTRY_DSN: FAKE.SENTRY_DSN });
+  assert.equal((await res.json()).results.SENTRY_API_KEY.notice, undefined, "no notice for sentry.io");
   res = await post({ SENTRY_API_KEY: FAKE.SENTRY_API_KEY, SENTRY_DSN: "https://k:secret@o1.ingest.sentry.io/9" });
   assert.equal(res.status, 422);
   assert.match((await res.json()).results.SENTRY_DSN.error, /legacy DSN/);
