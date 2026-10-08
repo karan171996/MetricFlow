@@ -318,6 +318,8 @@ test("a malformed value is refused: no tool starts (not even the valid one), one
     [{ sentry: { dsn: `https://${HEX32}:legacysecret@o123.ingest.sentry.io/456` } }, "legacysecret", /^MetricFlow: Sentry was not started: the DSN is a legacy one .* revoke the old key\./],
     [{ sentry: { dsn: `https://${HEX32}@o123.ingest.sentry.io/my-project` } }, "my-project", /the DSN is not a public Sentry DSN/],
     [{ sentry: { dsn: `ftp://${HEX32}@o123.ingest.sentry.io/456` } }, "ftp", /the DSN is not a public Sentry DSN/],
+    [{ sentry: { dsn: `http://${HEX32}@o123.ingest.sentry.io/456` } }, "ingest", /^MetricFlow: Sentry was not started: the DSN must use https\./],
+    [{ sentry: { dsn: `http://${HEX32}@localhost.example/456` } }, "example", /the DSN must use https/], // not localhost
     [{ sentry: { dsn: "definitely not a url" } }, "definitely", /the DSN is not a public Sentry DSN/],
     [{ sentry: { dsn: 42 } }, "42", /the DSN is not a public Sentry DSN/],
     ...[2, -1, NaN, "0.5"].map((rate) => [{ sentry: { dsn: DSN, tracesSampleRate: rate } }, "tracesSampleRate: " + rate, /tracesSampleRate must be a number from 0 to 1\./]),
@@ -346,6 +348,15 @@ test("a malformed value is refused: no tool starts (not even the valid one), one
     await init(bad);
     assert.ok(nothingStarted());
     assert.deepEqual(warnings, ["MetricFlow: init needs an options object. No tool was started."]);
+  }
+});
+
+test("an http DSN is accepted only for a Sentry on localhost, 127.0.0.1 or [::1]", async () => {
+  for (const host of ["localhost:9000", "127.0.0.1:9000", "[::1]:9000"]) {
+    const { init } = await entry();
+    await init({ sentry: { dsn: `http://${HEX32}@${host}/456` } });
+    assert.equal(seen.sentryInit.length, 1, host);
+    assert.deepEqual(warnings, []);
   }
 });
 

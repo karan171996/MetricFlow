@@ -3,7 +3,9 @@ import type { BrowserTool, SentryOptions } from './index.mjs';
 
 const BAD_DSN = 'the DSN is not a public Sentry DSN. Copy it from Sentry > Project settings > Client Keys (DSN).';
 const LEGACY_DSN = 'the DSN is a legacy one that contains a secret key after ":". Copy the DSN from Sentry > Project settings > Client Keys (DSN), and revoke the old key.';
-const BAD_RATE = 'tracesSampleRate must be a number from 0 to 1.';
+const HTTP_DSN = 'the DSN must use https. http is accepted only for a Sentry on localhost.';
+const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]']; // the same list as the dashboard's own DSN rule
+const BAD_RATE ='tracesSampleRate must be a number from 0 to 1.';
 const BAD_OPTION = 'only "dsn" and "tracesSampleRate" are accepted.';
 const EXISTING = 'MetricFlow: Sentry is already running on this page; MetricFlow left it as it is.';
 
@@ -15,6 +17,7 @@ function check(options: SentryOptions): string | null {
   let url: URL;
   try { url = new URL(dsn); } catch { return BAD_DSN; } // the caught error holds the input in some browsers: never log it
   if (url.password !== '') return LEGACY_DSN;
+  if (url.protocol === 'http:' && !LOCAL_HOSTS.includes(url.hostname)) return HTTP_DSN;
   if (!/^https?:$/.test(url.protocol) || !/^[a-f0-9]{32}$/i.test(url.username) || !/^(\/[\w-]+)*\/\d+$/.test(url.pathname) || url.search !== '' || url.hash !== '') return BAD_DSN;
   if (rate !== undefined && !(typeof rate === 'number' && rate >= 0 && rate <= 1)) return BAD_RATE; // NaN fails both comparisons
   return null;
