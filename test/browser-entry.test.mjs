@@ -295,6 +295,8 @@ test("a secret is refused: nothing starts, one fixed warning says revoke, and th
     ["NRAK-FAKE0000", "New Relic", { "new-relic": { ...NR, apiKey: "NRAK-FAKE0000" } }], // under a name init does not know
     ["sntrys_FAKE0000", "Sentry", { sentry: { dsn: "sntrys_FAKE0000" } }], // not a URL: new URL() would throw with the input in its message
     ["sntryu_FAKE0000", "Sentry", { sentry: { dsn: "sntryu_FAKE0000" } }],
+    ["sntryx_FAKE0000", "Sentry", { sentry: { dsn: "sntryx_FAKE0000" } }], // a token kind that does not exist yet
+    ["sntry_FAKE0000", "Sentry", { sentry: { dsn: `https://sntry_FAKE0000@o123.ingest.sentry.io/456` } }],
     [hex64, "Sentry", { sentry: { dsn: hex64 } }],
     ["sntrys_FAKE0000", "Sentry", { sentry: { dsn: `https://sntrys_FAKE0000@o123.ingest.sentry.io/456` } }], // token in the DSN's user part
     [hex64, "Sentry", { sentry: { dsn: `https://${hex64}@o123.ingest.sentry.io/456` } }],
@@ -349,6 +351,28 @@ test("a malformed value is refused: no tool starts (not even the valid one), one
     assert.ok(nothingStarted());
     assert.deepEqual(warnings, ["MetricFlow: init needs an options object. No tool was started."]);
   }
+});
+
+test("a key-shaped value that fails the allow-list gets the revoke warning, not the plain one", async () => {
+  const hex40 = "0123456789".repeat(4); // the shape of a legacy New Relic licence key
+  const long = "FAKE".repeat(12); // 48 key characters, no known prefix
+  const expected = (label) => `MetricFlow: ${label} was not started: a value passed to init looks like a secret key, not a public identifier. If it is one, it is already in your site's public JavaScript: revoke it now and create a new one. No tool was started.`;
+  for (const [value, label, options] of [
+    [hex40, "New Relic", { "new-relic": { ...NR, browserKey: hex40 } }],
+    [long, "New Relic", { sentry: { dsn: DSN }, "new-relic": { ...NR, accountId: long } }],
+    [hex40, "Sentry", { sentry: { dsn: `https://${hex40}@o123.ingest.sentry.io/456` } }],
+    [long, "Sentry", { sentry: { dsn: long } }],
+  ]) {
+    const { init } = await entry();
+    await init(options);
+    assert.ok(nothingStarted(), label);
+    assert.deepEqual(warnings, [expected(label)]);
+    assert.ok(!warnings[0].includes(value));
+  }
+  // Valid public identifiers that sit next to a plain mistake are not called secrets.
+  const { init } = await entry();
+  await init({ sentry: { dsn: DSN }, "new-relic": { ...NR, region: "apac" } });
+  assert.match(warnings[0], /region must be "us" or "eu"\./);
 });
 
 test("an http DSN is accepted only for a Sentry on localhost, 127.0.0.1 or [::1]", async () => {

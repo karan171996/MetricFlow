@@ -32,14 +32,18 @@ const LOADERS: { [K in ToolId]: () => Promise<{ tool: BrowserTool<never> }> } = 
 // against each part of it split on URL delimiters, so a token in a DSN's user part is caught.
 const DENY = [
   /^NR(?!JS-)[A-Z]{2}-/i, // every New Relic key prefix except the public browser key
-  /^sntry[su]_/i, // Sentry org and user auth tokens
+  /^sntry[a-z0-9]?_/i, // every Sentry token prefix (sntrys_ org, sntryu_ user, and any later kind)
   /NRAL$/i, // New Relic ingest licence key
   /^[a-f0-9]{64}$/i, // legacy Sentry auth token
 ];
+// Not a known secret format, but shaped like a key: 40 or more key characters in one piece (a 40-hex
+// legacy New Relic licence key, for one). Only consulted once a value has already failed a tool's
+// allow-list, so a valid 32-hex DSN key or NRJS- key never gets here.
+const KEY_SHAPED = [/^(?!NRJS-)[a-z0-9_-]{40,}$/i];
 
-function hasSecret(value: unknown, depth = 0): boolean {
-  if (typeof value === 'string') return [value, ...value.split(/[:/@?#&=\s]+/)].some(part => DENY.some(rule => rule.test(part)));
-  if (value !== null && typeof value === 'object' && depth < 4) return Object.values(value).some(v => hasSecret(v, depth + 1));
+function hasSecret(value: unknown, rules = DENY, depth = 0): boolean {
+  if (typeof value === 'string') return [value, ...value.split(/[:/@?#&=\s]+/)].some(part => rules.some(rule => rule.test(part)));
+  if (value !== null && typeof value === 'object' && depth < 4) return Object.values(value).some(v => hasSecret(v, rules, depth + 1));
   return false;
 }
 
@@ -86,7 +90,9 @@ export async function init(options: InitOptions): Promise<void> {
     // 3. Allow-list. One bad value starts no tool at all.
     for (const { id, tool } of loaded) {
       const reason = tool.check(options[id] as never);
-      if (reason) return warn(`${LABELS[id]} was not started: ${reason} No tool was started.`);
+      if (!reason) continue;
+      if (hasSecret(options[id], KEY_SHAPED)) return warn(`${LABELS[id]} was not started: a value passed to init looks like a secret key, not a public identifier. If it is one, it is already in your site's public JavaScript: revoke it now and create a new one. No tool was started.`);
+      return warn(`${LABELS[id]} was not started: ${reason} No tool was started.`);
     }
 
     // 4. Start in parallel; one failing does not stop the other or the page.
