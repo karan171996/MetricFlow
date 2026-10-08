@@ -1,6 +1,11 @@
+---
+title: Troubleshooting
+nav_order: 4
+---
+
 # Troubleshooting
 
-[← Back to the README](https://github.com/karan171996/MetricFlow/blob/main/README.md)
+[MetricFlow on GitHub](https://github.com/karan171996/MetricFlow)
 
 What to check when the dashboard is empty or a number looks wrong.
 

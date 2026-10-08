@@ -1,6 +1,11 @@
+---
+title: Developing MetricFlow
+nav_order: 7
+---
+
 # Developing MetricFlow
 
-[← Back to the README](https://github.com/karan171996/MetricFlow/blob/main/README.md)
+[MetricFlow on GitHub](https://github.com/karan171996/MetricFlow)
 
 Run MetricFlow from source, run its tests, and find your way around the code.
 

@@ -1,6 +1,11 @@
+---
+title: Sending data from your site
+nav_order: 3
+---
+
 # Sending data from your site
 
-[← Back to the README](https://github.com/karan171996/MetricFlow/blob/main/README.md)
+[MetricFlow on GitHub](https://github.com/karan171996/MetricFlow)
 
 MetricFlow only reads data. Your site sends it with one install and one call, and never installs a New Relic or Sentry package itself.
 

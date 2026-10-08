@@ -1,6 +1,11 @@
+---
+title: Configuration
+nav_order: 6
+---
+
 # Configuration
 
-[← Back to the README](https://github.com/karan171996/MetricFlow/blob/main/README.md)
+[MetricFlow on GitHub](https://github.com/karan171996/MetricFlow)
 
 Every environment variable MetricFlow reads.
 

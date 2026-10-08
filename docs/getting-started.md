@@ -1,6 +1,11 @@
+---
+title: Getting started
+nav_order: 2
+---
+
 # Getting started
 
-[← Back to the README](https://github.com/karan171996/MetricFlow/blob/main/README.md)
+[MetricFlow on GitHub](https://github.com/karan171996/MetricFlow)
 
 From nothing to real numbers on the dashboard, in four steps.
 

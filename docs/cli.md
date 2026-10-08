@@ -1,6 +1,11 @@
+---
+title: CLI reference
+nav_order: 5
+---
+
 # CLI reference
 
-[← Back to the README](https://github.com/karan171996/MetricFlow/blob/main/README.md)
+[MetricFlow on GitHub](https://github.com/karan171996/MetricFlow)
 
 Every option of the `performance-dashboard` command.
 
