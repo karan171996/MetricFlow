@@ -6,7 +6,11 @@ import { formatDuration } from "@/lib/formatDuration";
 export const CAPABILITIES = ["pages", "traffic", "loadTime", "apdex", "vitals", "ajax", "errorRate", "errors"] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
-/** One sidebar entry + one /tools/[id] page per data source. Add a tool here and both appear. */
+// Spelled out, not `keyof typeof TOOLS`: a page's `byTool` is keyed by tool id and a tool's cells take a page, so deriving it would be a type cycle.
+// `satisfies Record<ToolId, Tool>` below keeps the two in step: an id without an entry, or an entry without an id, does not compile.
+export type ToolId = "new-relic" | "sentry";
+
+/** One sidebar entry + one /tools/[id] page per data source. Add a tool here (and its id above) and both appear. */
 export interface Tool {
   label: string;
   icon: LucideIcon;
@@ -29,6 +33,8 @@ export interface Tool {
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 0);
 const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
+// ponytail: stats and cells still read the deprecated fields; they move to `p.byTool[id]` in C3, together with the fixtures of test/tools.test.mjs.
+const nr = (p: MetricsPage) => p.newRelic!;
 
 export const TOOLS = {
   "new-relic": {
@@ -40,20 +46,20 @@ export const TOOLS = {
     keys: { required: ["NEWRELIC_API_KEY", "NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID"], optional: ["NEWRELIC_INSERT_KEY"], derived: ["NEWRELIC_REGION"] },
     capabilities: ["pages", "traffic", "loadTime", "apdex", "vitals", "ajax", "errorRate"],
     stats: (live) => [
-      { label: "Avg Load Time", value: formatDuration(avg(live.map((p) => p.newRelic.loadTime))) },
-      { label: "Avg LCP", value: formatDuration(avg(live.map((p) => p.newRelic.lcp))) },
-      { label: "Avg TTFB", value: formatDuration(avg(live.map((p) => p.newRelic.ttfb))) },
-      { label: "Avg Apdex", value: avg(live.map((p) => p.newRelic.apdexScore)).toFixed(2) },
+      { label: "Avg Load Time", value: formatDuration(avg(live.map((p) => nr(p).loadTime))) },
+      { label: "Avg LCP", value: formatDuration(avg(live.map((p) => nr(p).lcp))) },
+      { label: "Avg TTFB", value: formatDuration(avg(live.map((p) => nr(p).ttfb))) },
+      { label: "Avg Apdex", value: avg(live.map((p) => nr(p).apdexScore)).toFixed(2) },
     ],
     columns: [
-      { needs: "loadTime", header: "Load", cell: (p) => formatDuration(p.newRelic.loadTime) },
-      { needs: "vitals", header: "LCP", cell: (p) => formatDuration(p.newRelic.lcp) },
-      { needs: "vitals", header: "TTFB", cell: (p) => formatDuration(p.newRelic.ttfb) },
-      { needs: "vitals", header: "CLS", cell: (p) => p.newRelic.cls.toFixed(2) },
-      { needs: "vitals", header: "INP", cell: (p) => (p.newRelic.inp === undefined ? "—" : formatDuration(p.newRelic.inp)) },
-      { needs: "errorRate", header: "Error Rate", cell: (p) => `${p.newRelic.errorRate.toFixed(2)}%` },
-      { needs: "traffic", header: "Throughput", cell: (p) => p.newRelic.throughput.toLocaleString() },
-      { needs: "apdex", header: "Apdex", cell: (p) => p.newRelic.apdexScore.toFixed(2) },
+      { needs: "loadTime", header: "Load", cell: (p) => formatDuration(nr(p).loadTime) },
+      { needs: "vitals", header: "LCP", cell: (p) => formatDuration(nr(p).lcp) },
+      { needs: "vitals", header: "TTFB", cell: (p) => formatDuration(nr(p).ttfb) },
+      { needs: "vitals", header: "CLS", cell: (p) => nr(p).cls.toFixed(2) },
+      { needs: "vitals", header: "INP", cell: (p) => { const inp = nr(p).inp; return inp === undefined ? "—" : formatDuration(inp); } },
+      { needs: "errorRate", header: "Error Rate", cell: (p) => `${nr(p).errorRate.toFixed(2)}%` },
+      { needs: "traffic", header: "Throughput", cell: (p) => nr(p).throughput.toLocaleString() },
+      { needs: "apdex", header: "Apdex", cell: (p) => nr(p).apdexScore.toFixed(2) },
     ],
   },
   sentry: {
@@ -77,7 +83,7 @@ export const TOOLS = {
       { needs: "errors", header: "Last Seen", cell: (p) => { const t = Date.parse(p.sentry?.latestErrors[0]?.lastSeen ?? ""); return Number.isNaN(t) ? "—" : new Date(t).toLocaleString(); } },
     ],
   },
-} satisfies Record<string, Tool>;
+} satisfies Record<ToolId, Tool>;
 
 /** One /setup field per required env key: its label, whether to mask it, and the help line under it. */
 export const KEY_FIELDS: Record<string, { label: string; secret: boolean; help: string }> = {
@@ -90,7 +96,6 @@ export const KEY_FIELDS: Record<string, { label: string; secret: boolean; help: 
 /** Field labels for each env key, used by the setup form and its error messages. */
 export const KEY_LABELS: Record<string, string> = Object.fromEntries(Object.entries(KEY_FIELDS).map(([name, f]) => [name, f.label]));
 
-export type ToolId = keyof typeof TOOLS;
 export const TOOL_IDS = Object.keys(TOOLS) as ToolId[];
 export const isToolId = (id: string): id is ToolId => Object.hasOwn(TOOLS, id);
 

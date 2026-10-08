@@ -46,6 +46,7 @@ mockAxios((method, url, call) => {
 
 const { GET } = await load("app/api/metrics/route.ts");
 const t = await load("lib/dashboardTransforms.ts");
+const { withNeutralShape } = process.env.C1_CAPTURE ? {} : await load("lib/legacyMetrics.ts");
 
 /** One GET with the given keys, plus what the home screen computes from that body. */
 async function run(keys) {
@@ -53,13 +54,15 @@ async function run(keys) {
   Object.assign(process.env, keys, { METRICFLOW_PROJECT_NAME: "fake-project" });
   mock.timers.tick(61_000); // past the 60s page-discovery memo
   const body = await (await GET()).json();
-  const transforms = {
-    stats: t.computeStats(body.pages, body.history),
-    webVitals: t.computeWebVitals(body.pages, body.history),
-    cwvTrend: t.computeCwvTrend(body.history),
-    visibility: t.computeVisibilityBreakdown(body.pages, body.history),
-    whatMoved: t.computeWhatMoved(body.pages, body.history),
-  };
+  // The home screen runs the transforms only when there are pages. `has` is new in C1; main ignores the extra argument.
+  const has = (cap) => body.sources?.[cap] !== undefined && !(body.failed ?? []).includes(body.sources[cap]);
+  const transforms = body.pages.length ? {
+    stats: t.computeStats(body.pages, body.history, has),
+    webVitals: t.computeWebVitals(body.pages, body.history, has),
+    cwvTrend: t.computeCwvTrend(body.history, has),
+    visibility: t.computeVisibilityBreakdown(body.pages, body.history, has),
+    whatMoved: t.computeWhatMoved(body.pages, body.history, has),
+  } : null;
   return { body, transforms };
 }
 
@@ -89,6 +92,10 @@ test("C1: /api/metrics legacy fields and every transform output are the same as 
       // Compared as text, so key order and absent fields count too.
       assert.equal(JSON.stringify(withoutNew(r.body), null, 2), JSON.stringify(before[i].body, null, 2), `${name} #${i}: body`);
       assert.deepEqual(r.transforms, before[i].transforms, `${name} #${i}: transforms`);
+      // A body with only the old fields (what the Cypress stubs send) is filled in by the client to exactly what the route now sends.
+      // History is left out: an old snapshot does not say which tools were connected then, so the client assumes today's.
+      const filled = JSON.parse(JSON.stringify(withNeutralShape(before[i].body)));
+      for (const k of ["sources", "pages"]) assert.deepEqual(filled[k], r.body[k], `${name} #${i}: client fill of ${k}`);
     });
   }
 });

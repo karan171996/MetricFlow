@@ -3,7 +3,7 @@
 import { notFound } from "next/navigation";
 import { EmptyState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMetrics, hasData, NEEDS_NEW_RELIC } from "@/lib/useMetrics";
+import { useMetrics, hasData, provides, NEEDS_NEW_RELIC } from "@/lib/useMetrics";
 import { PerformanceBreadcrumb } from "./PerformanceBreadcrumb";
 import { PerformanceKPIs } from "./PerformanceKPIs";
 import { RelatedErrorsList } from "./RelatedErrorsList";
@@ -18,7 +18,7 @@ export function PerformanceDetail({ slug }: { slug: string }) {
   if (!state.configured) {
     return <EmptyState title="Connect your data" reason="Add your New Relic or Sentry keys to see real numbers." href="/setup" cta="Set up keys" />;
   }
-  if (!state.tools.includes("new-relic")) return <EmptyState {...NEEDS_NEW_RELIC} />;
+  if (!state.sources.pages) return <EmptyState {...NEEDS_NEW_RELIC} />;
   if (state.pages.length === 0) return <EmptyState />;
   const page = state.pages.find((p) => p.slug === slug);
   if (!page) notFound();
@@ -28,9 +28,9 @@ export function PerformanceDetail({ slug }: { slug: string }) {
       <PerformanceBreadcrumb pageName={page.name} />
       {hasData(page) ? (
         <>
-          <PerformanceKPIs page={page} />
+          <PerformanceKPIs page={page} has={(cap) => provides(state, cap)} />
           {/* ponytail: trend charts + hourly table return with persisted history (Phase 3). */}
-          {page.sentry && <RelatedErrorsList errors={page.sentry.latestErrors} />}
+          {page.metrics.errors && <RelatedErrorsList errors={page.metrics.errors.latest} />}
         </>
       ) : (
         <EmptyState reason={`${page.name} (${page.url}): keys work, but no page events have arrived.`} />

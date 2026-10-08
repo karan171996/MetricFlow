@@ -1,4 +1,5 @@
 import type { MetricsPage, MetricsSnapshot } from '@/lib/metricsHistory';
+import type { Capability } from '@/lib/tools';
 import type {
   DashboardStatCard,
   WebVitalCardData,
@@ -11,9 +12,14 @@ import type {
 } from '@/types';
 import { formatDuration } from '@/lib/formatDuration';
 
-function avg(values: number[]): number {
-  if (!values.length) return 0;
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
+/** Is this capability provided right now? Each builder returns only the cards it can fill (see `provides` in lib/useMetrics.ts). */
+type Has = (cap: Capability) => boolean;
+
+/** Average of the values that are present. A missing value is skipped, never counted as 0. */
+function avg(values: (number | undefined)[]): number {
+  const present = values.filter((v): v is number => v !== undefined);
+  if (!present.length) return 0;
+  return present.reduce((sum, v) => sum + v, 0) / present.length;
 }
 
 function buildChange(current: number, previous: number | null, higherIsBetter: boolean) {
@@ -34,61 +40,67 @@ function previousPages(history: MetricsSnapshot[]): MetricsPage[] | null {
   return history.length >= 2 ? history[history.length - 2].pages : null;
 }
 
-export function computeStats(pages: MetricsPage[], history: MetricsSnapshot[]): DashboardStatCard[] {
+const traffic = (pages: MetricsPage[]) => pages.reduce((sum, p) => sum + (p.metrics.traffic?.count ?? 0), 0);
+const score = (p: MetricsPage) => (p.metrics.apdex === undefined ? undefined : p.metrics.apdex * 100);
+
+export function computeStats(pages: MetricsPage[], history: MetricsSnapshot[], has: Has): DashboardStatCard[] {
   const prev = previousPages(history);
 
-  const loadTime = avg(pages.map(p => p.newRelic.loadTime));
-  const errorRate = avg(pages.map(p => p.newRelic.errorRate));
-  const throughput = pages.reduce((sum, p) => sum + p.newRelic.throughput, 0);
-  const apdex = avg(pages.map(p => p.newRelic.apdexScore));
+  const loadTime = avg(pages.map(p => p.metrics.loadTime));
+  const errorRate = avg(pages.map(p => p.metrics.errorRate));
+  const throughput = traffic(pages);
+  const apdex = avg(pages.map(p => p.metrics.apdex));
 
-  const prevLoadTime = prev ? avg(prev.map(p => p.newRelic.loadTime)) : null;
-  const prevErrorRate = prev ? avg(prev.map(p => p.newRelic.errorRate)) : null;
-  const prevThroughput = prev ? prev.reduce((sum, p) => sum + p.newRelic.throughput, 0) : null;
-  const prevApdex = prev ? avg(prev.map(p => p.newRelic.apdexScore)) : null;
+  const prevLoadTime = prev ? avg(prev.map(p => p.metrics.loadTime)) : null;
+  const prevErrorRate = prev ? avg(prev.map(p => p.metrics.errorRate)) : null;
+  const prevThroughput = prev ? traffic(prev) : null;
+  const prevApdex = prev ? avg(prev.map(p => p.metrics.apdex)) : null;
 
   return [
-    {
+    has('loadTime') && {
       label: 'Avg Response Time',
       value: formatDuration(loadTime),
       ...buildChange(loadTime, prevLoadTime, false)
     },
-    {
+    has('errorRate') && {
       label: 'Error Rate',
       value: `${errorRate.toFixed(2)}%`,
       ...buildChange(errorRate, prevErrorRate, false)
     },
-    {
+    has('traffic') && {
       label: 'Throughput',
       value: `${(throughput / 1000).toFixed(1)}k/s`,
       ...buildChange(throughput, prevThroughput, true)
     },
-    {
+    has('apdex') && {
       label: 'Apdex Score',
       value: apdex.toFixed(2),
       ...buildChange(apdex, prevApdex, true)
     }
-  ];
+  ].filter((card): card is DashboardStatCard => Boolean(card));
 }
 
-function sparkline(history: MetricsSnapshot[], pick: (p: MetricsPage) => number): TimeSeriesPoint[] {
-  return history.map((snapshot, i) => ({
-    label: String(i + 1),
-    value: avg(snapshot.pages.map(pick))
-  }));
+/** A snapshot where no page has the value is `null`, which the charts draw as a gap, not as 0. */
+function sparkline(history: MetricsSnapshot[], pick: (p: MetricsPage) => number | undefined): TimeSeriesPoint[] {
+  return history.map((snapshot, i) => {
+    const values = snapshot.pages.map(pick);
+    return { label: String(i + 1), value: values.some(v => v !== undefined) ? avg(values) : null };
+  });
 }
 
 export function computeWebVitals(
   pages: MetricsPage[],
-  history: MetricsSnapshot[]
-): { ttfb: WebVitalCardData; lcp: WebVitalCardData; cls: WebVitalCardData } {
+  history: MetricsSnapshot[],
+  has: Has
+): { ttfb: WebVitalCardData; lcp: WebVitalCardData; cls: WebVitalCardData } | null {
+  if (!has('vitals')) return null;
   const prev = previousPages(history);
-  const ttfb = avg(pages.map(p => p.newRelic.ttfb));
-  const lcp = avg(pages.map(p => p.newRelic.lcp));
-  const cls = avg(pages.map(p => p.newRelic.cls));
-  const prevTtfb = prev ? avg(prev.map(p => p.newRelic.ttfb)) : ttfb;
-  const prevLcp = prev ? avg(prev.map(p => p.newRelic.lcp)) : lcp;
-  const prevCls = prev ? avg(prev.map(p => p.newRelic.cls)) : cls;
+  const ttfb = avg(pages.map(p => p.metrics.vitals?.ttfb));
+  const lcp = avg(pages.map(p => p.metrics.vitals?.lcp));
+  const cls = avg(pages.map(p => p.metrics.vitals?.cls));
+  const prevTtfb = prev ? avg(prev.map(p => p.metrics.vitals?.ttfb)) : ttfb;
+  const prevLcp = prev ? avg(prev.map(p => p.metrics.vitals?.lcp)) : lcp;
+  const prevCls = prev ? avg(prev.map(p => p.metrics.vitals?.cls)) : cls;
 
   return {
     ttfb: {
@@ -98,7 +110,7 @@ export function computeWebVitals(
       change: formatDuration(Math.abs(ttfb - prevTtfb)),
       isPositive: ttfb <= prevTtfb,
       color: ttfb <= prevTtfb ? '#3ee0a1' : '#ef4444',
-      data: sparkline(history, p => p.newRelic.ttfb)
+      data: sparkline(history, p => p.metrics.vitals?.ttfb)
     },
     lcp: {
       title: 'LCP',
@@ -107,7 +119,7 @@ export function computeWebVitals(
       change: formatDuration(Math.abs(lcp - prevLcp)),
       isPositive: lcp <= prevLcp,
       color: lcp <= prevLcp ? '#3ee0a1' : '#ef4444',
-      data: sparkline(history, p => p.newRelic.lcp)
+      data: sparkline(history, p => p.metrics.vitals?.lcp)
     },
     cls: {
       title: 'CLS',
@@ -116,44 +128,51 @@ export function computeWebVitals(
       change: Math.abs(cls - prevCls).toFixed(2),
       isPositive: cls <= prevCls,
       color: cls <= prevCls ? '#3ee0a1' : '#ef4444',
-      data: sparkline(history, p => p.newRelic.cls)
+      data: sparkline(history, p => p.metrics.vitals?.cls)
     }
   };
 }
 
-export function computeCwvTrend(history: MetricsSnapshot[]): LineChartCardData {
+/** The chart plots Apdex, so that is the capability it needs. */
+export function computeCwvTrend(history: MetricsSnapshot[], has: Has): LineChartCardData | null {
+  if (!has('apdex')) return null;
   return {
     title: 'Core Web Vitals Score Trend',
-    points: history.map(snapshot => ({
-      month: new Date(snapshot.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      value: Math.round(avg(snapshot.pages.map(p => p.newRelic.apdexScore * 100)))
+    points: sparkline(history, score).map((point, i) => ({
+      month: new Date(history[i].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      value: point.value === null ? null : Math.round(point.value)
     }))
   };
 }
 
 const CWV_APDEX_THRESHOLD = 0.9;
 const LOAD_BUDGET_MS = 1000;
+// A page with no value for the metric does not pass.
+const passesCwv = (p: MetricsPage) => p.metrics.apdex !== undefined && p.metrics.apdex >= CWV_APDEX_THRESHOLD;
+const inBudget = (p: MetricsPage) => p.metrics.loadTime !== undefined && p.metrics.loadTime <= LOAD_BUDGET_MS;
 
 export function computeVisibilityBreakdown(
   pages: MetricsPage[],
-  history: MetricsSnapshot[]
-): VisibilityBreakdownCardData {
+  history: MetricsSnapshot[],
+  has: Has
+): VisibilityBreakdownCardData | null {
+  if (!has('apdex') || !has('loadTime')) return null;
   const prev = previousPages(history);
 
-  const avgScore = avg(pages.map(p => p.newRelic.apdexScore)) * 100;
-  const prevAvgScore = prev ? avg(prev.map(p => p.newRelic.apdexScore)) * 100 : avgScore;
+  const avgScore = avg(pages.map(p => p.metrics.apdex)) * 100;
+  const prevAvgScore = prev ? avg(prev.map(p => p.metrics.apdex)) * 100 : avgScore;
 
-  const passingCwv = pages.filter(p => p.newRelic.apdexScore >= CWV_APDEX_THRESHOLD).length;
-  const prevPassingCwv = prev ? prev.filter(p => p.newRelic.apdexScore >= CWV_APDEX_THRESHOLD).length : passingCwv;
+  const passingCwv = pages.filter(passesCwv).length;
+  const prevPassingCwv = prev ? prev.filter(passesCwv).length : passingCwv;
 
-  const withinBudget = pages.filter(p => p.newRelic.loadTime <= LOAD_BUDGET_MS).length;
-  const prevWithinBudget = prev ? prev.filter(p => p.newRelic.loadTime <= LOAD_BUDGET_MS).length : withinBudget;
+  const withinBudget = pages.filter(inBudget).length;
+  const prevWithinBudget = prev ? prev.filter(inBudget).length : withinBudget;
 
   return {
     avgScore: Math.round(avgScore * 10) / 10,
     scoreDelta: Math.round((avgScore - prevAvgScore) * 10) / 10,
     isPositive: avgScore >= prevAvgScore,
-    trend: sparkline(history, p => p.newRelic.apdexScore * 100).map(p => ({ value: p.value })),
+    trend: sparkline(history, score).map(p => ({ value: p.value })),
     stats: [
       {
         label: 'Pages Passing Core Web Vitals',
@@ -176,7 +195,8 @@ export function computeVisibilityBreakdown(
  * gainers/decliners before the in-memory history buffer has anything to
  * compare against.
  */
-export function computeWhatMoved(pages: MetricsPage[], history: MetricsSnapshot[]): WhatMovedCardData {
+export function computeWhatMoved(pages: MetricsPage[], history: MetricsSnapshot[], has: Has): WhatMovedCardData | null {
+  if (!has('pages') || !has('apdex') || !has('loadTime')) return null;
   if (history.length < 2) {
     return { improved: [], regressed: [], period: 'not enough history yet — check back shortly' };
   }
@@ -187,17 +207,18 @@ export function computeWhatMoved(pages: MetricsPage[], history: MetricsSnapshot[
 
   pages.forEach(page => {
     const before = baseline.find(b => b.url === page.url);
-    if (!before) return;
+    if (!before || before.metrics.apdex === undefined || page.metrics.apdex === undefined) return;
 
-    const scoreBefore = Math.round(before.newRelic.apdexScore * 100);
-    const scoreAfter = Math.round(page.newRelic.apdexScore * 100);
+    const scoreBefore = Math.round(before.metrics.apdex * 100);
+    const scoreAfter = Math.round(page.metrics.apdex * 100);
     const scoreDelta = scoreAfter - scoreBefore;
     if (scoreDelta === 0) return;
 
     const movement: PageMovement = {
       score: String(scoreAfter),
       page: page.url,
-      metricChange: `Load ${formatDuration(before.newRelic.loadTime)} → ${formatDuration(page.newRelic.loadTime)}`,
+      // formatDuration prints "—" for a load time that is not there.
+      metricChange: `Load ${formatDuration(before.metrics.loadTime ?? NaN)} → ${formatDuration(page.metrics.loadTime ?? NaN)}`,
       scoreDelta,
       monthlyTraffic: page.visitors
     };

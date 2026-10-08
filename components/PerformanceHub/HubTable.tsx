@@ -14,10 +14,13 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { hasData } from "@/lib/useMetrics";
 import type { MetricsPage } from "@/lib/metricsHistory";
+import type { Capability } from "@/lib/tools";
 import { formatDuration } from "@/lib/formatDuration";
 
-export function HubTable({ pages, showSentry: hasSentry }: { pages: MetricsPage[]; showSentry: boolean }) {
+export function HubTable({ pages, has }: { pages: MetricsPage[]; has: (cap: Capability) => boolean }) {
   const router = useRouter();
+  // No page has a status unless every input of deriveStatus is provided; then there is no column either.
+  const hasStatus = pages.some((p) => p.status);
 
   return (
     <Card className="border-[#2d3748] bg-[#1a202c] shadow-md flex-1">
@@ -31,10 +34,10 @@ export function HubTable({ pages, showSentry: hasSentry }: { pages: MetricsPage[
               <TableRow className="border-[#2d3748] hover:bg-transparent">
                 <TableHead className="text-gray-400">Page Name</TableHead>
                 <TableHead className="text-gray-400">Path</TableHead>
-                <TableHead className="text-gray-400">Visitors (24h)</TableHead>
-                <TableHead className="text-gray-400">Avg Load</TableHead>
-                {hasSentry && <TableHead className="text-gray-400">Errors</TableHead>}
-                <TableHead className="text-right text-gray-400">Status</TableHead>
+                {has("traffic") && <TableHead className="text-gray-400">Visitors (24h)</TableHead>}
+                {has("loadTime") && <TableHead className="text-gray-400">Avg Load</TableHead>}
+                {has("errors") && <TableHead className="text-gray-400">Errors</TableHead>}
+                {hasStatus && <TableHead className="text-right text-gray-400">Status</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -48,10 +51,10 @@ export function HubTable({ pages, showSentry: hasSentry }: { pages: MetricsPage[
                 >
                   <TableCell className="font-medium text-white">{page.name}</TableCell>
                   <TableCell className="text-gray-500 font-mono text-xs">{page.url}</TableCell>
-                  <TableCell className="text-gray-400">{live ? page.visitors : "—"}</TableCell>
-                  <TableCell className="text-gray-400">{live ? formatDuration(page.newRelic.loadTime) : "—"}</TableCell>
-                  {hasSentry && <TableCell className="text-gray-400">{live ? page.sentry?.errorCount : "—"}</TableCell>}
-                  <TableCell className="text-right">
+                  {has("traffic") && <TableCell className="text-gray-400">{live ? page.visitors : "—"}</TableCell>}
+                  {has("loadTime") && <TableCell className="text-gray-400">{live && page.metrics.loadTime !== undefined ? formatDuration(page.metrics.loadTime) : "—"}</TableCell>}
+                  {has("errors") && <TableCell className="text-gray-400">{live ? page.metrics.errors?.count : "—"}</TableCell>}
+                  {hasStatus && <TableCell className="text-right">
                     {!live ? (
                       <Badge variant="outline" className="border-[#4a5568] text-gray-400">No data yet</Badge>
                     ) : (
@@ -66,7 +69,7 @@ export function HubTable({ pages, showSentry: hasSentry }: { pages: MetricsPage[
                       {page.status}
                     </Badge>
                     )}
-                  </TableCell>
+                  </TableCell>}
                 </TableRow>
                 );
               })}

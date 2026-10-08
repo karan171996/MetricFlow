@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { load } from "./helpers.mjs";
 
 const { TOOLS, TOOL_IDS, CAPABILITIES, KEY_FIELDS, KEY_LABELS, sourcesFor, mergeMetrics, toolColumns } = await load("lib/tools.ts");
+const { deriveStatus, DEFAULT_THRESHOLDS } = await load("lib/thresholds.ts");
 
 test("tools: each entry declares today's capabilities, and every column names one of them", () => {
   assert.deepEqual(TOOLS["new-relic"].capabilities, ["pages", "traffic", "loadTime", "apdex", "vitals", "ajax", "errorRate"]);
@@ -33,4 +34,19 @@ test("mergeMetrics: whole capabilities from their supplier only; a failed suppli
   assert.deepEqual(mergeMetrics(byTool, sources, ["new-relic"]), { errors }, "the next tool is never promoted");
   assert.deepEqual(mergeMetrics({ sentry: { errors, loadTime: 5 } }, sources, []), { errors }, "no row from the supplier = absent, not borrowed");
   assert.deepEqual(mergeMetrics(byTool, {}, []), {});
+});
+
+test("deriveStatus: no status unless load time, error rate and Apdex are all there; otherwise the same rule as before", () => {
+  const t = DEFAULT_THRESHOLDS; // 1.5s, 2%
+  const m = { loadTime: 1000, errorRate: 1, apdex: 0.95 };
+  for (const k of Object.keys(m)) assert.equal(deriveStatus({ ...m, [k]: undefined }, t), undefined, `${k} missing`);
+  assert.equal(deriveStatus({ errors: { count: 9, latest: [] } }, t), undefined);
+
+  assert.equal(deriveStatus(m, t), "Healthy");
+  assert.equal(deriveStatus({ ...m, apdex: 0.89 }, t), "Warning");
+  assert.equal(deriveStatus({ ...m, loadTime: 1501 }, t), "Warning");
+  assert.equal(deriveStatus({ ...m, errorRate: 2.1 }, t), "Warning");
+  assert.equal(deriveStatus({ ...m, loadTime: 3001 }, t), "Critical");
+  assert.equal(deriveStatus({ ...m, errorRate: 4.1 }, t), "Critical");
+  assert.equal(deriveStatus({ loadTime: 0, errorRate: 0, apdex: 0 }, t), "Warning", "the legacy zeros of a page with no rows still read as Warning in C1");
 });

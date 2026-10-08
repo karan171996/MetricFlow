@@ -6,12 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { useMetrics, hasData, NEEDS_NEW_RELIC } from "@/lib/useMetrics";
-import { TOOLS, type Tool, type ToolId } from "@/lib/tools";
+import { TOOLS, toolColumns, type Tool, type ToolId } from "@/lib/tools";
 
 export function ToolInsights({ tool }: { tool: ToolId }) {
   const { state, retry } = useMetrics();
   const router = useRouter();
-  const { label, stats, columns }: Tool = TOOLS[tool];
+  const { label, stats }: Tool = TOOLS[tool];
+  const columns = toolColumns(tool);
 
   if (state.status === "loading") return <Skeleton className="mt-6 h-64 w-full bg-[#2d3748]" />;
   if (state.status === "error") {
@@ -20,7 +21,7 @@ export function ToolInsights({ tool }: { tool: ToolId }) {
   if (!state.configured) {
     return <EmptyState title="Connect your data" reason="Add your New Relic or Sentry keys to see real numbers." href="/setup" cta="Set up keys" />;
   }
-  if (!state.tools.includes("new-relic")) return <EmptyState {...NEEDS_NEW_RELIC} />;
+  if (!state.sources.pages) return <EmptyState {...NEEDS_NEW_RELIC} />;
   // A failed load shows "Could not load", never zeros.
   if (state.failed.includes(tool)) return <EmptyState title={`Could not load ${label} data`} reason="The request failed. Your other data is unaffected." onRetry={retry} />;
   const live = state.pages.filter(hasData);

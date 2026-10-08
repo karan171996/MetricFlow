@@ -10,11 +10,6 @@ import { EmptyState } from "@/components/EmptyState";
 // Connected state depends on .env.local, which can change without a rebuild.
 export const dynamic = "force-dynamic";
 
-const CONNECT_REASON = {
-  "new-relic": "Add your New Relic keys to see load time and Core Web Vitals for each page.",
-  sentry: "Add your Sentry keys to see the errors on each page.",
-} as const;
-
 export default async function ToolPage({ params }: { params: Promise<{ tool: string }> }) {
   const { tool } = await params;
   if (!isToolId(tool)) notFound();
@@ -32,7 +27,7 @@ export default async function ToolPage({ params }: { params: Promise<{ tool: str
             <ToolInsights tool={tool} />
           ) : (
             <div className="mt-6">
-              <EmptyState title={`Connect ${TOOLS[tool].label}`} reason={CONNECT_REASON[tool]} href={`/setup#${tool}`} cta={`Add ${TOOLS[tool].label} keys`} />
+              <EmptyState title={`Connect ${TOOLS[tool].label}`} reason={TOOLS[tool].connectReason} href={`/setup#${tool}`} cta={`Add ${TOOLS[tool].label} keys`} />
             </div>
           )}
         </div>

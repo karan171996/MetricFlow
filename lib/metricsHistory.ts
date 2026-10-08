@@ -32,16 +32,37 @@ export interface MetricsPage {
   slug: string;
   url: string;
   visitors: string;
-  status: PageStatus;
-  newRelic: NewRelicPageMetrics;
-  /** Absent when Sentry is not connected (never a zero), so screens can leave it out. */
-  sentry?: SentryPageErrors;
+  /** Absent unless loadTime, errorRate and apdex are all provided. */
+  status?: PageStatus;
+  /** Merged view: each capability taken from `sources[capability]`. Shared screens read only this. */
+  metrics: PageMetrics;
+  /** Each connected, non-failed tool's own numbers. */
+  byTool: Partial<Record<ToolId, PageMetrics>>;
   recordedAt: string;
+  /** @deprecated Removed in C3. No screen may read these. */
+  newRelic?: NewRelicPageMetrics;
+  /** @deprecated Removed in C3. Absent when Sentry is not connected (never a zero). */
+  sentry?: SentryPageErrors;
 }
 
 export interface MetricsSnapshot {
   timestamp: string;
+  /** Kept with the numbers, so a later change of supplier is not read as a regression. */
+  sources: Sources;
   pages: MetricsPage[];
+}
+
+/** The /api/metrics body, as lib/legacyMetrics.ts hands it to screens. */
+export interface MetricsResponse {
+  configured: boolean;
+  tools: string[];
+  /** Connected tools whose last load failed. Their capabilities are absent, never zero. */
+  failed: string[];
+  sources: Sources;
+  project?: string;
+  pages: MetricsPage[];
+  history: MetricsSnapshot[];
+  timestamp: string;
 }
 
 // ponytail: in-memory, single-process rolling buffer — resets on dev server
@@ -50,8 +71,8 @@ export interface MetricsSnapshot {
 const MAX_HISTORY = 20;
 const history: MetricsSnapshot[] = [];
 
-export function recordSnapshot(pages: MetricsPage[]) {
-  history.push({ timestamp: new Date().toISOString(), pages });
+export function recordSnapshot(pages: MetricsPage[], sources: Sources) {
+  history.push({ timestamp: new Date().toISOString(), sources, pages });
   if (history.length > MAX_HISTORY) history.shift();
 }
 

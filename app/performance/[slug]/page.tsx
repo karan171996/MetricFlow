@@ -2,8 +2,7 @@ import { AppSidebar } from "@/components/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Header } from "@/components/header";
 import { notFound } from "next/navigation";
-import { discoverPages } from "@/lib/newrelic";
-import { env, isToolConnected } from "@/lib/env";
+import { listedSlugs } from "@/lib/pageList";
 import { PerformanceDetail } from "@/components/Analytics";
 
 export const dynamic = "force-dynamic";
@@ -11,11 +10,9 @@ export const dynamic = "force-dynamic";
 export default async function PerformanceDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  if (isToolConnected("new-relic")) {
-    // A real 404 for unknown slugs. If New Relic is unreachable, fall through so the client shows its error card.
-    const pages = await discoverPages(env("NEWRELIC_API_KEY"), env("NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID")).catch(() => null);
-    if (pages && pages.length && !pages.some((p) => p.slug === slug)) notFound();
-  }
+  // A real 404 for unknown slugs. If the page list cannot be read, fall through so the client shows its error card.
+  const slugs = await listedSlugs();
+  if (slugs?.length && !slugs.includes(slug)) notFound();
 
   return (
     <SidebarProvider>
