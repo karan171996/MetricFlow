@@ -3,6 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readdirSync, statSync, writeFileSync, chmodSync } from "node:fs";
+import { createServer } from "node:net";
 import { networkInterfaces, tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -144,20 +145,32 @@ test("real start: prints running banner, serves /api/health", { skip: !built && 
 
 test("real start --no-open: the browser is not launched (and is without the flag)", { skip: !built && "no .next/BUILD_ID (run npm run build)", timeout: 60000 }, async () => {
   // Fake `open` that records being called, so the test can tell and no browser ever launches.
-  const start = async (port, flags) => {
+  // A free port each time: a fixed one collides with a server left over from an earlier run.
+  const freePort = () => new Promise((res) => { const s = createServer().listen(0, "127.0.0.1", () => { const { port } = s.address(); s.close(() => res(String(port))); }); });
+  /** Starts the CLI and reports whether the launcher ran within `waitMs` of the server being up. */
+  const start = async (flags, waitMs) => {
     const bin = mkdtempSync(join(tmpdir(), "fakeopen-"));
     for (const n of ["open", "xdg-open"]) { writeFileSync(join(bin, n), '#!/bin/sh\ntouch "$0.called"\n'); chmodSync(join(bin, n), 0o755); }
-    const p = spawn(process.execPath, [cli, port, "--json", ...flags], { env: { PATH: `${bin}:${process.env.PATH}` } });
+    const p = spawn(process.execPath, [cli, await freePort(), "--json", ...flags], { env: { PATH: `${bin}:${process.env.PATH}` } });
+    const exited = new Promise((res) => p.once("exit", res));
     let out = "";
     p.stdout.on("data", (d) => (out += d));
+    const called = () => readdirSync(bin).some((f) => f.endsWith(".called"));
     try {
-      await new Promise((res, rej) => { const t = setInterval(() => out.includes("\n") && (clearInterval(t), res()), 200); p.on("exit", () => rej(new Error("server exited early"))); });
-      await new Promise((res) => setTimeout(res, 1000)); // the launcher is detached; give it time to run
-      return readdirSync(bin).some((f) => f.endsWith(".called"));
-    } finally { p.kill("SIGTERM"); }
+      await new Promise((res, rej) => {
+        const t = setInterval(() => out.includes("\n") && (clearInterval(t), res()), 200);
+        exited.then(() => { clearInterval(t); rej(new Error("server exited early")); });
+      });
+      // The launcher is detached: poll for its marker instead of sleeping a fixed time. Stops as soon as it appears.
+      for (const until = Date.now() + waitMs; !called() && Date.now() < until; ) await new Promise((res) => setTimeout(res, 100));
+      return called();
+    } finally {
+      p.kill("SIGTERM");
+      await exited; // the next start must not overlap this server
+    }
   };
-  assert.equal(await start("43178", []), true, "control: without --no-open the launcher runs");
-  assert.equal(await start("43179", ["--no-open"]), false, "--no-open still launched the browser");
+  assert.equal(await start([], 10_000), true, "control: without --no-open the launcher runs");
+  assert.equal(await start(["--no-open"], 2_000), false, "--no-open still launched the browser");
 });
 
 test("color precedence: FORCE_COLOR beats TERM=dumb; FORCE_COLOR=0 is off", () => {
