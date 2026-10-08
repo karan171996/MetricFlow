@@ -37,7 +37,7 @@ export function Header() {
     <header className="flex h-16 shrink-0 items-center gap-2 border-b border-gray-800 bg-[#0f1419] px-4 md:px-6">
       {/* Title & Subtitle */}
       <div className="hidden md:block flex flex-col gap-0.5">
-        <h1 className="text-base md:text-lg font-semibold text-white tracking-tight line-clamp-1">
+        <h1 className="title-enter text-base md:text-lg font-semibold text-white tracking-tight line-clamp-1">
           {(state.status === "ready" && state.project) || "MetricFlow"}
         </h1>
         <p className="hidden sm:block text-xs text-gray-400">
