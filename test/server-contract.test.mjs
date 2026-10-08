@@ -1,6 +1,7 @@
 // C2a: the server half of the tool contract. Fake keys only, no network (axios is mocked).
 // Every test captures console output and checks it with the response body: a leak in either fails.
 import { test, beforeEach, afterEach } from "node:test";
+import { existsSync } from "node:fs";
 import assert from "node:assert/strict";
 import { FAKE, httpError, load, mockAxios, req, tmpEnvFile } from "./helpers.mjs";
 
@@ -201,7 +202,7 @@ test("writes need Content-Type: application/json; a text/plain POST is refused b
   ];
   for (const r of refused) assert.equal(r.status, 415);
   assert.equal(calls.length, 0);
-  assert.equal(process.env.CLAUDE_API_KEY, undefined);
+  assert.ok(!existsSync(process.env.METRICFLOW_ENV_FILE), "nothing written");
   // application/json with a charset still passes the check
   const ok = await setup.POST(new Request("http://localhost:3000/api/setup", { method: "POST", headers: { host: "localhost:3000", "content-type": "application/json; charset=utf-8" }, body: "{}" }));
   assert.equal(ok.status, 400);
