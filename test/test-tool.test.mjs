@@ -49,7 +49,7 @@ test("C1.5: a registry entry with only `errors` is enough for the tab, the setup
   // Errors column: it supplies `errors` (Sentry is not connected), and its tab shows only the columns it declares.
   assert.deepEqual(tools.sourcesFor(env.connectedTools()), { errors: "test-tool" });
   assert.deepEqual(tools.toolColumns("test-tool").map((c) => c.header), ["Errors"]);
-  assert.deepEqual(tools.sourcesFor(["sentry", "test-tool"]), { errors: "sentry" }, "Sentry is earlier in TOOLS, so it stays the supplier");
+  assert.equal(tools.sourcesFor(["sentry", "test-tool"]).errors, "sentry", "Sentry is earlier in TOOLS, so it stays the supplier");
 });
 
 // C1.2: no screen reads a vendor field from a page or compares a tool id. components/Connect is exempt until C2 rewrites it.

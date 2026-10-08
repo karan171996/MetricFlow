@@ -19,8 +19,9 @@ const stub = (tools: string[]) => {
     metrics: { ...nrMetrics, ...(hasSentry ? { errors } : {}) },
     byTool: { "new-relic": nrMetrics, ...(hasSentry ? { sentry: { errors } } : {}) },
   };
-  const sources = { ...(hasNr ? NR_SOURCES : {}), ...(hasSentry ? { errors: "sentry" } : {}) };
-  const pages = hasNr ? [page] : []; // pages are listed from New Relic
+  // Beside New Relic, Sentry supplies only errors. Alone, it lists the pages and supplies sampled traffic and vitals too.
+  const sources = { ...(hasNr ? NR_SOURCES : hasSentry ? { pages: "sentry", traffic: "sentry", vitals: "sentry" } : {}), ...(hasSentry ? { errors: "sentry" } : {}) };
+  const pages = hasNr ? [page] : []; // Sentry-only here has sent nothing yet (cypress/e2e/sentry-only.cy.ts covers it with data)
   cy.viewport(1440, 900); // sidebar labels and the header subtitle are hidden at narrower widths
   cy.intercept("GET", "/api/setup", { configured: true, tools, keys: {} });
   cy.intercept("GET", "/api/metrics", { configured: true, tools, failed: [], sources, project: "fake-project", pages, history: pages.length ? [{ timestamp: at, sources, pages }] : [] });
@@ -59,7 +60,8 @@ describe("both tools connected", () => {
 
     cy.visit("/tools/sentry");
     shows("Total Errors", "Pages With Errors", "1 of 1", "Noisiest Page", "Sentry by Page");
-    headers(["Page Name", "Path", "Errors", "Latest Error", "Last Seen"]);
+    // The tab also shows Sentry's own page loads and vitals, from tracing.
+    headers(["Page Name", "Path", "Errors", "Latest Error", "Last Seen", "Page loads (sampled)", "LCP", "TTFB", "CLS", "INP"]);
   });
 });
 
@@ -88,13 +90,13 @@ describe("New Relic keys only", () => {
 describe("Sentry keys only", () => {
   beforeEach(() => stub(["sentry"]));
 
-  it("every screen is still the 'add New Relic' state", () => {
+  it("nothing sent yet → every screen says 'No data yet' and points to Connect, with no zeros", () => {
     ["/", "/performance", "/performance/blog", "/tools/sentry"].forEach((path) => {
       cy.visit(path);
-      shows("Sentry is connected");
-      cy.get('a[href="/setup#new-relic"]').should("be.visible").and("contain", "Add New Relic keys");
-      cy.contains("header p", "Sentry connected · add New Relic to list pages").should("be.visible");
-      absent("0ms", "Healthy", "Avg Load Time", "Avg Response Time");
+      shows("No data yet");
+      cy.get('a[href="/connect"]').should("be.visible");
+      // Sentry lists pages itself now, so nothing asks for New Relic keys.
+      absent("Sentry is connected", "Add New Relic keys", "0ms", "Healthy", "Avg Load Time", "Avg Response Time");
       cy.get("thead").should("not.exist");
     });
   });

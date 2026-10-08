@@ -40,6 +40,8 @@ function previousPages(history: MetricsSnapshot[]): MetricsPage[] | null {
   return history.length >= 2 ? history[history.length - 2].pages : null;
 }
 
+/** True when the traffic numbers are a sampled count (Sentry tracing), not every page view. */
+export const isSampled = (pages: MetricsPage[]) => pages.some(p => p.metrics.traffic?.sampled);
 const traffic = (pages: MetricsPage[]) => pages.reduce((sum, p) => sum + (p.metrics.traffic?.count ?? 0), 0);
 const score = (p: MetricsPage) => (p.metrics.apdex === undefined ? undefined : p.metrics.apdex * 100);
 
@@ -68,8 +70,8 @@ export function computeStats(pages: MetricsPage[], history: MetricsSnapshot[], h
       ...buildChange(errorRate, prevErrorRate, false)
     },
     has('traffic') && {
-      label: 'Throughput',
-      value: `${(throughput / 1000).toFixed(1)}k/s`,
+      // A sampled count is shown as it is: never scaled up, never called throughput or visitors.
+      ...(isSampled(pages) ? { label: 'Sampled page loads (24h)', value: throughput.toLocaleString() } : { label: 'Throughput', value: `${(throughput / 1000).toFixed(1)}k/s` }),
       ...buildChange(throughput, prevThroughput, true)
     },
     has('apdex') && {

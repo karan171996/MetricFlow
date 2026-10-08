@@ -132,12 +132,15 @@ test("metrics: both tools - Sentry is called; if it fails, New Relic data stays 
   assert.ok(hits("sentry") > 0);
 });
 
-test("metrics: Sentry only never calls New Relic and lists no pages yet", async () => {
+test("metrics: Sentry only never calls New Relic; Sentry lists the pages, and with nothing sent yet there are none", async () => {
   Object.assign(process.env, SENTRY);
   const body = await (await metrics.GET()).json();
   assert.deepEqual(body.tools, ["sentry"]);
+  assert.equal(body.sources.pages, "sentry");
+  assert.equal(body.error, undefined);
   assert.deepEqual(body.pages, []);
-  assert.equal(calls.length, 0);
+  assert.equal(hits("newrelic"), 0);
+  assert.ok(hits("sentry") > 0, "Sentry is read");
 });
 
 test("analysis: no error-count alert unless a page carries Sentry data", async () => {

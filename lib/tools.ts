@@ -35,6 +35,10 @@ const avg = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.le
 const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
 // ponytail: stats and cells still read the deprecated fields; they move to `p.byTool[id]` in C3, together with the fixtures of test/tools.test.mjs.
 const nr = (p: MetricsPage) => p.newRelic!;
+const ms = (v: number | undefined) => (v === undefined ? "—" : formatDuration(v));
+// Sentry's own errors for a page: from `byTool`, or from the deprecated `sentry` field on a body that only carries that.
+const sentryErrors = (p: MetricsPage) => p.byTool?.sentry?.errors ?? (p.sentry && { count: p.sentry.errorCount, latest: p.sentry.latestErrors });
+const errorCount = (p: MetricsPage) => sentryErrors(p)?.count ?? 0;
 
 export const TOOLS = {
   "new-relic": {
@@ -65,22 +69,29 @@ export const TOOLS = {
   sentry: {
     label: "Sentry",
     icon: Bug,
-    description: "Errors captured per page over the last 24 hours.",
+    description: "Errors per page over the last 24 hours, with page loads and web vitals when your site sends traces.",
     connectReason: "Add your Sentry keys to see the errors on each page.",
     keys: { required: ["SENTRY_API_KEY", "SENTRY_DSN"], optional: [] },
-    capabilities: ["errors"],
+    // After New Relic in TOOLS order, so with both connected New Relic still supplies pages, traffic and vitals.
+    capabilities: ["pages", "traffic", "vitals", "errors"],
     stats: (live) => {
-      const noisiest = live.reduce<MetricsPage | null>((top, p) => ((p.sentry?.errorCount ?? 0) > (top?.sentry?.errorCount ?? 0) ? p : top), null);
+      const noisiest = live.reduce<MetricsPage | null>((top, p) => (errorCount(p) > (top ? errorCount(top) : 0) ? p : top), null);
       return [
-        { label: "Total Errors", value: String(sum(live.map((p) => p.sentry?.errorCount ?? 0))) },
-        { label: "Pages With Errors", value: `${live.filter((p) => (p.sentry?.errorCount ?? 0) > 0).length} of ${live.length}` },
+        { label: "Total Errors", value: String(sum(live.map(errorCount))) },
+        { label: "Pages With Errors", value: `${live.filter((p) => errorCount(p) > 0).length} of ${live.length}` },
         { label: "Noisiest Page", value: noisiest?.name ?? "None" },
       ];
     },
     columns: [
-      { needs: "errors", header: "Errors", cell: (p) => String(p.sentry?.errorCount ?? 0) },
-      { needs: "errors", header: "Latest Error", cell: (p) => p.sentry?.latestErrors[0]?.title ?? "—" },
-      { needs: "errors", header: "Last Seen", cell: (p) => { const t = Date.parse(p.sentry?.latestErrors[0]?.lastSeen ?? ""); return Number.isNaN(t) ? "—" : new Date(t).toLocaleString(); } },
+      { needs: "errors", header: "Errors", cell: (p) => String(errorCount(p)) },
+      { needs: "errors", header: "Latest Error", cell: (p) => sentryErrors(p)?.latest[0]?.title ?? "—" },
+      { needs: "errors", header: "Last Seen", cell: (p) => { const t = Date.parse(sentryErrors(p)?.latest[0]?.lastSeen ?? ""); return Number.isNaN(t) ? "—" : new Date(t).toLocaleString(); } },
+      // From Sentry tracing. A value nobody measured is "—", never 0.
+      { needs: "traffic", header: "Page loads (sampled)", cell: (p) => p.byTool?.sentry?.traffic?.count.toLocaleString() ?? "—" },
+      { needs: "vitals", header: "LCP", cell: (p) => ms(p.byTool?.sentry?.vitals?.lcp) },
+      { needs: "vitals", header: "TTFB", cell: (p) => ms(p.byTool?.sentry?.vitals?.ttfb) },
+      { needs: "vitals", header: "CLS", cell: (p) => p.byTool?.sentry?.vitals?.cls?.toFixed(2) ?? "—" },
+      { needs: "vitals", header: "INP", cell: (p) => ms(p.byTool?.sentry?.vitals?.inp) },
     ],
   },
 } satisfies Record<ToolId, Tool>;

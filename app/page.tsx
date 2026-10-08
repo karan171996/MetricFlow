@@ -22,7 +22,7 @@ import {
   alertsToSuggestions
 } from "@/lib/dashboardTransforms";
 import { EmptyState } from "@/components/EmptyState";
-import { hasData, provides, NEEDS_NEW_RELIC } from "@/lib/useMetrics";
+import { hasData, provides } from "@/lib/useMetrics";
 import { withNeutralShape } from "@/lib/legacyMetrics";
 import type { MetricsResponse } from "@/lib/metricsHistory";
 import type { Capability } from "@/lib/tools";
@@ -140,7 +140,7 @@ export default function Home() {
           <Header />
           <div className="flex flex-1 flex-col p-6 md:p-8">
             {metrics.configured ? (
-              <EmptyState {...(metrics.sources.pages ? {} : NEEDS_NEW_RELIC)} />
+              <EmptyState />
             ) : (
               <EmptyState title="Connect your data" reason="Add your New Relic or Sentry keys to see real numbers." href="/setup" cta="Set up keys" />
             )}

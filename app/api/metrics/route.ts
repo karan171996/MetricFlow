@@ -13,7 +13,7 @@ export async function GET() {
   if (!tools.length) {
     return Response.json({ configured: false, tools, sources, project: projectName(), pages: [], history: [], timestamp: new Date().toISOString() });
   }
-  // Without a tool that lists pages there is nothing to list yet (a Sentry-only page list is a later change).
+  // Without a tool that lists pages there is nothing to list. Both tools list pages today; this is for a future one that does not.
   const pagesTool = sources.pages;
   if (!pagesTool) {
     return Response.json({ configured: true, tools, sources, project: projectName(), pages: [], history: [], timestamp: new Date().toISOString() });

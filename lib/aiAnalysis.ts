@@ -73,9 +73,7 @@ function formatMetricsForPrompt(metrics: Metrics) {
   metrics.pages?.forEach((page: PageMetrics) => {
     prompt += `
 Page: ${page.name} (${page.url})
-- Load Time: ${page.newRelic?.loadTime}ms
-- Error Rate: ${page.newRelic?.errorRate}%
-${page.sentry ? `- Errors: ${page.sentry.errorCount} errors\n` : ''}
+${page.newRelic ? `- Load Time: ${page.newRelic.loadTime}ms\n- Error Rate: ${page.newRelic.errorRate}%\n` : ''}${page.sentry ? `- Errors: ${page.sentry.errorCount} errors\n` : ''}
 `;
   });
 
