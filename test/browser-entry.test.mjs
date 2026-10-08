@@ -254,8 +254,15 @@ test("both tools start with the privacy defaults and only the needed New Relic f
   assert.equal(seen.tracing[0].beforeStartSpan(navigation), navigation);
 
   const [a] = seen.agents;
-  assert.equal(a.init.session_replay.enabled, false);
-  assert.equal(a.init.privacy.cookies_enabled, false);
+  // The whole config, so a new default-on collector cannot be added without this line changing.
+  assert.deepEqual(a.init, {
+    distributed_tracing: { enabled: true },
+    session_replay: { enabled: false },
+    privacy: { cookies_enabled: false },
+    user_actions: { enabled: false }, // no click / key / paste / focus events
+    feature_flags: ["no_spv"], // no Content-Security-Policy violation events
+    page_action: { enabled: true }, // keeps the code behind recordCustomEvent loaded
+  });
   assert.deepEqual(a.features.map((f) => f.featureName).sort(), ["ajax", "generic_events", "jserrors", "page_view_event", "page_view_timing"]);
   assert.equal(a.info.beacon, "bam.eu01.nr-data.net");
   assert.deepEqual([a.info.licenseKey, a.info.applicationID, a.loader_config.accountID], [NR.browserKey, NR.applicationId, NR.accountId]);

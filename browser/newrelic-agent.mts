@@ -19,6 +19,13 @@ export function start(browserKey: string, applicationId: string, accountId: stri
       distributed_tracing: { enabled: true },
       session_replay: { enabled: false }, // also absent from the bundle; stated for the day the feature list changes
       privacy: { cookies_enabled: false },
+      // GenericEvents is here for recordCustomEvent only. Its two automatic sources are on by default
+      // and the dashboard reads neither, so both are turned off:
+      user_actions: { enabled: false }, // clicks, key presses, copy/paste, focus, with the target's selector, id and class
+      feature_flags: ['no_spv'], // Content-Security-Policy violation events (blocked and document URLs)
+      // Must stay on: with every source off the agent never loads the code behind recordCustomEvent.
+      // On its own it collects nothing; it only enables the addPageAction call.
+      page_action: { enabled: true },
     },
     info: { beacon, errorBeacon: beacon, licenseKey: browserKey, applicationID: applicationId, sa: 1 },
     loader_config: { accountID: accountId, trustKey: accountId, agentID: applicationId, licenseKey: browserKey, applicationID: applicationId },
