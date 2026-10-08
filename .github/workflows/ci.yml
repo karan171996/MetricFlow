@@ -24,7 +24,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build (generates Next's route types and the app the CLI tests start)
         run: npx next build --webpack
-      - name: Build the browser entry (sealed tree: fails on an import that leaves browser/)
+      - name: "Build the browser entry (sealed tree: fails on an import that leaves browser/)"
         run: pnpm run build:browser
       - name: Type check
         run: pnpm exec tsc --noEmit
@@ -54,7 +54,7 @@ jobs:
       - run: pnpm exec cypress install
       - name: Build (the CLI test refuses a stale or missing .next)
         run: npx next build --webpack
-      - name: Build the browser entry (sealed tree: fails on an import that leaves browser/)
+      - name: "Build the browser entry (sealed tree: fails on an import that leaves browser/)"
         run: pnpm run build:browser
       - name: Tests (node + Cypress, fake keys, no network)
         run: pnpm test
