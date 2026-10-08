@@ -10,7 +10,9 @@ import { useThresholds } from "@/lib/useThresholds";
 export type MetricsState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | ({ status: "ready" } & Pick<MetricsResponse, "configured" | "tools" | "failed" | "sources" | "pages" | "project"> & { timestamp?: string });
+  | ({ status: "ready" } & Pick<MetricsResponse, "configured" | "tools" | "failed" | "sources" | "pages" | "project"> & { timestamp?: string; /** The last refresh failed; the numbers and `timestamp` are from the last good one. */ stale?: boolean });
+// Same cadence as the home screen. The server memoises each tool for 25s, so three components polling do not triple the vendor calls.
+const REFRESH_INTERVAL_MS = 30000;
 
 /** True when a connected tool supplies the capability and its last load worked (a failed load shows "Could not load", never zeros). */
 export const provides = (s: { sources: Sources; failed: string[] }, cap: Capability): boolean =>
@@ -36,18 +38,23 @@ export function useMetrics() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/metrics")
-      .then(async (res) => {
-        const raw = await res.json();
-        if (!res.ok) throw new Error(raw.error ?? `HTTP ${res.status}`);
-        const body = withNeutralShape(raw);
-        if (!cancelled) setState({ status: "ready", configured: body.configured, tools: body.tools, failed: body.failed, sources: body.sources, pages: body.pages, project: body.project, timestamp: body.timestamp });
-      })
-      .catch((e) => {
-        if (!cancelled) setState({ status: "error", message: e instanceof Error ? e.message : "Request failed" });
-      });
+    const load = () =>
+      fetch("/api/metrics")
+        .then(async (res) => {
+          const raw = await res.json();
+          if (!res.ok) throw new Error(raw.error ?? `HTTP ${res.status}`);
+          const body = withNeutralShape(raw);
+          if (!cancelled) setState({ status: "ready", configured: body.configured, tools: body.tools, failed: body.failed, sources: body.sources, pages: body.pages, project: body.project, timestamp: body.timestamp });
+        })
+        .catch((e) => {
+          // A failed refresh keeps the last good numbers; only a failed first load is an error.
+          if (!cancelled) setState((prev) => (prev.status === "ready" ? { ...prev, stale: true } : { status: "error", message: e instanceof Error ? e.message : "Request failed" }));
+        });
+    load();
+    const interval = setInterval(load, REFRESH_INTERVAL_MS);
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
   }, [attempt]);
 

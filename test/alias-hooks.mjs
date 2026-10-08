@@ -4,6 +4,8 @@ import { join } from "node:path";
 
 const root = join(fileURLToPath(import.meta.url), "../..");
 export function resolve(specifier, context, next) {
+  // Next handles `server-only` itself; with no bundler here it is an empty module (the npm package throws outside Next).
+  if (specifier === "server-only") return { url: "data:text/javascript,", shortCircuit: true };
   if (specifier.startsWith("@/")) {
     const base = join(root, specifier.slice(2));
     const file = [base, `${base}.ts`, `${base}.tsx`, join(base, "index.ts")].find((f) => /\.tsx?$/.test(f) && existsSync(f));

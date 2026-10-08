@@ -60,7 +60,8 @@ const server = spawn(process.execPath, [nextBin, "start", "-p", port, "-H", host
     METRICFLOW_PROJECT_NAME: projectName, // set it yourself to override the title
     METRICFLOW_PROJECT_DIR: process.cwd(), // server cwd is the package; writes (.env.local, settings) belong here
     ...process.env,
-    ...(loopback ? {} : { METRICFLOW_EXPOSED: "1" }), // app's isLocalRequest honors this
+    // app's isLocalRequest honors this. On loopback it is emptied, so a METRICFLOW_EXPOSED left in the user's shell cannot switch the API guard off.
+    METRICFLOW_EXPOSED: loopback ? "" : "1",
     ...(process.argv.includes("--no-color") || wantsJson ? { FORCE_COLOR: undefined, NO_COLOR: "1" } : {}),
   },
 });

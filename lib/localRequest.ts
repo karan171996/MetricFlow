@@ -10,6 +10,19 @@ export const REFUSAL_MESSAGE = () =>
     ? 'Setup and Connect are disabled because the dashboard is exposed on the network (--host). Restart without --host to use them.'
     : 'Setup is only available from localhost.';
 
+/** What the proxy says: it guards every /api route, so the text names none of them. */
+export const PROXY_REFUSAL = 'This dashboard only answers requests from this machine.';
+
+/**
+ * Writes must be sent as JSON. A page on another localhost port can send a text/plain or form POST
+ * without a preflight; a JSON content type forces one, and the browser then refuses it.
+ * Returns the refusal to send, or null. Call it after the body is parsed: it changes nothing either way.
+ */
+export function requireJson(request: Request): Response | null {
+  if (/^application\/json\s*(;|$)/i.test(request.headers.get('content-type') ?? '')) return null;
+  return Response.json({ error: 'Send the request as application/json.' }, { status: 415 });
+}
+
 /** Setup writes secrets to disk, so it only answers requests addressed to this machine. */
 export function isLocalRequest(request: Request): boolean {
   if (isExposed()) return false;

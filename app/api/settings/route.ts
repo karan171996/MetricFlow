@@ -1,6 +1,6 @@
 import { readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { isLocalRequest, REFUSAL_MESSAGE } from '@/lib/localRequest';
+import { isLocalRequest, requireJson, REFUSAL_MESSAGE } from '@/lib/localRequest';
 import { projectDir } from '@/lib/env';
 import { DEFAULT_THRESHOLDS, type Thresholds } from '@/lib/thresholds';
 
@@ -34,6 +34,8 @@ export async function PUT(request: Request) {
   } catch {
     return Response.json({ error: 'Invalid request body.' }, { status: 400 });
   }
+  const notJson = requireJson(request);
+  if (notJson) return notJson;
 
   const next = load();
   for (const [k, [min, max]] of Object.entries(RANGES) as [keyof Thresholds, [number, number]][]) {

@@ -11,7 +11,7 @@ import { KEY_FIELDS, TOOLS, TOOL_IDS, type Tool, type ToolId } from "@/lib/tools
 // One field per required key of each tool, in TOOLS order. A tool added to the registry gets its group here with no edit.
 const FIELDS = TOOL_IDS.flatMap((tool) => TOOLS[tool].keys.required.map((name) => ({ name, tool, ...KEY_FIELDS[name] })));
 
-type Result = { ok: true } | { ok: false; error: string };
+type Result = { ok: true; notice?: string } | { ok: false; error: string; notice?: string };
 
 export function SetupForm() {
   const [values, setValues] = useState<Record<string, string>>({});
@@ -110,6 +110,7 @@ export function SetupForm() {
                 <div id={`${f.name}-result`} aria-live="polite">
                   {r && !r.ok && <p className="text-xs text-[#f87171]">✗ {r.error}</p>}
                   {r?.ok && <p className="text-xs text-[#3ee0a1]">✓ Checked</p>}
+                  {r?.notice && <p className="text-xs text-[#fbbf24]">{r.notice}</p>}
                 </div>
               </div>
             );

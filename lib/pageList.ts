@@ -1,12 +1,16 @@
-import { discoverPages } from '@/lib/newrelic';
-import { env, isToolConnected } from '@/lib/env';
+import 'server-only';
+import { SERVER_TOOLS } from '@/lib/analytics';
+import { buildPages } from '@/lib/discoverPages';
+import { connectedTools } from '@/lib/env';
+import { sourcesFor } from '@/lib/tools';
 
 /**
  * Slugs of the pages listed right now, for the detail page's "does this slug exist" check.
  * `null` when no connected tool lists pages or the lookup failed: the caller then lets the client show its own state.
  */
 export async function listedSlugs(): Promise<string[] | null> {
-  if (!isToolConnected('new-relic')) return null;
-  const pages = await discoverPages(env('NEWRELIC_API_KEY'), env('NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID')).catch(() => null);
-  return pages && pages.map(p => p.slug);
+  const id = sourcesFor(connectedTools()).pages;
+  if (!id) return null;
+  const read = await SERVER_TOOLS[id].poll().catch(() => null);
+  return read && buildPages(read.pages ?? []).map(p => p.slug);
 }

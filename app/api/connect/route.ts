@@ -1,10 +1,11 @@
 import { INSERT_KEY, connectedTools, env, isToolConnected } from '@/lib/env';
-import { isLocalRequest, REFUSAL_MESSAGE } from '@/lib/localRequest';
+import { isLocalRequest, requireJson, REFUSAL_MESSAGE } from '@/lib/localRequest';
+import { publicDsn } from '@/lib/sentryDsn';
 import { browserSetup, newRelicStatus, sendTestEvent, sentryStatus } from '@/lib/connectStatus';
 
 const refuse = () => Response.json({ error: REFUSAL_MESSAGE() }, { status: 403 });
 
-/** Per-source "events received" status. Never returns key values. */
+/** Per-source "events received" status. Never returns secrets: the DSN is re-serialised from its parsed public parts. */
 export async function GET(request: Request) {
   if (!isLocalRequest(request)) return refuse();
   const tools = connectedTools();
@@ -22,12 +23,14 @@ export async function GET(request: Request) {
     sentry ? sentryStatus(env('SENTRY_API_KEY'), env('SENTRY_DSN')) : undefined,
     nr ? browserSetup(nrKey, acct) : undefined
   ]);
-  return Response.json({ configured: true, tools, accountId: nr ? acct : undefined, insertKeySet: Boolean(env(INSERT_KEY)), browser, ajax, custom, sentry: sentryStatusResult, setup });
+  return Response.json({ configured: true, tools, accountId: nr ? acct : undefined, insertKeySet: Boolean(env(INSERT_KEY)), dsn: sentry ? (publicDsn(env('SENTRY_DSN')) ?? undefined) : undefined, browser, ajax, custom, sentry: sentryStatusResult, setup });
 }
 
 /** Sends one test event so the user can watch it arrive. */
 export async function POST(request: Request) {
   if (!isLocalRequest(request)) return refuse();
+  const notJson = requireJson(request);
+  if (notJson) return notJson;
   if (!env(INSERT_KEY)) {
     return Response.json({ sent: false, error: 'Add your Insert key first.' }, { status: 400 });
   }

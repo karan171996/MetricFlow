@@ -23,6 +23,8 @@ function subtitle(state: MetricsState): string {
     provides(state, "traffic") && `${views.toLocaleString()} views in 24h`,
     provides(state, "errors") && `${errors} open ${errors === 1 ? "error" : "errors"}`,
     ...state.failed.filter(isToolId).map((id) => `Could not load ${TOOLS[id].label} data.`),
+    // The last refresh failed: the numbers and the time after this are from the last good one.
+    state.stale && "Could not load the latest data.",
     state.timestamp && `updated ${new Date(state.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
   ].filter(Boolean).join(" · ");
 }
