@@ -224,6 +224,20 @@ test("writes need Content-Type: application/json; a text/plain POST is refused b
   assert.equal(ok.status, 400);
 });
 
+test("/api/analyze: a failure answers with fixed text; neither the body nor the console carries the error or a key", async () => {
+  const json = (body) => new Request("http://localhost:3000/api/analyze", { method: "POST", headers: { host: "localhost:3000", "content-type": "application/json" }, body });
+  // An unreadable body, and a body whose getter throws an error that carries a fake key.
+  for (const request of [json("{nope"), Object.assign(json("{}"), { json: async () => { throw httpError(500); } })]) {
+    const res = await analyze.POST(request);
+    assert.equal(res.status, 500);
+    const text = JSON.stringify(await res.json());
+    assert.equal(text, JSON.stringify({ error: "Could not analyze the metrics." }));
+    clean(text, "body");
+  }
+  assert.deepEqual(logged, ["[analyze] failed", "[analyze] failed"]);
+  cleanLogs();
+});
+
 test("the CLI empties METRICFLOW_EXPOSED on a loopback start", async () => {
   const { readFileSync } = await import("node:fs");
   const { root } = await import("./helpers.mjs");
