@@ -94,6 +94,8 @@ Before the first release that contains `./browser`, also do the two checks a mac
 
 The two browser SDKs (`@sentry/browser`, `@newrelic/browser-agent`) are pinned to exact versions on purpose: the lockfile is not published, so a range would let a consumer install a version nobody here looked at. A security fix in either SDK therefore needs a version bump here and a release; `overrides` in `pnpm-workspace.yaml` do not reach consumers.
 
+**Known advisory.** A consumer's `npm audit` shows one moderate advisory: [GHSA-px8p-9vwx-vf98](https://github.com/advisories/GHSA-px8p-9vwx-vf98) in `fflate` 0.8.2, which comes with `@newrelic/browser-agent` 1.323.0. The affected function (`unzipSync`) belongs to a package that only the agent's session-replay feature imports, and the agent MetricFlow builds does not include that feature, so the code is not in a consumer's bundle. It cannot be fixed from here: the agent pins `fflate` to exactly 0.8.2. Bump the agent pin when New Relic ships one with `fflate` 0.8.3 or later. Do not add an override for it: it would hide the finding here and change nothing for consumers.
+
 ## What makes a PR easy to merge
 
 - Don't request a reviewer or assignee when you open the PR. The maintainer picks it up.
