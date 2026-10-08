@@ -16,7 +16,9 @@ export function start(browserKey: string, applicationId: string, accountId: stri
   return new Agent({
     features: [Ajax, GenericEvents, JSErrors, PageViewEvent, PageViewTiming],
     init: {
-      distributed_tracing: { enabled: true },
+      // Off: it adds newrelic/traceparent headers to the site's own requests, and the dashboard reads no traces.
+      // AJAX events are recorded either way; only their trace and span IDs go.
+      distributed_tracing: { enabled: false },
       session_replay: { enabled: false }, // also absent from the bundle; stated for the day the feature list changes
       privacy: { cookies_enabled: false },
       // GenericEvents is here for recordCustomEvent only. Its two automatic sources are on by default

@@ -256,7 +256,7 @@ test("both tools start with the privacy defaults and only the needed New Relic f
   const [a] = seen.agents;
   // The whole config, so a new default-on collector cannot be added without this line changing.
   assert.deepEqual(a.init, {
-    distributed_tracing: { enabled: true },
+    distributed_tracing: { enabled: false }, // no newrelic / traceparent headers on the site's requests
     session_replay: { enabled: false },
     privacy: { cookies_enabled: false },
     user_actions: { enabled: false }, // no click / key / paste / focus events
