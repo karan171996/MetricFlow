@@ -1,4 +1,4 @@
-import { isExposed, isLocalRequest, REFUSAL_MESSAGE } from '@/lib/localRequest';
+import { isExposed, isLocalRequest, PROXY_REFUSAL } from '@/lib/localRequest';
 
 /**
  * The dashboard holds API keys, so unless it is deliberately exposed (--host) every /api route
@@ -7,7 +7,7 @@ import { isExposed, isLocalRequest, REFUSAL_MESSAGE } from '@/lib/localRequest';
  */
 export function proxy(request: Request) {
   if (isExposed() || isLocalRequest(request)) return;
-  return Response.json({ error: REFUSAL_MESSAGE() }, { status: 403 });
+  return Response.json({ error: PROXY_REFUSAL }, { status: 403 });
 }
 
 export const config = { matcher: '/api/:path*' };

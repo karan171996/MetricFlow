@@ -1,8 +1,11 @@
 import { analyzeMetrics } from '@/lib/aiAnalysis';
 import { recordTiming } from '@/lib/apiTimingStore';
 import { AI_PROVIDERS, activeAi } from '@/lib/env';
+import { requireJson } from '@/lib/localRequest';
 
 export async function POST(request: Request) {
+  const notJson = requireJson(request);
+  if (notJson) return notJson;
   try {
     const data = await request.json();
 
@@ -12,11 +15,9 @@ export async function POST(request: Request) {
     recordTiming(`${ai ? AI_PROVIDERS[ai.provider].label : 'AI'}: analyze`, performance.now() - start);
 
     return Response.json(analysis);
-  } catch (error) {
-    console.error('Analysis API error:', error);
-    return Response.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+  } catch {
+    // Fixed text only: the caught error is never logged or returned (it can carry the request, and so a key).
+    console.error('[analyze] failed');
+    return Response.json({ error: 'Could not analyze the metrics.' }, { status: 500 });
   }
 }

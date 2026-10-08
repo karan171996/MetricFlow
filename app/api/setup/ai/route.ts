@@ -1,9 +1,6 @@
 import axios from 'axios';
-import { AI_PROVIDERS, AI_PROVIDER_KEY, activeAi, writeEnvLocal, type AiProvider } from '@/lib/env';
-import { isLocalRequest, REFUSAL_MESSAGE } from '@/lib/localRequest';
-
-// Same rule as /api/setup: the value is written unquoted to .env.local.
-const UNSAFE = /[\s\0#"'`\\$]/;
+import { AI_PROVIDERS, AI_PROVIDER_KEY, EnvWriteRefused, UNSAFE, activeAi, writeEnvLocal, type AiProvider } from '@/lib/env';
+import { isLocalRequest, requireJson, REFUSAL_MESSAGE } from '@/lib/localRequest';
 
 const refuse = () => Response.json({ error: REFUSAL_MESSAGE() }, { status: 403 });
 
@@ -33,6 +30,8 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ error: 'Invalid request body.' }, { status: 400 });
   }
+  const notJson = requireJson(request);
+  if (notJson) return notJson;
 
   const provider = body.provider as AiProvider;
   if (!(typeof provider === 'string' && provider in AI_PROVIDERS)) {
@@ -58,7 +57,9 @@ export async function POST(request: Request) {
 
   try {
     writeEnvLocal({ [AI_PROVIDER_KEY]: provider, [AI_PROVIDERS[provider].key]: key });
-  } catch {
+  } catch (e) {
+    // The guard refusing is told apart from the file system failing; neither echoes the key.
+    if (e instanceof EnvWriteRefused) return Response.json({ saved: false, error: 'Nothing was saved: the key or its name was refused as unsafe.' }, { status: 400 });
     return Response.json({ saved: false, error: 'Key is valid but .env.local could not be written. Check folder permissions.' }, { status: 500 });
   }
   return Response.json({ saved: true, provider });

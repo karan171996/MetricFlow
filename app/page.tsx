@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppSidebar } from "@/components/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Header } from "@/components/header";
@@ -62,16 +62,26 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Loads can overlap (a slow one is still waiting when the next 30s refresh starts). Only the newest may
+  // write state, so an older success never hides a newer failure or puts older numbers back.
+  const latestLoad = useRef(0);
+
   async function fetchData() {
+    const load = ++latestLoad.current;
+    const stale = () => load !== latestLoad.current;
     try {
       setRefreshing(true);
 
       const metricsRes = await fetch("/api/metrics");
+      // A failed read answers { error }: thrown here, so the last good data stays instead of becoming "not configured".
+      if (!metricsRes.ok) throw new Error(`HTTP ${metricsRes.status}`);
       const metricsData = withNeutralShape(await metricsRes.json());
+      if (stale()) return;
       setMetrics(metricsData);
 
       const timingsRes = await fetch("/api/timings");
       const timingsData: { items: TrafficBarItem[] } = await timingsRes.json();
+      if (stale()) return;
       setApiTimings(timingsData.items);
 
       if (metricsData.configured && shouldRunAnalysis()) {
@@ -81,6 +91,7 @@ export default function Home() {
           body: JSON.stringify({ metrics: { pages: metricsData.pages } })
         });
         const analysisData: AnalysisResponse = await analysisRes.json();
+        if (stale()) return;
         setAnalysis(analysisData);
         markAnalysisRan();
       }
@@ -88,9 +99,9 @@ export default function Home() {
       setError(null);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
-      setError("Failed to load live data.");
+      if (!stale()) setError("Failed to load live data.");
     } finally {
-      setRefreshing(false);
+      if (!stale()) setRefreshing(false);
     }
   }
 
@@ -107,7 +118,14 @@ export default function Home() {
         <AppSidebar />
         <SidebarInset className="bg-dash-surface">
           <Header />
-          <DashboardBodySkeleton />
+          {/* The first load failed: an error with Retry, not an endless skeleton or the setup prompt. */}
+          {error && !refreshing ? (
+            <div className="flex flex-1 flex-col p-6 md:p-8">
+              <EmptyState title="Could not load metrics" reason={error} onRetry={fetchData} />
+            </div>
+          ) : (
+            <DashboardBodySkeleton />
+          )}
         </SidebarInset>
       </SidebarProvider>
     );

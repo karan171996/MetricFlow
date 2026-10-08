@@ -1,6 +1,10 @@
-import { Analytics } from '@/lib/analytics/Analytics';
+import axios from 'axios';
+import { Analytics, describeFailure, type KeyResult, type ToolRead, type ToolUpdate } from '@/lib/analytics/Analytics';
 import { nrGraphql } from '@/lib/nrRequest';
 import { LOCAL_ONLY_NRQL } from '@/lib/discoverPages';
+import { env, nrHosts, type NrRegion } from '@/lib/env';
+import { newRelicToPageMetrics } from '@/lib/legacyMetrics';
+import { discoverPages } from '@/lib/newrelic';
 
 export interface NewRelicPageMetrics {
   loadTime: number;
@@ -56,14 +60,55 @@ export function num(v: unknown): number {
  * New Relic metrics: 75th percentiles, view-weighted averages, last 24h.
  * Runs 4 NRQL queries (views, timing, errors, ajax) in one GraphQL call.
  */
-export class NewRelicAnalytics extends Analytics<NrRawRow, NewRelicPageMetrics> {
-  private apiKey: string;
-  private accountId: string;
+const EMPTY_NEWRELIC_METRICS: NewRelicPageMetrics = {
+  loadTime: 0,
+  lcp: 0,
+  ttfb: 0,
+  cls: 0,
+  inp: 0,
+  fid: 0,
+  errorRate: 0,
+  throughput: 0,
+  apdexScore: 0
+};
 
-  constructor(apiKey: string, accountId: string) {
-    super();
-    this.apiKey = apiKey;
-    this.accountId = accountId;
+// An NRAK- User key in an ingest field is the most common setup mistake; a prefix check kills the whole class.
+const USER_KEY_MSG = 'That is a User API key (starts NRAK-), which reads data. The Insert key sends data: New Relic > API keys > create key, type "Ingest - License".';
+
+export class NewRelicAnalytics extends Analytics<NrRawRow, NewRelicPageMetrics> {
+  readonly id = 'new-relic';
+  readonly legacyField = 'newRelic';
+  protected readonly timingLabel = 'New Relic: metrics';
+
+  // Read at call time, so one instance can hold the poll memo and a key change on /setup is seen at once.
+  private get apiKey() { return env('NEWRELIC_API_KEY'); }
+  private get accountId() { return env('NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID'); }
+
+  protected memoKey() { return `${this.apiKey}:${this.accountId}:${env('NEWRELIC_REGION')}`; }
+
+  emptyPage() {
+    return { metrics: newRelicToPageMetrics(EMPTY_NEWRELIC_METRICS), legacy: EMPTY_NEWRELIC_METRICS };
+  }
+
+  /** The page list, then the metrics for those pages (no metrics query for an empty list, as before). */
+  protected async load(): Promise<ToolRead> {
+    const found = await discoverPages(this.apiKey, this.accountId);
+    const pages = found.map(({ url, views }) => ({ url, views }));
+    if (!found.length) return { pages, byPath: {}, legacy: {} };
+    const legacy = this.aggregateRows(await this.fetchRows());
+    return { pages, byPath: Object.fromEntries(Object.entries(legacy).map(([path, nr]) => [path, newRelicToPageMetrics(nr)])), legacy };
+  }
+
+  /** Checks the User key and account ID together, or the optional Insert key alone. */
+  async update(values: Record<string, string>): Promise<ToolUpdate> {
+    const insert = values.NEWRELIC_INSERT_KEY;
+    if (insert !== undefined) {
+      return { results: { NEWRELIC_INSERT_KEY: /^NRAK-/i.test(insert) ? { ok: false, error: USER_KEY_MSG } : { ok: true } } };
+    }
+    const results = await checkNewRelic(values.NEWRELIC_API_KEY, values.NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID);
+    // Region only changes when the User key was checked in this save.
+    const key = results.NEWRELIC_API_KEY;
+    return { results, ...(key && { derived: { NEWRELIC_REGION: key.ok && key.region === 'eu' ? 'eu' : 'us' } }) };
   }
 
   /** Per-path metrics from an already-fetched NRQL account payload. */
@@ -87,14 +132,10 @@ export class NewRelicAnalytics extends Analytics<NrRawRow, NewRelicPageMetrics> 
       ajax: ${q(`SELECT average(duration) AS ajaxLatency, count(*) AS ajaxCalls, filter(count(*), WHERE httpResponseCode >= 400 OR httpResponseCode = 0) AS ajaxFailed FROM AjaxRequest ${LOCAL} FACET pageUrl ${WINDOW} LIMIT 200`)}
     } } }`;
 
-    try {
-      const data = await nrGraphql<NrGraphqlResponse>(this.apiKey, query, 15000);
-      const account = data.data?.actor?.account;
-      if (!account?.views) throw new Error('New Relic rejected the metrics query. Check your key and account ID.');
-      return this.flattenNrAccount(account);
-    } catch {
-      throw new Error('Could not reach New Relic to load metrics.');
-    }
+    const data = await nrGraphql<NrGraphqlResponse>(this.apiKey, query, 15000);
+    const account = data.data?.actor?.account;
+    if (!account?.views) throw new Error('rejected');
+    return this.flattenNrAccount(account);
   }
 
   /** Convert { views: [...], timing: [...], errors: [...], ajax: [...] } into a flat array. */
@@ -176,9 +217,46 @@ export class NewRelicAnalytics extends Analytics<NrRawRow, NewRelicPageMetrics> 
       ...(totalAjaxCalls > 0 && { ajaxLatency: weightedAjaxLatency / totalAjaxCalls, ajaxFailRate: (totalAjaxFailed / totalAjaxCalls) * 100 })
     };
   }
+}
 
-  protected onError(error: unknown): void {
-    console.error('New Relic fetch failed:', error);
+async function checkNewRelic(key: string, accountId: string): Promise<Record<string, KeyResult>> {
+  if (!/^\d+$/.test(accountId)) {
+    return { NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: { ok: false, error: 'Account ID must be a number.' } };
+  }
+  try {
+    const ask = (region: NrRegion) =>
+      axios.post(
+        nrHosts(region).graphql,
+        { query: `{ actor { user { id } account(id: ${accountId}) { id } } }` },
+        { headers: { 'API-Key': key }, timeout: 8000 }
+      );
+    // A key only works on its own data centre: try US, and if it is rejected there, EU.
+    let region: NrRegion = 'us';
+    let res;
+    try {
+      res = await ask('us');
+      if (!res.data?.data?.actor?.user?.id) throw new Error('rejected');
+    } catch (usError) {
+      try {
+        res = await ask('eu');
+        if (!res.data?.data?.actor?.user?.id) throw usError;
+        region = 'eu';
+      } catch {
+        throw usError;
+      }
+    }
+    const regionTag = region === 'eu' ? { region } : {};
+    const actor = res.data?.data?.actor;
+    if (!actor?.user?.id) return { NEWRELIC_API_KEY: { ok: false, error: 'New Relic User key was rejected.' } };
+    if (!actor.account?.id) {
+      return {
+        NEWRELIC_API_KEY: { ok: true, ...regionTag },
+        NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: { ok: false, error: 'This key cannot see that account ID.' }
+      };
+    }
+    return { NEWRELIC_API_KEY: { ok: true, ...regionTag }, NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: { ok: true } };
+  } catch (e) {
+    return { NEWRELIC_API_KEY: { ok: false, error: describeFailure(e, 'New Relic') } };
   }
 }
 
@@ -186,5 +264,5 @@ export class NewRelicAnalytics extends Analytics<NrRawRow, NewRelicPageMetrics> 
 export function aggregateMetrics(
   account: Record<string, { results: Record<string, unknown>[] } | undefined>
 ): Record<string, NewRelicPageMetrics> {
-  return new NewRelicAnalytics('', '').aggregate(account);
+  return new NewRelicAnalytics().aggregate(account);
 }

@@ -12,9 +12,9 @@ const { proxy, config } = await load("proxy.ts");
 
 // Every route handler in the app, as { path: "/api/metrics", methods: ["GET"] }.
 const routes = readdirSync(join(root, "app"), { recursive: true })
-  .filter((f) => /(^|\/)route\.ts$/.test(f))
+  .filter((f) => /(^|\/)route\.(ts|tsx|js|mjs)$/.test(f))
   .map((f) => ({
-    path: "/" + f.replace(/\/?route\.ts$/, ""),
+    path: "/" + f.replace(/\/?route\.(ts|tsx|js|mjs)$/, ""),
     methods: [...readFileSync(join(root, "app", f), "utf8").matchAll(/^export (?:async )?function ([A-Z]+)/gm)].map((m) => m[1]),
   }));
 const FOREIGN = { host: "evil.example:3000" };
@@ -30,6 +30,13 @@ test("the guard covers every route handler: a new route outside /api would be un
   }
 });
 
+test("the app has only the App Router at app/: no pages/api, no src/app, no 'use server' that could add an endpoint the proxy does not match", () => {
+  for (const dir of ["pages", "src"]) assert.ok(!existsSync(join(root, dir)), `${dir}/ exists`);
+  const files = readdirSync(root, { recursive: true }).filter((f) => /\.(ts|tsx|js|jsx|mjs)$/.test(f) && !/^(node_modules|\.next|\.claude|\.git)\//.test(f) && !/(^|\/)(test|cypress)\//.test(f));
+  assert.ok(files.length > 50, "source discovery found too few files");
+  assert.deepEqual(files.filter((f) => /^\s*['"]use server['"]/m.test(readFileSync(join(root, f), "utf8"))), []);
+});
+
 for (const { path, methods } of routes) for (const method of methods) {
   const call = (headers) => proxy(req(`http://localhost:3000${path}`, { method, headers }));
 
@@ -43,7 +50,7 @@ for (const { path, methods } of routes) for (const method of methods) {
       const res = call({ ...headers, authorization: "Bearer FAKE-SECRET-0000" });
       assert.equal(res.status, 403);
       const text = await res.text();
-      assert.deepEqual(JSON.parse(text), { error: "Setup is only available from localhost." });
+      assert.deepEqual(JSON.parse(text), { error: "This dashboard only answers requests from this machine." });
       assert.ok(!/evil\.example|FAKE-SECRET/.test(text), "refusal echoes a request header");
     }
   });
@@ -59,13 +66,13 @@ const skip = !built && "no .next/BUILD_ID (run npm run build)";
 const fetchAs = (port, path, method, headers) => new Promise((res, rej) => {
   http.request({ host: "127.0.0.1", port, path, method, headers }, (r) => { r.resume(); r.on("end", () => res(r.statusCode)); }).on("error", rej).end();
 });
-async function withServer(port, args, fn) {
+async function withServer(port, args, fn, extraEnv = {}) {
   const builtAt = statSync(join(root, ".next/BUILD_ID")).mtimeMs;
   for (const f of ["proxy.ts", "lib/localRequest.ts"]) assert.ok(statSync(join(root, f)).mtimeMs <= builtAt, `.next is older than ${f}: run npx next build --webpack`);
   // Fake `open` so the test never launches a browser.
   const bin = mkdtempSync(join(tmpdir(), "fakeopen-"));
   for (const n of ["open", "xdg-open"]) { writeFileSync(join(bin, n), "#!/bin/sh\n"); chmodSync(join(bin, n), 0o755); }
-  const p = spawn(process.execPath, [join(root, "bin/cli.mjs"), port, "--no-open", "--json", ...args], { env: { PATH: `${bin}:${process.env.PATH}` } });
+  const p = spawn(process.execPath, [join(root, "bin/cli.mjs"), port, "--no-open", "--json", ...args], { env: { PATH: `${bin}:${process.env.PATH}`, ...extraEnv } });
   let out = "";
   p.stdout.on("data", (d) => (out += d));
   try {
@@ -86,6 +93,23 @@ test("real start: every route refuses a foreign Host and a cross-site request be
       assert.equal(await fetchAs(port, path, "GET", { host, "sec-fetch-site": "same-origin" }), 200, `${path} refused ${host}`);
     }
   });
+});
+
+test("real start: odd spellings of /api/metrics with a foreign Host are never answered (200)", { skip, timeout: 60000 }, async () => {
+  const port = "43183";
+  await withServer(port, [], async () => {
+    for (const path of ["/API/metrics", "//api/metrics", "/api/metrics/", "/%61pi/metrics"]) {
+      const status = await fetchAs(port, path, "GET", FOREIGN);
+      assert.notEqual(status, 200, `${path} answered a foreign Host`);
+    }
+  });
+});
+
+test("real start on loopback: METRICFLOW_EXPOSED=1 inherited from the shell does not switch the guard off", { skip, timeout: 60000 }, async () => {
+  const port = "43184";
+  await withServer(port, [], async () => {
+    assert.equal(await fetchAs(port, "/api/metrics", "GET", FOREIGN), 403);
+  }, { METRICFLOW_EXPOSED: "1" });
 });
 
 test("real start with --host 0.0.0.0: a LAN Host still reaches the open routes, setup stays off", { skip, timeout: 60000 }, async () => {
