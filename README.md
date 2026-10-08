@@ -99,6 +99,47 @@ MetricFlow only reads data. Your website has to send it to New Relic and Sentry 
 
 Add them to your site, deploy or run it, and open a few pages.
 
+#### One import instead of the vendor snippets
+
+Your site does not have to install `@sentry/browser` or `@newrelic/browser-agent`. MetricFlow ships both and loads each one only when you ask for it:
+
+```bash
+npm i @karan171996/metricflow
+```
+
+```ts
+// instrumentation-client.ts  (Next.js 15.3 or newer; in any other app, a file that runs only in the browser)
+import { init } from '@karan171996/metricflow/browser';
+
+init({
+  sentry: { dsn: 'https://0123456789abcdef0123456789abcdef@o123.ingest.sentry.io/456' },
+  'new-relic': { browserKey: 'NRJS-fake0000', applicationId: '123456789', accountId: '1234567' },
+});
+```
+
+Name only the tools you use. Call `init` once. It never throws, and it does nothing during server rendering or a build.
+
+| Option | Value |
+|---|---|
+| `sentry.dsn` | Sentry > Project settings > Client Keys (DSN) |
+| `sentry.tracesSampleRate` | Optional, 0 to 1. Default: `1` on `localhost` and `127.0.0.1`, `0.1` everywhere else |
+| `'new-relic'.browserKey` | The **Ingest - Browser** key. It starts with `NRJS-` |
+| `'new-relic'.applicationId` | The Browser app's application ID (a number, as a string) |
+| `'new-relic'.accountId` | Your account ID (a number, as a string) |
+| `'new-relic'.region` | Optional: `'us'` (default) or `'eu'` |
+
+To record your own numbers (New Relic only): `import { send } from '@karan171996/metricflow/browser'; send('checkout_step', 2, { step: 'payment' });`. Before `init`, `send` does nothing.
+
+Things to know:
+
+- **Public identifiers only.** Everything you pass to `init` is published in your site's JavaScript. If `init` sees a secret (a New Relic `NRAK-` User key or any other non-browser New Relic key, a Sentry auth token, a legacy DSN with a secret in it), it starts nothing and prints one console warning. That key has already been published: revoke it and create a new one.
+- **One bad value starts no tool.** The console warning names the tool and the reason, never the value.
+- **You already run Sentry or New Relic.** MetricFlow leaves it alone and says so once in the console. For Sentry, call MetricFlow's `init` after your own Sentry has started; if yours starts later, MetricFlow cannot see it and the page reports twice.
+- **Content Security Policy.** Add these hosts to `connect-src`: the host in your Sentry DSN (for example `o123.ingest.sentry.io`), and `bam.nr-data.net` for New Relic (`bam.eu01.nr-data.net` for an EU account). The vendor code itself is bundled with your site, so `script-src` needs nothing new.
+- **Page names are real paths.** Sentry page loads are named by `location.pathname` (`/orders/8841`, not `/orders/[id]`), so the dashboard can match them. Any ID or token that sits in a path is sent to Sentry.
+- **Privacy defaults.** Sentry: `sendDefaultPii: false`, no session replay, no feedback widget. New Relic: session replay and session trace are not included at all, and the session cookie is off.
+- **Bundler needed.** The entry is ESM only and uses `import()`, which webpack, Turbopack, Vite and Rollup split into separate files: a site that never calls `init` downloads no vendor code, and a New Relic-only site never downloads Sentry.
+
 ### 4. Check that metrics arrive
 
 On `/connect`, the **Events received** panel shows a row for each source:
@@ -228,6 +269,7 @@ pnpm send-test-data    # one dummy event to Sentry and New Relic
 app/            Next.js App Router: pages and api/ route handlers
 components/     UI, one folder per feature; ui/ is generated shadcn code
 lib/            Data fetching (New Relic, Sentry), transforms, hooks
+browser/        What a consumer site imports (init, send). Sealed: imports nothing from lib/
 bin/            CLI (cli.mjs) and output formatter (output.mjs)
 scripts/        send-test-data.mjs, test-env.mjs
 test/           node:test suites

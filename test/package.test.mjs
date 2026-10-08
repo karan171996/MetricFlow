@@ -13,7 +13,8 @@ test("package.json is publishable with a bin", () => {
   assert.notEqual(pkg.private, true);
   assert.equal(pkg.bin["performance-dashboard"], "bin/cli.mjs");
   assert.match(pkg.engines.node, />=\s*20\.12/);
-  assert.equal(pkg.scripts.prepublishOnly, "next build");
+  assert.equal(pkg.scripts.prepublishOnly, "pnpm run build"); // next build, then the browser entry (dist/browser)
+  assert.equal(pkg.scripts.build, "next build && pnpm run build:browser");
   assert.match(readFileSync(join(root, "bin/cli.mjs"), "utf8"), /^#!\/usr\/bin\/env node/);
 });
 
@@ -46,9 +47,10 @@ test("scoped package name is publishable and README uses it", () => {
   assert.ok(readFileSync(join(root, "README.md"), "utf8").includes(`npx ${pkg.name}`), "README must show `npx " + pkg.name + "`");
 });
 
-// The published package ships a prebuilt .next, so only what `next start` loads at runtime belongs in dependencies.
+// The published package ships a prebuilt .next, so only what `next start` loads at runtime belongs in dependencies,
+// plus the two SDKs the browser entry loads lazily: the consumer's bundler resolves those from this package.
 test("dependencies are runtime-only; build/UI-only packages are devDependencies", () => {
-  assert.deepEqual(Object.keys(pkg.dependencies).sort(), ["axios", "next", "react", "react-dom"]);
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), ["@newrelic/browser-agent", "@sentry/browser", "axios", "next", "react", "react-dom"]);
   for (const d of ["recharts", "lucide-react", "@base-ui/react", "class-variance-authority", "cn", "shadcn", "tw-animate-css", "@sentry/node", "dotenv"]) {
     assert.ok(pkg.devDependencies?.[d], `${d} must be in devDependencies`);
     assert.ok(!pkg.dependencies[d], `${d} must not be in dependencies`);
