@@ -3,34 +3,40 @@ name: Publish
 # Manual only. Publishes the version in package.json on main to npm, with provenance.
 # No npm token is stored anywhere: npm trusts this workflow through OIDC ("trusted publishing").
 # One-time set-up on npmjs.com and GitHub is described in CONTRIBUTING.md, "Publishing".
+#
+# Two jobs on purpose. Everything that runs code from the repository or from npm (install, build,
+# tests) happens in a job that cannot publish. The job that can publish runs none of it: it only
+# takes the finished tarball and hands it to npm.
 on:
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# One release at a time; a second run waits instead of racing the first.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
 jobs:
-  publish:
-    name: publish
+  build:
+    name: build and test
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: npm # give this environment required reviewers, so a publish needs a second click
     permissions:
-      contents: read
-      id-token: write # the OIDC token npm exchanges for a short-lived publish credential
+      contents: read # no id-token here: nothing in this job can publish
     env:
       CYPRESS_INSTALL_BINARY: "0"
     steps:
-      # Pinned to commits: a moved tag must not be able to change what runs with publish rights.
+      # Actions are pinned to commits: a moved tag must not be able to change what runs in a release.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - run: corepack enable
+      # No dependency cache in a release: a cache written by another run must not reach the tarball.
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24 # trusted publishing needs npm 11.5.1 or newer
-          registry-url: https://registry.npmjs.org
-          cache: pnpm
-      - name: npm is new enough for trusted publishing
-        run: node -e "const [a,b,c]=process.argv[1].split('.').map(Number); if (a<11||(a===11&&(b<5||(b===5&&c<1)))) { console.error('npm '+process.argv[1]+' is older than 11.5.1'); process.exit(1) }" "$(npm --version)"
+          node-version: 24
       - run: pnpm install --frozen-lockfile
       - name: Build the dashboard and the browser entry
         run: pnpm run build
@@ -42,5 +48,35 @@ jobs:
         run: pnpm run test:cli
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level=high
-      - name: Publish what was just built and tested
-        run: npm publish --provenance --access public --ignore-scripts
+      - name: Pack what was just built and tested
+        run: mkdir release && npm pack --ignore-scripts --pack-destination release
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package
+          path: release/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: publish
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: npm # give this environment required reviewers, so a publish needs a second click
+    permissions:
+      contents: read
+      id-token: write # the OIDC token npm exchanges for a short-lived publish credential
+    steps:
+      # No checkout and no install: this job runs no code from the repository or its dependencies.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24 # trusted publishing needs npm 11.5.1 or newer
+          registry-url: https://registry.npmjs.org
+      - name: npm is new enough for trusted publishing
+        run: node -e "const [a,b,c]=process.argv[1].split('.').map(Number); if (a<11||(a===11&&(b<5||(b===5&&c<1)))) { console.error('npm '+process.argv[1]+' is older than 11.5.1'); process.exit(1) }" "$(npm --version)"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: package
+          path: release
+      - name: Publish the tarball the first job built
+        run: npm publish release/*.tgz --provenance --access public --ignore-scripts

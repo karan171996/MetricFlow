@@ -88,7 +88,7 @@ One-time set-up, done by the maintainer:
 3. **Same page, Publishing access:** choose "Require two-factor authentication and disallow tokens", so nothing but this workflow and a 2FA login can publish.
 4. **GitHub > Settings > Environments:** create `npm`, add yourself as a required reviewer, and limit it to the `main` branch.
 
-To release: merge the version bump to `main`, then run **Actions > Publish > Run workflow** on `main` and approve it.
+To release: merge the version bump to `main`, then run **Actions > Publish > Run workflow** on `main`. The run has two jobs. The first builds, tests and packs the tarball; it cannot publish. The second waits for your approval, then publishes that exact tarball and runs nothing else. Approve it once the first job is green.
 
 Before the first release that contains `./browser`, also do the two checks a machine cannot: install the packed tarball into a scratch app outside this repo and build it (no secret name, `axios` or `node:` in its client bundle; no Sentry file requested by a New Relic-only `init`), and start the CLI from that installed copy.
 
