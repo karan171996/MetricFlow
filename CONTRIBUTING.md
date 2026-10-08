@@ -77,6 +77,23 @@ Every fix or feature raises the `package.json` version, picked from the commit t
 
 In Claude Code, the project agent `fix-pr` (`.claude/agents/fix-pr.md`) does the whole hand-off after a change is written: check, commit, bump, push and open the PR. Nobody needs to push by hand. Only the maintainer merges.
 
+## Publishing
+
+The package is published from GitHub Actions, not from a laptop: the `Publish` workflow (`.github/workflows/publish.yml`) builds, runs the checks and tests, and publishes with [npm provenance](https://docs.npmjs.com/generating-provenance-statements). It stores no npm token. npm trusts the workflow itself ("trusted publishing").
+
+One-time set-up, done by the maintainer:
+
+1. **npmjs.com account:** turn on two-factor authentication.
+2. **npmjs.com > the package > Settings > Trusted Publisher:** add GitHub Actions with the owner `karan171996`, the repository `MetricFlow`, the workflow file `publish.yml` and the environment `npm`.
+3. **Same page, Publishing access:** choose "Require two-factor authentication and disallow tokens", so nothing but this workflow and a 2FA login can publish.
+4. **GitHub > Settings > Environments:** create `npm`, add yourself as a required reviewer, and limit it to the `main` branch.
+
+To release: merge the version bump to `main`, then run **Actions > Publish > Run workflow** on `main` and approve it.
+
+Before the first release that contains `./browser`, also do the two checks a machine cannot: install the packed tarball into a scratch app outside this repo and build it (no secret name, `axios` or `node:` in its client bundle; no Sentry file requested by a New Relic-only `init`), and start the CLI from that installed copy.
+
+The two browser SDKs (`@sentry/browser`, `@newrelic/browser-agent`) are pinned to exact versions on purpose: the lockfile is not published, so a range would let a consumer install a version nobody here looked at. A security fix in either SDK therefore needs a version bump here and a release; `overrides` in `pnpm-workspace.yaml` do not reach consumers.
+
 ## What makes a PR easy to merge
 
 - Don't request a reviewer or assignee when you open the PR. The maintainer picks it up.

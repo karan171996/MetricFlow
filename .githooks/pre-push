@@ -13,6 +13,8 @@ while read -r lref lsha rref rsha; do
   [ "$hits" != "0" ] && { echo "BLOCKED: key-shaped string in commits being pushed ($hits lines)"; exit 1; }
 done
 
+# The root tsconfig cannot see a browser/ file that imports lib/ (it has the @/ alias and Node types); this build can.
+pnpm run -s build:browser || { echo "BLOCKED: browser entry does not build (tsconfig.browser.json)"; exit 1; }
 .githooks/run-tests.sh || exit 1
 pnpm exec tsc --noEmit || { echo "BLOCKED: type errors"; exit 1; }
 pnpm run -s lint || { echo "BLOCKED: lint failed"; exit 1; }

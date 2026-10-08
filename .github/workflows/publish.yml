@@ -1,0 +1,45 @@
+name: Publish
+
+# Manual only. Publishes the version in package.json on main to npm, with provenance.
+# No npm token is stored anywhere: npm trusts this workflow through OIDC ("trusted publishing").
+# One-time set-up on npmjs.com and GitHub is described in CONTRIBUTING.md, "Publishing".
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: publish
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: npm # give this environment required reviewers, so a publish needs a second click
+    permissions:
+      contents: read
+      id-token: write # the OIDC token npm exchanges for a short-lived publish credential
+    env:
+      CYPRESS_INSTALL_BINARY: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24 # trusted publishing needs npm 11.5.1 or newer
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - name: npm is new enough for trusted publishing
+        run: node -e "const [a,b,c]=process.argv[1].split('.').map(Number); if (a<11||(a===11&&(b<5||(b===5&&c<1)))) { console.error('npm '+process.argv[1]+' is older than 11.5.1'); process.exit(1) }" "$(npm --version)"
+      - run: pnpm install --frozen-lockfile
+      - name: Build the dashboard and the browser entry
+        run: pnpm run build
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+      - name: Lint
+        run: pnpm lint
+      - name: Tests (includes the build check on the packed tarball)
+        run: pnpm run test:cli
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level=high
+      - name: Publish what was just built and tested
+        run: npm publish --provenance --access public --ignore-scripts
