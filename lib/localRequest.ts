@@ -16,6 +16,8 @@ export function isLocalRequest(request: Request): boolean {
   // Next sets x-forwarded-for to the socket address itself, so only a non-loopback hop means a real proxy.
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded && !forwarded.split(',').every(ip => LOOPBACK_IPS.has(ip.trim().replace(/^\[|\]$/g, '')))) return false;
+  // Browsers set this on a request made by another site's page; curl and older browsers send nothing.
+  if (request.headers.get('sec-fetch-site') === 'cross-site') return false;
   const host = (request.headers.get('host') ?? '').replace(/:\d+$/, '');
   if (!LOCAL_HOSTS.has(host)) return false;
   const origin = request.headers.get('origin');
