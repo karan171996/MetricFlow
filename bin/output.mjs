@@ -74,6 +74,7 @@ ${c.bold("Options")}
                    --host 0.0.0.0 exposes the dashboard to your network
   --json           Machine-readable output: one JSON object per line
   --no-color       Disable colors (also honors NO_COLOR and non-TTY)
+  --no-open        Start the server without opening a browser
 
 ${c.bold("Environment")}
   PORT             Port to listen on (default 3000)
