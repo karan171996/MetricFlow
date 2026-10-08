@@ -1,0 +1,20 @@
+# The documentation site: GitHub Pages builds this folder as it is (Settings > Pages > main, /docs).
+title: MetricFlow
+description: See how your site really performs, without leaving your machine.
+# Pinned: an unpinned theme can change the site's look or break its build without a commit here.
+remote_theme: just-the-docs/just-the-docs@v0.12.0
+color_scheme: dark
+url: https://karan171996.github.io
+baseurl: /MetricFlow
+search_enabled: true
+heading_anchors: true
+aux_links:
+  GitHub: https://github.com/karan171996/MetricFlow
+  npm: https://www.npmjs.com/package/@karan171996/metricflow
+aux_links_new_tab: true
+footer_content: MetricFlow is released under the MIT license.
+# Internal planning and design notes live in this folder too. They are not part of the site.
+exclude:
+  - plans
+  - design
+  - CARDS.md
