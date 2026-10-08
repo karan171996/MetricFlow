@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-09T00:00:00.000Z",
+  "title": "Design System: MetricFlow",
+  "extensions": {
+    "colorMeta": {
+      "signal-blue": { "role": "primary", "displayName": "Signal Blue", "canonical": "#3b82f6", "tonalRamp": ["oklch(0.15 0.19 260)", "oklch(0.27 0.19 260)", "oklch(0.38 0.19 260)", "oklch(0.5 0.19 260)", "oklch(0.62 0.19 260)", "oklch(0.73 0.14 260)", "oklch(0.84 0.09 260)", "oklch(0.95 0.03 260)"] },
+      "healthy-green": { "role": "secondary", "displayName": "Healthy Green", "canonical": "#10b981", "tonalRamp": ["oklch(0.15 0.15 162)", "oklch(0.27 0.15 162)", "oklch(0.38 0.15 162)", "oklch(0.5 0.15 162)", "oklch(0.62 0.15 162)", "oklch(0.73 0.15 162)", "oklch(0.84 0.1 162)", "oklch(0.95 0.04 162)"] },
+      "healthy-cyan": { "role": "secondary", "displayName": "Healthy Cyan", "canonical": "#06b6d4", "tonalRamp": ["oklch(0.15 0.13 215)", "oklch(0.27 0.13 215)", "oklch(0.38 0.13 215)", "oklch(0.5 0.13 215)", "oklch(0.62 0.13 215)", "oklch(0.73 0.13 215)", "oklch(0.84 0.09 215)", "oklch(0.95 0.03 215)"] },
+      "caution-amber": { "role": "secondary", "displayName": "Caution Amber", "canonical": "#f59e0b", "tonalRamp": ["oklch(0.15 0.16 70)", "oklch(0.27 0.16 70)", "oklch(0.38 0.16 70)", "oklch(0.5 0.16 70)", "oklch(0.62 0.16 70)", "oklch(0.73 0.16 70)", "oklch(0.84 0.11 70)", "oklch(0.95 0.04 70)"] },
+      "alarm-red": { "role": "secondary", "displayName": "Alarm Red", "canonical": "#ef4444", "tonalRamp": ["oklch(0.15 0.21 25)", "oklch(0.27 0.21 25)", "oklch(0.38 0.21 25)", "oklch(0.5 0.21 25)", "oklch(0.62 0.21 25)", "oklch(0.73 0.15 25)", "oklch(0.84 0.09 25)", "oklch(0.95 0.03 25)"] },
+      "series-violet": { "role": "tertiary", "displayName": "Series Violet", "canonical": "#8b5cf6", "tonalRamp": ["oklch(0.15 0.22 293)", "oklch(0.27 0.22 293)", "oklch(0.38 0.22 293)", "oklch(0.5 0.22 293)", "oklch(0.62 0.22 293)", "oklch(0.73 0.15 293)", "oklch(0.84 0.09 293)", "oklch(0.95 0.03 293)"] },
+      "console-black": { "role": "neutral", "displayName": "Console Black", "canonical": "#0f1419", "tonalRamp": ["#0f1419", "#1a1f2e", "#1a202c", "#2d3748", "#374151", "#4a5568", "#a0aec0", "#cbd5e0"] },
+      "panel-navy": { "role": "neutral", "displayName": "Panel Navy", "canonical": "#1a202c" },
+      "recess-navy": { "role": "neutral", "displayName": "Recess Navy", "canonical": "#1a1f2e" },
+      "hairline-slate": { "role": "neutral", "displayName": "Hairline Slate", "canonical": "#2d3748" },
+      "field-slate": { "role": "neutral", "displayName": "Field Slate", "canonical": "#374151" },
+      "focus-slate": { "role": "neutral", "displayName": "Focus Slate", "canonical": "#4a5568" },
+      "readout-white": { "role": "neutral", "displayName": "Readout White", "canonical": "#ffffff" },
+      "quiet-slate": { "role": "neutral", "displayName": "Quiet Slate", "canonical": "#a0aec0" },
+      "soft-slate": { "role": "neutral", "displayName": "Soft Slate", "canonical": "#cbd5e0" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The page h1." },
+      "headline": { "displayName": "Headline", "purpose": "Section h2." },
+      "title": { "displayName": "Title", "purpose": "h3 and panel headings." },
+      "body": { "displayName": "Body", "purpose": "Default text." },
+      "body-sm": { "displayName": "Body small", "purpose": "Captions, badges, table metadata." },
+      "label": { "displayName": "Label", "purpose": "Form labels and control text." },
+      "mono": { "displayName": "Mono", "purpose": "Code, keys and snippets." }
+    },
+    "shadows": [
+      { "name": "card-ring", "value": "0 0 0 1px rgba(255,255,255,0.1)", "purpose": "The hairline ring around every card." },
+      { "name": "panel", "value": "0 4px 6px rgba(0,0,0,0.3)", "purpose": "Dashboard chart and score panels." },
+      { "name": "raised", "value": "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)", "purpose": "Popovers and tooltips (Tailwind shadow-md)." },
+      { "name": "floating", "value": "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)", "purpose": "Drawers and sheets (Tailwind shadow-lg)." }
+    ],
+    "motion": [
+      { "name": "title-enter", "value": "fade + 8px rise, 400ms ease-out, once on mount", "purpose": "Titles and card titles; skipped under reduced motion." },
+      { "name": "shimmer", "value": "background-position 200% to -200%", "purpose": "Page-level loading bar." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main action on a screen.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Save keys</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid transparent; border-radius: 10px; font: 500 14px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; white-space: nowrap; cursor: pointer; transition: all 150ms; outline: none; } .ds-btn:focus-visible { border-color: #4a5568; box-shadow: 0 0 0 3px rgba(74,85,104,0.5); } .ds-btn:active { transform: translateY(1px); } .ds-btn-primary { background: #3b82f6; color: #fff; } .ds-btn-primary:hover { background: rgba(59,130,246,0.8); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary actions beside a primary button.",
+      "html": "<button class=\"ds-btn ds-btn-outline\">Cancel</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid transparent; border-radius: 10px; font: 500 14px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; white-space: nowrap; cursor: pointer; transition: all 150ms; outline: none; } .ds-btn:focus-visible { border-color: #4a5568; box-shadow: 0 0 0 3px rgba(74,85,104,0.5); } .ds-btn:active { transform: translateY(1px); } .ds-btn-outline { background: rgba(55,65,81,0.3); border-color: #374151; color: #fff; } .ds-btn-outline:hover { background: rgba(55,65,81,0.5); }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Removing keys or data. A red tint, not a solid block.",
+      "html": "<button class=\"ds-btn ds-btn-destructive\">Remove</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid transparent; border-radius: 10px; font: 500 14px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; white-space: nowrap; cursor: pointer; transition: all 150ms; outline: none; } .ds-btn:active { transform: translateY(1px); } .ds-btn-destructive { background: rgba(239,68,68,0.2); color: #ef4444; } .ds-btn-destructive:hover { background: rgba(239,68,68,0.3); } .ds-btn-destructive:focus-visible { border-color: rgba(239,68,68,0.4); box-shadow: 0 0 0 3px rgba(239,68,68,0.4); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The standard panel: flat, with a hairline ring.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-title\">Largest Contentful Paint</div><div class=\"ds-card-desc\">Per page, last 24 hours</div></div>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: 14px; background: #1a202c; color: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,0.1); font: 400 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; } .ds-card-title { font-size: 16px; font-weight: 500; line-height: 1.375; } .ds-card-desc { color: #a0aec0; }"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Text fields on the setup and settings screens.",
+      "html": "<input class=\"ds-input\" placeholder=\"NRAK-...\" />",
+      "css": ".ds-input { height: 32px; width: 100%; min-width: 0; padding: 4px 10px; border: 1px solid #374151; border-radius: 10px; background: rgba(55,65,81,0.3); color: #fff; font: 400 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; outline: none; transition: border-color 150ms, box-shadow 150ms; } .ds-input::placeholder { color: #a0aec0; } .ds-input:focus-visible { border-color: #4a5568; box-shadow: 0 0 0 3px rgba(74,85,104,0.5); }"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Short status or count labels.",
+      "html": "<span class=\"ds-badge\">High</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; justify-content: center; height: 20px; padding: 2px 8px; border-radius: 26px; background: #3b82f6; color: #fff; font: 500 12px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; white-space: nowrap; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Night Console",
+    "overview": "MetricFlow looks like a calm, dark control room. Surfaces are deep navy-black and stay quiet; the status colours light up only where a page needs attention. An engineer should be able to glance at a screen and see what is wrong before reading a word.\n\nThe mood is calm, precise, technical and friendly. It sits comfortably next to a terminal and an editor, uses exact numbers and tight alignment, and still reads easily for someone who is not an observability expert. Components are compact and restrained: small controls, flat panels, hairline edges.\n\nThe app is dark only. `<html>` carries the `dark` class permanently; the light values in `app/globals.css` are unused shadcn defaults, not a second theme.",
+    "keyCharacteristics": [
+      "Dark only, on a navy-black base",
+      "System font stack; no web fonts are loaded",
+      "Compact 32px controls and 14px body text",
+      "Flat panels edged with a hairline ring",
+      "Colour carries status, not decoration"
+    ],
+    "rules": [
+      { "name": "The Status-Only Rule", "body": "Green, amber and red mean healthy, warning and failing. They are never used as decoration.", "section": "colors" },
+      { "name": "The One Accent Rule", "body": "Signal Blue is the only non-status accent. Violet belongs to charts.", "section": "colors" },
+      { "name": "The Title Entrance Rule", "body": "Titles fade in and rise 8px once on mount (400ms, ease-out) through the `title-enter` utility. With reduced motion they render in their final state.", "section": "typography" },
+      { "name": "The Ring-First Rule", "body": "A new panel gets the hairline ring and no shadow. Add a shadow only when the surface floats above others.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the app dark only, on Console Black.",
+      "Do use the theme tokens (`bg-card`, `text-muted-foreground`, `border-border`) rather than raw hex.",
+      "Do keep controls at 32px and body text at 14px.",
+      "Do give new panels the hairline ring first (The Ring-First Rule).",
+      "Do wrap entrance motion in `motion-safe`, as `title-enter` does."
+    ],
+    "donts": [
+      "Don't use green, amber or red for anything but status.",
+      "Don't add a second accent colour beside Signal Blue.",
+      "Don't load web fonts; the system stack is the type system.",
+      "Don't build a light theme from the unused `:root` values without deciding to."
+    ]
+  }
+}
