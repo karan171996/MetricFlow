@@ -23,6 +23,7 @@ describe("live metric cards (real .env.local)", () => {
         cy.contains("No data yet").should("be.visible");
         cy.contains(/\b0ms\b|Healthy/).should("not.exist"); // never invented zeros
       }
+      cy.wait(1000); // entrance motion ends after the data arrives: titles 400ms, bars 800ms
       cy.screenshot("live-dashboard", { capture: "viewport", overwrite: true });
       cy.visit("/performance");
       cy.wait(2500);
