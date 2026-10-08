@@ -252,6 +252,9 @@ test("both tools start with the privacy defaults and only the needed New Relic f
   await init({ sentry: { dsn: DSN }, "new-relic": { ...NR, region: "eu" } });
 
   const [s] = seen.sentryInit;
+  // Exactly these keys. In 10.76.1 a `dataCollection` key makes the SDK ignore sendDefaultPii and start
+  // from collect-everything defaults, so it must not appear here unnoticed.
+  assert.deepEqual(Object.keys(s).sort(), ["dsn", "integrations", "sendDefaultPii", "tracesSampleRate"]);
   assert.equal(s.dsn, DSN);
   assert.equal(s.sendDefaultPii, false);
   assert.equal(s.tracesSampleRate, 1, "localhost default");
