@@ -11,6 +11,7 @@ See how your site really performs, without leaving your machine.
 {: .fs-6 .fw-300 }
 
 [Get started](getting-started.md){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[Take the tour](tour.md){: .btn .fs-5 .mb-4 .mb-md-0 .mr-2 }
 [View on GitHub](https://github.com/karan171996/MetricFlow){: .btn .fs-5 .mb-4 .mb-md-0 }
 
 ---
@@ -45,9 +46,14 @@ The dashboard opens on `http://localhost:3000`. Paste your keys on the Setup pag
 
 | Page | What it covers |
 | :--- | :--- |
+| [Tour](tour.md) | Every screen, with sample data |
 | [Getting started](getting-started.md) | What you need, the keys to add, and how to check that metrics arrive |
 | [Sending data from your site](sending-data.md) | The `init` call, its options, what each tool collects, and CSP |
 | [Troubleshooting](troubleshooting.md) | What to check when the dashboard is empty or a number looks wrong |
 | [CLI reference](cli.md) | Every option of the `performance-dashboard` command |
 | [Configuration](configuration.md) | Every environment variable MetricFlow reads |
 | [Developing MetricFlow](development.md) | Run from source, run the tests, project structure |
+
+---
+
+Created and maintained by [@karan171996](https://github.com/karan171996).

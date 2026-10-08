@@ -31,14 +31,21 @@ test("docs site: every page has a title and a place in the sidebar, and internal
   const config = readFileSync(join(root, "docs/_config.yml"), "utf8");
   assert.match(config, /^remote_theme: just-the-docs\/just-the-docs@v\d+\.\d+\.\d+$/m, "the theme is pinned to a version");
   for (const internal of ["plans", "design", "CARDS.md"]) assert.match(config, new RegExp(`^  - ${internal.replace(".", "\\.")}$`, "m"), `${internal} is excluded from the site`);
-  const pages = ["index", "getting-started", "sending-data", "troubleshooting", "cli", "configuration", "development"];
+  const pages = ["index", "tour", "getting-started", "sending-data", "troubleshooting", "cli", "configuration", "development"];
   const orders = pages.map((page) => {
     const md = readFileSync(join(root, "docs", `${page}.md`), "utf8");
     const front = /^---\ntitle: (.+)\nnav_order: (\d+)\n(?:permalink: .+\n)?---\n/.exec(md);
     assert.ok(front, `docs/${page}.md starts with a title and nav_order`);
     return Number(front[2]);
   });
-  assert.deepEqual(orders, [1, 2, 3, 4, 5, 6, 7], "sidebar order");
+  assert.deepEqual(orders, [1, 2, 3, 4, 5, 6, 7, 8], "sidebar order");
+});
+
+test("docs tour: every picture it shows is a file in docs/images", () => {
+  const md = readFileSync(join(root, "docs/tour.md"), "utf8");
+  const images = [...md.matchAll(/\/main\/docs\/images\/([a-z-]+\.png)\)/g)].map((m) => m[1]);
+  assert.ok(images.length >= 8, "the tour shows every screen");
+  for (const image of images) assert.ok(existsSync(join(root, "docs/images", image)), `docs/images/${image} is shown in the tour but does not exist`);
 });
 
 test("docs/images exists and is kept out of the npm package", () => {

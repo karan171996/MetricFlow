@@ -12,7 +12,7 @@ aux_links:
   GitHub: https://github.com/karan171996/MetricFlow
   npm: https://www.npmjs.com/package/@karan171996/metricflow
 aux_links_new_tab: true
-footer_content: MetricFlow is released under the MIT license.
+footer_content: Created and maintained by <a href="https://github.com/karan171996">@karan171996</a>. Released under the MIT license.
 # Internal planning and design notes live in this folder too. They are not part of the site.
 exclude:
   - plans
