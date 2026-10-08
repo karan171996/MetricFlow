@@ -54,3 +54,6 @@ next-env.d.ts
 
 # shared dashboard settings
 .metricflow-settings.json*
+
+# agent worktrees (full checkouts, never part of this repo)
+/.claude/worktrees/

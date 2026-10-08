@@ -148,6 +148,7 @@ performance-dashboard [port] [options]
 | `-v`, `--version` | Print the version |
 | `--json` | Machine-readable output: one JSON object per line on stdout (`event` is `ok`, `info`, `warn`, `error` or `summary`) |
 | `--no-color` | Disable colors (also honors `NO_COLOR` and non-TTY output) |
+| `--no-open` | Start the server without opening a browser |
 | `--host <addr>` | Address to listen on. Default `127.0.0.1` (this machine only). `--host 0.0.0.0` exposes the dashboard, and the New Relic/Sentry data behind it, to your network and prints a warning |
 | `[port]` | Port to listen on; default `3000`. The `PORT` environment variable also works |
 
