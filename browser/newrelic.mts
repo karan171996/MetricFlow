@@ -31,7 +31,8 @@ async function init({ browserKey, applicationId, accountId, region }: NewRelicOp
 }
 
 function send(name: string, value: number, attrs: Attrs): void {
-  agent?.recordCustomEvent('MetricFlowEvent', { name, value, page: window.location.pathname, ...attrs });
+  // attrs first: a caller's own "name", "value" or "page" must not replace the fields the dashboard reads.
+  agent?.recordCustomEvent('MetricFlowEvent', { ...attrs, name, value, page: window.location.pathname });
 }
 
 export const tool: BrowserTool<NewRelicOptions> = { check, init, send };

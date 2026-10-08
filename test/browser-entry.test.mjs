@@ -398,9 +398,11 @@ test("send: nothing before init, MetricFlowEvent through New Relic after, never 
   send("plain", 3);
   send("ignored", "not a number");
   send(undefined, 1);
+  send("real_name", 4, { name: "spoofed", value: 99, page: "/elsewhere", kept: true }); // the fixed fields win
   assert.deepEqual(seen.events, [
     ["MetricFlowEvent", { name: "checkout_step", value: 2, page: "/checkout", step: "payment" }],
     ["MetricFlowEvent", { name: "plain", value: 3, page: "/checkout" }],
+    ["MetricFlowEvent", { name: "real_name", value: 4, page: "/checkout", kept: true }],
   ]);
   Agent.prototype.recordCustomEvent = () => { throw new Error("FAKE"); };
   assert.doesNotThrow(() => send("x", 1));
