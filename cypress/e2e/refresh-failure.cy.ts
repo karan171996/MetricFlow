@@ -8,23 +8,39 @@ const page = { name: "FAKE Blog", slug: "blog", url: "/blog", visitors: "40", st
 const good = { configured: true, tools: ["new-relic"], failed: [], sources, project: "fake-project", pages: [page], history: [{ timestamp: at, sources, pages: [page] }], timestamp: at };
 
 let down = false;
+let analyzeDelay = 0;
+let analyzeAsked = false;
 const REFRESH_MS = 30000;
 const STALE = "Could not load the latest data.";
+// Every screen here has three readers of /api/metrics: the screen itself, the header and the threshold alert.
+const READERS = 3;
 
 beforeEach(() => {
   down = false;
+  analyzeDelay = 0;
+  analyzeAsked = false;
   cy.viewport(1440, 900); // the header subtitle is hidden at narrower widths
   cy.intercept("GET", "/api/setup", { configured: true, tools: ["new-relic"], keys: {} });
-  cy.intercept("GET", "/api/timings", { items: [] });
-  cy.intercept("POST", "/api/analyze", { alerts: [], recommendations: [] });
+  cy.intercept("GET", "/api/timings", { items: [] }).as("timings");
+  cy.intercept("POST", "/api/analyze", (req) => { analyzeAsked = true; req.reply({ delay: analyzeDelay, body: { alerts: [], recommendations: [] } }); }).as("analyze");
   cy.intercept("GET", "/api/metrics", (req) => req.reply(down ? { statusCode: 500, body: { error: "Could not load New Relic data." } } : { statusCode: 200, body: good })).as("metrics");
   cy.clock(Date.parse(at), ["setInterval", "clearInterval"]);
 });
-const refresh = (isDown: boolean) => cy.then(() => { down = isDown; }).tick(REFRESH_MS);
+// Each reader starts its 30s interval in the same effect as its first fetch, so once every reader's response
+// has arrived the intervals exist and a tick cannot fire into nothing.
+const allRead = () => { for (let i = 0; i < READERS; i++) cy.wait("@metrics"); };
+/** One refresh: tick the faked interval, then wait until every reader has had its answer. */
+const refresh = (isDown: boolean) => {
+  cy.then(() => { down = isDown; });
+  cy.tick(REFRESH_MS);
+  allRead();
+};
 
 describe("a failed refresh", () => {
   it("home: the data stays with the failure line, never the setup prompt; a good refresh clears it", () => {
     cy.visit("/");
+    allRead();
+    cy.wait("@analyze"); // the first load is only over after its last request; a tick before that overlaps two loads
     cy.contains("Avg Response Time", { timeout: 15000 }).should("be.visible");
     cy.contains("1.2s").should("be.visible");
 
@@ -37,25 +53,45 @@ describe("a failed refresh", () => {
     cy.contains("Set up keys").should("not.exist");
 
     refresh(false);
+    cy.wait("@timings");
     cy.contains("Failed to load live data.").should("not.exist");
     cy.contains(STALE).should("not.exist");
+    cy.contains("1.2s").should("be.visible");
+  });
+
+  it("home: a slow load that finishes after a newer failed refresh does not hide the failure", () => {
+    analyzeDelay = 1500; // the first load is still waiting for its last request when the next refresh fails
+    cy.visit("/");
+    allRead();
+    // The first load has sent its last request and is waiting for the slow answer: only now do the two loads overlap there.
+    cy.wrap(null).should(() => expect(analyzeAsked, "analyze requested").to.equal(true));
+    cy.contains("Avg Response Time", { timeout: 15000 }).should("be.visible");
+
+    refresh(true);
+    cy.contains("Failed to load live data.").should("be.visible");
+    cy.wait("@analyze"); // now the older, successful load has finished
+    cy.contains("header p", STALE).should("be.visible"); // gives the page a render after that
+    cy.contains("Failed to load live data.").should("be.visible");
     cy.contains("1.2s").should("be.visible");
   });
 
   it("home: a failed first load shows an error with Retry, not the setup prompt or an endless skeleton", () => {
     down = true;
     cy.visit("/");
+    allRead();
     cy.contains("Could not load metrics", { timeout: 15000 }).should("be.visible");
     cy.contains("Failed to load live data.").should("be.visible");
     cy.contains("Connect your data").should("not.exist");
     cy.contains("Set up keys").should("not.exist");
     cy.then(() => { down = false; });
     cy.contains("button", "Retry").click();
+    cy.wait("@metrics");
     cy.contains("Avg Response Time").should("be.visible");
   });
 
   it("performance: a failed refresh keeps the numbers and shows the line in the header; a later good one removes it", () => {
     cy.visit("/performance");
+    allRead();
     cy.contains("FAKE Blog", { timeout: 15000 }).should("be.visible");
     cy.contains("header p", "1 of 1 pages reporting").should("be.visible");
     cy.contains(STALE).should("not.exist");
