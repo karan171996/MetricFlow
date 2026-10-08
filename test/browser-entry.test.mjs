@@ -29,7 +29,7 @@ const FORBIDDEN_NAMES = [
   ...Object.values(AI_PROVIDERS).map((p) => p.key),
   AI_PROVIDER_KEY,
 ];
-const FORBIDDEN_TEXT = ["process.env", "node:", "axios", "lib/env", "require("];
+const FORBIDDEN_TEXT = ["process.env", "node:", "axios", "lib/env", "require(", "import.meta"];
 
 const walk = (dir) => readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? walk(join(dir, f)) : [join(dir, f)]));
 
@@ -46,7 +46,8 @@ function checkBrowserTree(dir) {
     for (const t of FORBIDDEN_TEXT) if (text.includes(t)) bad.push(`${rel}: contains ${t}`);
 
     // Every specifier is resolved to a path, never string-matched.
-    const specs = [...text.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(["'`])([^"'`]*)\1/g)].map((m) => m[2]);
+    // Whitespace is optional everywhere (minified or hand-written `import"x"`, `import{a}from"x"`).
+    const specs = [...text.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s*)(["'`])([^"'`]*)\1/g)].map((m) => m[2]);
     const dynamic = text.match(/\bimport\s*\(/g)?.length ?? 0;
     const literal = text.match(/\bimport\s*\(\s*(["'])[^"'`$]*\1\s*\)/g)?.length ?? 0;
     if (dynamic !== literal) bad.push(`${rel}: import() with a specifier that is not a plain string`);
@@ -58,7 +59,9 @@ function checkBrowserTree(dir) {
       } else if (!ALLOWED_BARE.includes(spec)) bad.push(`${rel}: import not allowed: ${spec}`);
     }
     // No static import in the entry: a site that never calls init must download nothing else.
-    if (/^index\.m[jt]s$/.test(rel) && /^\s*import\s+(?!type\b)[^(]|^\s*export\s[^;]*\bfrom\b/m.test(text)) bad.push(`${rel}: static import in the entry`);
+    // Any import statement at all (type-only ones too: the entry needs none), and any `export ... from`.
+    const STATIC = /(^|[;}\n])\s*import\s*(?!\()["'{*\w$]|(^|[;}\n])\s*export\s*[*{][^;]*?\bfrom\s*["']/;
+    if (/^index\.m[jt]s$/.test(rel) && STATIC.test(text)) bad.push(`${rel}: static import in the entry`);
   }
   return bad;
 }
@@ -103,6 +106,11 @@ test("build check rejects every violation (a clean tree passes, so the check is 
     "template import()": { "index.mjs": ok, "sentry.mjs": "await import(`./${'x'}.mjs`);\n" },
     "static import in the entry": { "index.mjs": "import { tool } from './sentry.mjs';\n", "sentry.mjs": ok },
     "re-export in the entry": { "index.mjs": "export { tool } from './sentry.mjs';\n", "sentry.mjs": ok },
+    "import with no space before the quote": { "index.mjs": ok, "sentry.mjs": 'import"../lib/sentryDsn.js";\n' },
+    "import with no spaces at all, in the entry": { "index.mjs": 'import{tool}from"./sentry.mjs";\n', "sentry.mjs": ok },
+    "namespace import after another statement, in the entry": { "index.mjs": 'const a = 1;import*as s from"./sentry.mjs";\n', "sentry.mjs": ok },
+    "re-export with no spaces, in the entry": { "index.mjs": 'export*from"./sentry.mjs";\n', "sentry.mjs": ok },
+    "import.meta": { "index.mjs": "export const here = import.meta.url;\n" },
     "reads the environment": { "index.mjs": "export const k = process.env.NEXT_PUBLIC_X;\n" },
     "node builtin": { "index.mjs": ok, "sentry.mjs": "await import('node:fs');\n" },
     "http client": { "index.mjs": ok, "sentry.mjs": "await import('axios');\n" },
