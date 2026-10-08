@@ -101,7 +101,9 @@ export async function browserSetup(apiKey: string, accountId: string): Promise<B
     const search = body?.data?.actor?.entitySearch;
     const app = search?.results?.entities?.[0];
     // keySearch needs extra permissions; a key without them still gives us the app.
-    const browserKey = body?.data?.actor?.apiAccess?.keySearch?.keys?.find(k => k.ingestType === 'BROWSER')?.key ?? null;
+    const found = body?.data?.actor?.apiAccess?.keySearch?.keys?.find(k => k.ingestType === 'BROWSER')?.key;
+    // This value is pre-filled into a snippet for a public page, so pass on nothing that is not a browser key.
+    const browserKey = found && /^NRJS-[a-z0-9]+$/i.test(found) ? found : null;
     return {
       appCount: search?.count ?? 0,
       appName: app?.name ?? null,
