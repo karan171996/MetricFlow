@@ -204,7 +204,7 @@ export function ConnectPage() {
       {showNr && <Card className={cardCls}>
         <CardHeader>
           <CardTitle className="text-base font-bold text-white">Connection</CardTitle>
-          <CardDescription className="text-sm text-gray-400">Each link in the chain from your site to this dashboard. Fix the first \u2717.</CardDescription>
+          <CardDescription className="text-sm text-gray-400">Each link in the chain from your site to this dashboard. Fix the first ✗.</CardDescription>
         </CardHeader>
         <CardContent aria-live="polite">
           <ChainRow

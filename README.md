@@ -11,6 +11,7 @@ with AI suggestions on what to fix first.
 [![CI](https://github.com/karan171996/MetricFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/karan171996/MetricFlow/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@karan171996/metricflow?color=3ee0a1)](https://github.com/karan171996/MetricFlow/blob/main/LICENSE)
 
+[Tour](https://github.com/karan171996/MetricFlow/blob/main/docs/tour.md) ·
 [Get started](https://github.com/karan171996/MetricFlow/blob/main/docs/getting-started.md) ·
 [Send data](https://github.com/karan171996/MetricFlow/blob/main/docs/sending-data.md) ·
 [CLI](https://github.com/karan171996/MetricFlow/blob/main/docs/cli.md) ·
@@ -70,6 +71,7 @@ Options, privacy defaults and Content Security Policy hosts are in [Sending data
 
 | Page | What it covers |
 | :--- | :--- |
+| [Tour](https://github.com/karan171996/MetricFlow/blob/main/docs/tour.md) | Every screen of the dashboard, with sample data |
 | [Getting started](https://github.com/karan171996/MetricFlow/blob/main/docs/getting-started.md) | What you need, the keys to add, and how to check that metrics arrive |
 | [Sending data from your site](https://github.com/karan171996/MetricFlow/blob/main/docs/sending-data.md) | The `init` call, its options, what each tool collects, and CSP |
 | [Troubleshooting](https://github.com/karan171996/MetricFlow/blob/main/docs/troubleshooting.md) | What to check when the dashboard is empty or a number looks wrong |
@@ -88,3 +90,9 @@ Fork, branch, and open a pull request. The steps, the commit format and the PR c
 ## License
 
 [MIT](https://github.com/karan171996/MetricFlow/blob/main/LICENSE)
+
+<div align="center">
+
+Created and maintained by [@karan171996](https://github.com/karan171996)
+
+</div>

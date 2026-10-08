@@ -1,6 +1,6 @@
 ---
 title: CLI reference
-nav_order: 5
+nav_order: 6
 ---
 
 # CLI reference
