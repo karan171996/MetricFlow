@@ -1,7 +1,6 @@
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { FAKE, load, mockAxios, root } from "./helpers.mjs";
+import { FAKE, load, mockAxios } from "./helpers.mjs";
 
 let handler = () => ({ data: {} });
 const calls = mockAxios((m, u, c) => handler(m, u, c));

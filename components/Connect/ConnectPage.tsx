@@ -156,7 +156,7 @@ export function ConnectPage() {
     setBusy(true);
     setMsg(null);
     try {
-      const res = await fetch("/api/connect", { method: "POST" });
+      const res = await fetch("/api/connect", { method: "POST", headers: { "Content-Type": "application/json" } });
       const body = await res.json();
       setMsg(body.sent ? { ok: true, text: "Test event sent. It can take up to a minute to show below." } : { ok: false, text: body.error ?? "Failed." });
       refresh();

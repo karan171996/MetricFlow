@@ -1,8 +1,11 @@
 import { analyzeMetrics } from '@/lib/aiAnalysis';
 import { recordTiming } from '@/lib/apiTimingStore';
 import { AI_PROVIDERS, activeAi } from '@/lib/env';
+import { requireJson } from '@/lib/localRequest';
 
 export async function POST(request: Request) {
+  const notJson = requireJson(request);
+  if (notJson) return notJson;
   try {
     const data = await request.json();
 
