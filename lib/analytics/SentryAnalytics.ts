@@ -97,20 +97,20 @@ export class SentryAnalytics extends Analytics<SentryEventRow, SentryPageErrors>
   protected async load(): Promise<ToolRead> {
     const target = await this.target();
     if (!target) return { pages: [], byPath: {}, legacy: {} };
-    const [errorRows, loadRows] = await Promise.all([
+    const [allErrorRows, loadRows] = await Promise.all([
       this.query<SentryEventRow>(target, ERRORS),
       this.query<PageLoadRow>(target, PAGE_LOADS)
     ]);
+    // Local pages only, like the page loads and like New Relic: an error on production's /pricing
+    // is not an error on this machine's /pricing.
+    // ponytail: filtered after the fetch, so a project flooded with production errors can fill the 100-row page first. Filter in the query if that bites.
+    const errorRows = allErrorRows.filter(row => isLocalUrl(String(row.url ?? '')));
     const legacy = this.aggregateRows(errorRows);
     const loads = pageLoads(loadRows);
 
     // The page list: every local page that loaded, plus local pages that only have errors (listed with no traffic).
     const views: Record<string, number> = Object.fromEntries(Object.entries(loads).map(([path, m]) => [path, m.traffic!.count]));
-    for (const row of errorRows) {
-      const url = String(row.url ?? '');
-      const path = isLocalUrl(url) ? normalizePath(url) : null;
-      if (path !== null) views[path] ??= 0;
-    }
+    for (const path of Object.keys(legacy)) views[path] ??= 0;
 
     const byPath: Record<string, PageMetrics> = {};
     for (const path of new Set([...Object.keys(legacy), ...Object.keys(loads)])) {
