@@ -67,6 +67,8 @@ export default function Home() {
       setRefreshing(true);
 
       const metricsRes = await fetch("/api/metrics");
+      // A failed read answers { error }: thrown here, so the last good data stays instead of becoming "not configured".
+      if (!metricsRes.ok) throw new Error(`HTTP ${metricsRes.status}`);
       const metricsData = withNeutralShape(await metricsRes.json());
       setMetrics(metricsData);
 
@@ -107,7 +109,14 @@ export default function Home() {
         <AppSidebar />
         <SidebarInset className="bg-dash-surface">
           <Header />
-          <DashboardBodySkeleton />
+          {/* The first load failed: an error with Retry, not an endless skeleton or the setup prompt. */}
+          {error && !refreshing ? (
+            <div className="flex flex-1 flex-col p-6 md:p-8">
+              <EmptyState title="Could not load metrics" reason={error} onRetry={fetchData} />
+            </div>
+          ) : (
+            <DashboardBodySkeleton />
+          )}
         </SidebarInset>
       </SidebarProvider>
     );
