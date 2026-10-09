@@ -12,11 +12,11 @@ Each card number is computed from real New Relic and Sentry data. This table sho
 | **LCP** | New Relic | `largestContentfulPaint` (p75) | average `lcp` across all pages, in milliseconds | ms | `dashboardTransforms.ts:87` |
 | **CLS** | New Relic | `cumulativeLayoutShift` (p75) | average `cls` across all pages | score | `dashboardTransforms.ts:88` |
 | **Apdex Trend** | New Relic | `apdexScore` per snapshot | `apdexScore * 100` per snapshot | % | `dashboardTransforms.ts:124-131` |
-| **Avg Apdex (x100)** | New Relic | `apdexScore >= 0.9` (pages passing) | average `apdexScore * 100` across all pages | % | `dashboardTransforms.ts:143` |
-| **Pages with Apdex 0.9 or higher** | New Relic | `apdexScore` | count of pages where `apdexScore >= CWV_APDEX_THRESHOLD (0.9)` | count | `dashboardTransforms.ts:146` |
-| **Pages Within Load Budget** | New Relic | `loadTime` | count of pages where `loadTime <= LOAD_BUDGET_MS (1000)` | count | `dashboardTransforms.ts:149` |
+| **Avg Apdex (x100)** | New Relic | `apdexScore >=` the Apdex minimum from Settings (default 0.9) (pages passing) | average `apdexScore * 100` across all pages | % | `dashboardTransforms.ts:143` |
+| **Pages with Apdex 0.9 or higher** | New Relic | `apdexScore` | count of pages where `apdexScore >=` the user's Apdex minimum (default 0.9, shown in the label) | count | `dashboardTransforms.ts`, rule in `lib/thresholds.ts` |
+| **Pages Within Load Budget (1.5s)** | New Relic | `loadTime` | count of pages where `loadTime <=` the user's load time threshold (default 1.5s, shown in the label) | count | `dashboardTransforms.ts`, rule in `lib/thresholds.ts` |
 | **What Moved** | New Relic | `apdexScore` (baseline vs current) | page-by-page delta in apdex score; sorted by improvement/regression | delta | `dashboardTransforms.ts:179-211` |
-| **Page Status** | New Relic | `errorRate`, `apdexScore` | "Critical" if errorRate > 5%; "Warning" if errorRate > 1% OR apdexScore < 0.9; else "Healthy" | status | `app/api/metrics/route.ts:84-88` |
+| **Page Status** | New Relic | `loadTime`, `errorRate`, `apdexScore` | the worst of the three, judged against the thresholds from Settings: "Critical" if loadTime or errorRate is above 2x its threshold; "Warning" if loadTime or errorRate is above its threshold OR apdexScore is below the Apdex minimum (Apdex has no Critical step); else "Healthy". No status at all unless all three values are present | status | `lib/thresholds.ts` |
 
 ## How Metrics Flow
 
@@ -34,7 +34,7 @@ Each card number is computed from real New Relic and Sentry data. This table sho
 3. **Card Computation** (`lib/dashboardTransforms.ts`)
    - Receives current snapshot (pages with NR + Sentry data)
    - Computes aggregates: `avg()` across pages, `sparkline()` from history
-   - Thresholds are named constants: `CWV_APDEX_THRESHOLD = 0.9`, `LOAD_BUDGET_MS = 1000`
+   - Thresholds are the user's (Settings, `lib/thresholds.ts`), passed in as an argument; `metricStatus` is the one rule for page status, counts and tile colours
    - Previous snapshot is fetched to show change (delta, % change)
 
 ## Adding a New Card

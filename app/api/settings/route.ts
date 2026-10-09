@@ -10,6 +10,7 @@ const file = () => process.env.METRICFLOW_SETTINGS_FILE || join(projectDir(), '.
 const RANGES: Record<keyof Thresholds, [number, number]> = {
   loadSeconds: [0.1, 30],
   errorPercent: [0.1, 100],
+  apdexMin: [0, 1],
   uptimeSLA: [90, 100]
 };
 

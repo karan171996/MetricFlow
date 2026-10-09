@@ -142,13 +142,17 @@
           "label": "Avg Page Load Time",
           "value": "1.4s",
           "change": "No prior data yet",
-          "changeClass": "text-dash-muted"
+          "changeClass": "text-dash-muted",
+          "status": "Healthy",
+          "limit": "limit 1.5s"
         },
         {
           "label": "Error Rate",
           "value": "1.00%",
           "change": "No prior data yet",
-          "changeClass": "text-dash-muted"
+          "changeClass": "text-dash-muted",
+          "status": "Healthy",
+          "limit": "limit 2%"
         },
         {
           "label": "Page views (24h)",
@@ -160,7 +164,9 @@
           "label": "Apdex Score",
           "value": "0.51",
           "change": "No prior data yet",
-          "changeClass": "text-dash-muted"
+          "changeClass": "text-dash-muted",
+          "status": "Warning",
+          "limit": "min 0.9"
         }
       ],
       "webVitals": {
@@ -236,7 +242,7 @@
             "isPositive": false
           },
           {
-            "label": "Pages Within Load Budget",
+            "label": "Pages Within Load Budget (1.5s)",
             "value": "2/3",
             "delta": null,
             "isPositive": false

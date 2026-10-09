@@ -71,6 +71,10 @@ export interface DashboardStatCard {
    * e.g. "text-dash-success" | "text-dash-warning" | "text-dash-blue"
    */
   changeClass: string;
+  /** The value judged against the user's threshold (lib/thresholds.ts). Absent on a tile with no limit (page views) or no measured value. */
+  status?: PageStatus;
+  /** The threshold as text, e.g. "limit 2%". Present together with `status`. */
+  limit?: string;
 }
 
 
@@ -181,7 +185,7 @@ export interface AISuggestionsCardData {
 
 /** A summary stat row shown below the main metric in VisibilityBreakdownCard. */
 export interface VisibilityStat {
-  /** Row label (e.g. "Pages with Apdex 0.9 or higher"). */
+  /** Row label; names the user's limit (e.g. "Pages with Apdex 0.9 or higher"). */
   label: string;
   /** Formatted fraction or count (e.g. "44/47"). */
   value: string;

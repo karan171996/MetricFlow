@@ -24,6 +24,7 @@ const calls = mockAxios((method, url, call) => {
 const { pageLoads } = await load("lib/analytics/SentryAnalytics.ts");
 const { GET } = await load("app/api/metrics/route.ts");
 const t = await load("lib/dashboardTransforms.ts");
+const { DEFAULT_THRESHOLDS } = await load("lib/thresholds.ts");
 const { TOOLS } = await load("lib/tools.ts");
 
 mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-01-01T10:00:00Z") });
@@ -149,7 +150,7 @@ test("screens: sampled traffic is labelled as sampled and shown as a plain count
   const { body } = await get(SENTRY);
   const has = (cap) => body.sources[cap] !== undefined;
   assert.equal(t.isSampled(body.pages), true);
-  assert.deepEqual(t.computeStats(body.pages, body.history, has).map((c) => [c.label, c.value]), [["Sampled page loads (24h)", "12"]]);
+  assert.deepEqual(t.computeStats(body.pages, body.history, has, DEFAULT_THRESHOLDS).map((c) => [c.label, c.value]), [["Sampled page loads (24h)", "12"]]);
   // Sentry's tab shows its own page loads and vitals; "—" where nothing was measured.
   const cells = (url) => Object.fromEntries(TOOLS.sentry.columns.map((c) => [c.header, c.cell(byUrl(body)[url])]));
   assert.deepEqual([cells("/a")["Page loads (sampled)"], cells("/a").LCP, cells("/a").CLS, cells("/a").TTFB, cells("/a").INP], ["9", "600ms", "0.05", "30ms", "—"]);
@@ -157,5 +158,5 @@ test("screens: sampled traffic is labelled as sampled and shown as a plain count
   mock.timers.tick(61_000);
   const both = (await get({ ...NR, ...SENTRY })).body;
   assert.equal(t.isSampled(both.pages), false);
-  assert.equal(t.computeStats(both.pages, both.history, (cap) => both.sources[cap] !== undefined).find((c) => c.label === "Page views (24h)").value, "500");
+  assert.equal(t.computeStats(both.pages, both.history, (cap) => both.sources[cap] !== undefined, DEFAULT_THRESHOLDS).find((c) => c.label === "Page views (24h)").value, "500");
 });

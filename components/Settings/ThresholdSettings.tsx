@@ -36,7 +36,8 @@ export function ThresholdSettings() {
           <Slider 
             value={loadThreshold} 
             onValueChange={(val) => setThresholds({ loadSeconds: num(val) })} 
-            max={5} 
+            min={0.1}
+            max={5}
             step={0.1}
             className="cursor-pointer"
           />
@@ -51,11 +52,31 @@ export function ThresholdSettings() {
           <Slider 
             value={errorThreshold} 
             onValueChange={(val) => setThresholds({ errorPercent: num(val) })} 
-            max={10} 
+            // The route accepts 0.1 and up, but stops are counted from min: min 0.1 with step 0.5 gives 0.6, 1.1, 2.1.
+            // 0.5 is the first existing stop the route accepts, so 1% and the 2% default stay selectable.
+            min={0.5}
+            max={10}
             step={0.5}
             className="cursor-pointer"
           />
           <p className="text-xs text-gray-500">Alert triggers if percentage of 5xx errors exceeds this value.</p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label className="text-gray-300 text-sm">Apdex Minimum (0-1)</Label>
+            <span className="text-white font-mono text-sm">{+t.apdexMin.toFixed(2)}</span>
+          </div>
+          <Slider
+            value={[t.apdexMin]}
+            onValueChange={(val) => setThresholds({ apdexMin: num(val) })}
+            min={0}
+            max={1}
+            step={0.05}
+            largeStep={0.1}
+            className="cursor-pointer"
+          />
+          <p className="text-xs text-gray-500">Alert triggers if a page&apos;s Apdex falls below this value.</p>
         </div>
 
         <div className="space-y-4">

@@ -277,13 +277,17 @@
           "label": "Avg Page Load Time",
           "value": "1.4s",
           "change": "0.0% from last check",
-          "changeClass": "text-dash-blue"
+          "changeClass": "text-dash-blue",
+          "status": "Healthy",
+          "limit": "limit 1.5s"
         },
         {
           "label": "Error Rate",
           "value": "1.00%",
           "change": "0.0% from last check",
-          "changeClass": "text-dash-blue"
+          "changeClass": "text-dash-blue",
+          "status": "Healthy",
+          "limit": "limit 2%"
         },
         {
           "label": "Page views (24h)",
@@ -295,7 +299,9 @@
           "label": "Apdex Score",
           "value": "0.51",
           "change": "0.0% from last check",
-          "changeClass": "text-dash-blue"
+          "changeClass": "text-dash-blue",
+          "status": "Warning",
+          "limit": "min 0.9"
         }
       ],
       "webVitals": {
@@ -390,7 +396,7 @@
             "isPositive": true
           },
           {
-            "label": "Pages Within Load Budget",
+            "label": "Pages Within Load Budget (1.5s)",
             "value": "2/3",
             "delta": 0,
             "isPositive": true
@@ -781,13 +787,17 @@
           "label": "Avg Page Load Time",
           "value": "1.3s",
           "change": "-1.5% from last check",
-          "changeClass": "text-dash-success"
+          "changeClass": "text-dash-success",
+          "status": "Healthy",
+          "limit": "limit 1.5s"
         },
         {
           "label": "Error Rate",
           "value": "1.02%",
           "change": "+2.1% from last check",
-          "changeClass": "text-dash-warning"
+          "changeClass": "text-dash-warning",
+          "status": "Healthy",
+          "limit": "limit 2%"
         },
         {
           "label": "Page views (24h)",
@@ -799,7 +809,9 @@
           "label": "Apdex Score",
           "value": "0.55",
           "change": "+6.9% from last check",
-          "changeClass": "text-dash-success"
+          "changeClass": "text-dash-success",
+          "status": "Warning",
+          "limit": "min 0.9"
         }
       ],
       "webVitals": {
@@ -913,7 +925,7 @@
             "isPositive": false
           },
           {
-            "label": "Pages Within Load Budget",
+            "label": "Pages Within Load Budget (1.5s)",
             "value": "1/3",
             "delta": -1,
             "isPositive": false
@@ -1351,13 +1363,17 @@
           "label": "Avg Page Load Time",
           "value": "1.3s",
           "change": "0.0% from last check",
-          "changeClass": "text-dash-blue"
+          "changeClass": "text-dash-blue",
+          "status": "Healthy",
+          "limit": "limit 1.5s"
         },
         {
           "label": "Error Rate",
           "value": "1.02%",
           "change": "0.0% from last check",
-          "changeClass": "text-dash-blue"
+          "changeClass": "text-dash-blue",
+          "status": "Healthy",
+          "limit": "limit 2%"
         },
         {
           "label": "Page views (24h)",
@@ -1369,7 +1385,9 @@
           "label": "Apdex Score",
           "value": "0.55",
           "change": "0.0% from last check",
-          "changeClass": "text-dash-blue"
+          "changeClass": "text-dash-blue",
+          "status": "Warning",
+          "limit": "min 0.9"
         }
       ],
       "webVitals": {
@@ -1502,7 +1520,7 @@
             "isPositive": true
           },
           {
-            "label": "Pages Within Load Budget",
+            "label": "Pages Within Load Budget (1.5s)",
             "value": "1/3",
             "delta": 0,
             "isPositive": true

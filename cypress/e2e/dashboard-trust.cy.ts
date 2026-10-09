@@ -130,7 +130,7 @@ describe("deltas on the home dashboard", () => {
       card(description).contains("span", "No prior data yet").parent().should("not.have.css", "color", GREEN).and("not.have.css", "color", RED);
     });
     card("Avg Apdex (x100)").should(($card) => {
-      // The headline and both rows ("Pages with Apdex 0.9 or higher", "Pages Within Load Budget").
+      // The headline and both rows ("Pages with Apdex 0.9 or higher", "Pages Within Load Budget (1.5s)"; both name the user's limit).
       expect($card.text().split("No prior data yet")).to.have.length(4);
       expect($card.find(ARROWS)).to.have.length(0);
     });

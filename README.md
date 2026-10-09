@@ -43,7 +43,7 @@ There is no MetricFlow server and no account to create: it runs on your machine,
 
 | Page | What it shows |
 | --- | --- |
-| **Dashboard** (`/`) | Average page load time, error rate, page views and Apdex; TTFB, LCP and CLS cards with trends; pages with Apdex 0.9 or higher; what moved since the last check; AI suggestions |
+| **Dashboard** (`/`) | Average page load time, error rate, page views and Apdex; TTFB, LCP and CLS cards with trends; pages at or above the Apdex minimum from Settings (default 0.9); what moved since the last check; AI suggestions |
 | **Performance** (`/performance`) | Every tracked page with its health. Click a row for that page's detail view |
 | **New Relic** (`/tools/new-relic`) | New Relic numbers only, per page |
 | **Sentry** (`/tools/sentry`) | Error count, latest error and when it was last seen, per page |
