@@ -238,6 +238,27 @@ test("/api/analyze: a failure answers with fixed text; neither the body nor the 
   cleanLogs();
 });
 
+test("/api/analyze: with no AI key nothing is timed; with a key the provider call is", async () => {
+  const { AI_PROVIDERS } = await load("lib/env.ts");
+  const { getTimings } = await load("lib/apiTimingStore.ts");
+  const aiKeys = Object.values(AI_PROVIDERS).map((p) => p.key);
+  const saved = Object.fromEntries(["AI_PROVIDER", ...aiKeys].map((k) => [k, process.env[k]]));
+  const post = () => analyze.POST(req("http://localhost:3000/api/analyze", { method: "POST", body: { metrics: { pages: [] } } }));
+  const timed = () => getTimings().filter((t) => t.name.includes("analyze"));
+  try {
+    for (const k of Object.keys(saved)) delete process.env[k];
+    assert.deepEqual(await (await post()).json(), { status: "unavailable", reason: "no_key" });
+    assert.deepEqual(timed(), [], "no provider was called, so no timing row");
+
+    process.env[AI_PROVIDERS.claude.key] = "FAKE-CLAUDE-0000";
+    handler = () => ({ data: { content: [{ text: '{"recommendations":["cache it"]}' }] } });
+    assert.equal((await (await post()).json()).status, "ok");
+    assert.deepEqual(timed().map((t) => t.name), [`${AI_PROVIDERS.claude.label}: analyze`]);
+  } finally {
+    for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k]; else process.env[k] = v;
+  }
+});
+
 test("the CLI empties METRICFLOW_EXPOSED on a loopback start", async () => {
   const { readFileSync } = await import("node:fs");
   const { root } = await import("./helpers.mjs");

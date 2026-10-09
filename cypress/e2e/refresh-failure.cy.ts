@@ -41,14 +41,14 @@ describe("a failed refresh", () => {
     cy.visit("/");
     allRead();
     cy.wait("@analyze"); // the first load is only over after its last request; a tick before that overlaps two loads
-    cy.contains("Avg Response Time", { timeout: 15000 }).should("be.visible");
+    cy.contains("Avg Page Load Time", { timeout: 15000 }).should("be.visible");
     cy.contains("1.2s").should("be.visible");
 
     refresh(true);
     cy.contains("Failed to load live data.").should("be.visible");
     cy.contains("header p", STALE).should("be.visible");
     cy.contains("1.2s").should("be.visible");
-    cy.contains("Avg Response Time").should("be.visible");
+    cy.contains("Avg Page Load Time").should("be.visible");
     cy.contains("Connect your data").should("not.exist");
     cy.contains("Set up keys").should("not.exist");
 
@@ -65,7 +65,7 @@ describe("a failed refresh", () => {
     allRead();
     // The first load has sent its last request and is waiting for the slow answer: only now do the two loads overlap there.
     cy.wrap(null).should(() => expect(analyzeAsked, "analyze requested").to.equal(true));
-    cy.contains("Avg Response Time", { timeout: 15000 }).should("be.visible");
+    cy.contains("Avg Page Load Time", { timeout: 15000 }).should("be.visible");
 
     refresh(true);
     cy.contains("Failed to load live data.").should("be.visible");
@@ -86,7 +86,7 @@ describe("a failed refresh", () => {
     cy.then(() => { down = false; });
     cy.contains("button", "Retry").click();
     cy.wait("@metrics");
-    cy.contains("Avg Response Time").should("be.visible");
+    cy.contains("Avg Page Load Time").should("be.visible");
   });
 
   it("performance: a failed refresh keeps the numbers and shows the line in the header; a later good one removes it", () => {

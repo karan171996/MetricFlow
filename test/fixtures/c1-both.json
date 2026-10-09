@@ -274,7 +274,7 @@
     "transforms": {
       "stats": [
         {
-          "label": "Avg Response Time",
+          "label": "Avg Page Load Time",
           "value": "1.4s",
           "change": "0.0% from last check",
           "changeClass": "text-dash-blue"
@@ -286,8 +286,8 @@
           "changeClass": "text-dash-blue"
         },
         {
-          "label": "Throughput",
-          "value": "1.6k/s",
+          "label": "Page views (24h)",
+          "value": "1,640",
           "change": "0.0% from last check",
           "changeClass": "text-dash-blue"
         },
@@ -303,9 +303,10 @@
           "title": "TTFB",
           "description": "Time to First Byte",
           "value": "210ms",
-          "change": "0ms",
-          "isPositive": true,
-          "color": "#3ee0a1",
+          "change": "No change",
+          "direction": null,
+          "isPositive": null,
+          "color": "#9ca3af",
           "data": [
             {
               "label": "1",
@@ -321,9 +322,10 @@
           "title": "LCP",
           "description": "Largest Contentful Paint",
           "value": "594ms",
-          "change": "0ms",
-          "isPositive": true,
-          "color": "#3ee0a1",
+          "change": "No change",
+          "direction": null,
+          "isPositive": null,
+          "color": "#9ca3af",
           "data": [
             {
               "label": "1",
@@ -339,9 +341,10 @@
           "title": "CLS",
           "description": "Cumulative Layout Shift",
           "value": "0.02",
-          "change": "0.00",
-          "isPositive": true,
-          "color": "#3ee0a1",
+          "change": "No change",
+          "direction": null,
+          "isPositive": null,
+          "color": "#9ca3af",
           "data": [
             {
               "label": "1",
@@ -355,7 +358,7 @@
         }
       },
       "cwvTrend": {
-        "title": "Core Web Vitals Score Trend",
+        "title": "Apdex Trend",
         "points": [
           {
             "month": "10:02 AM",
@@ -381,7 +384,7 @@
         ],
         "stats": [
           {
-            "label": "Pages Passing Core Web Vitals",
+            "label": "Pages with Apdex 0.9 or higher",
             "value": "1/3",
             "delta": 0,
             "isPositive": true
@@ -775,7 +778,7 @@
     "transforms": {
       "stats": [
         {
-          "label": "Avg Response Time",
+          "label": "Avg Page Load Time",
           "value": "1.3s",
           "change": "-1.5% from last check",
           "changeClass": "text-dash-success"
@@ -787,8 +790,8 @@
           "changeClass": "text-dash-warning"
         },
         {
-          "label": "Throughput",
-          "value": "1.6k/s",
+          "label": "Page views (24h)",
+          "value": "1,640",
           "change": "0.0% from last check",
           "changeClass": "text-dash-blue"
         },
@@ -804,9 +807,10 @@
           "title": "TTFB",
           "description": "Time to First Byte",
           "value": "210ms",
-          "change": "0ms",
-          "isPositive": true,
-          "color": "#3ee0a1",
+          "change": "No change",
+          "direction": null,
+          "isPositive": null,
+          "color": "#9ca3af",
           "data": [
             {
               "label": "1",
@@ -826,9 +830,10 @@
           "title": "LCP",
           "description": "Largest Contentful Paint",
           "value": "594ms",
-          "change": "0ms",
-          "isPositive": true,
-          "color": "#3ee0a1",
+          "change": "No change",
+          "direction": null,
+          "isPositive": null,
+          "color": "#9ca3af",
           "data": [
             {
               "label": "1",
@@ -848,9 +853,10 @@
           "title": "CLS",
           "description": "Cumulative Layout Shift",
           "value": "0.02",
-          "change": "0.00",
-          "isPositive": true,
-          "color": "#3ee0a1",
+          "change": "No change",
+          "direction": null,
+          "isPositive": null,
+          "color": "#9ca3af",
           "data": [
             {
               "label": "1",
@@ -868,7 +874,7 @@
         }
       },
       "cwvTrend": {
-        "title": "Core Web Vitals Score Trend",
+        "title": "Apdex Trend",
         "points": [
           {
             "month": "10:02 AM",
@@ -901,7 +907,7 @@
         ],
         "stats": [
           {
-            "label": "Pages Passing Core Web Vitals",
+            "label": "Pages with Apdex 0.9 or higher",
             "value": "0/3",
             "delta": -1,
             "isPositive": false
@@ -1342,7 +1348,7 @@
     "transforms": {
       "stats": [
         {
-          "label": "Avg Response Time",
+          "label": "Avg Page Load Time",
           "value": "1.3s",
           "change": "0.0% from last check",
           "changeClass": "text-dash-blue"
@@ -1354,8 +1360,8 @@
           "changeClass": "text-dash-blue"
         },
         {
-          "label": "Throughput",
-          "value": "1.6k/s",
+          "label": "Page views (24h)",
+          "value": "1,640",
           "change": "0.0% from last check",
           "changeClass": "text-dash-blue"
         },
@@ -1371,9 +1377,10 @@
           "title": "TTFB",
           "description": "Time to First Byte",
           "value": "210ms",
-          "change": "0ms",
-          "isPositive": true,
-          "color": "#3ee0a1",
+          "change": "No change",
+          "direction": null,
+          "isPositive": null,
+          "color": "#9ca3af",
           "data": [
             {
               "label": "1",
@@ -1397,9 +1404,10 @@
           "title": "LCP",
           "description": "Largest Contentful Paint",
           "value": "594ms",
-          "change": "0ms",
-          "isPositive": true,
-          "color": "#3ee0a1",
+          "change": "No change",
+          "direction": null,
+          "isPositive": null,
+          "color": "#9ca3af",
           "data": [
             {
               "label": "1",
@@ -1423,9 +1431,10 @@
           "title": "CLS",
           "description": "Cumulative Layout Shift",
           "value": "0.02",
-          "change": "0.00",
-          "isPositive": true,
-          "color": "#3ee0a1",
+          "change": "No change",
+          "direction": null,
+          "isPositive": null,
+          "color": "#9ca3af",
           "data": [
             {
               "label": "1",
@@ -1447,7 +1456,7 @@
         }
       },
       "cwvTrend": {
-        "title": "Core Web Vitals Score Trend",
+        "title": "Apdex Trend",
         "points": [
           {
             "month": "10:02 AM",
@@ -1487,7 +1496,7 @@
         ],
         "stats": [
           {
-            "label": "Pages Passing Core Web Vitals",
+            "label": "Pages with Apdex 0.9 or higher",
             "value": "0/3",
             "delta": 0,
             "isPositive": true

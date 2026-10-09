@@ -34,7 +34,7 @@ const headers = (expected: string[]) => cy.get("thead th").should(($th) => expec
 const shows = (...texts: string[]) => texts.forEach((t) => cy.contains(t, { timeout: 15000 }).should("be.visible"));
 const absent = (...texts: string[]) => texts.forEach((t) => cy.contains(t).should("not.exist"));
 
-const HOME = ["Avg Response Time", "Error Rate", "Throughput", "Apdex Score", "TTFB", "LCP", "CLS", "Core Web Vitals Score Trend", "Pages Passing Core Web Vitals", "Pages Within Load Budget"];
+const HOME = ["Avg Page Load Time", "Error Rate", "Page views (24h)", "Apdex Score", "TTFB", "LCP", "CLS", "Apdex Trend", "Avg Apdex (x100)", "Pages with Apdex 0.9 or higher", "Pages Within Load Budget"];
 const NR_TAB = ["Page Name", "Path", "Load", "LCP", "TTFB", "CLS", "INP", "Error Rate", "Throughput", "Apdex"];
 
 describe("both tools connected", () => {
@@ -42,7 +42,9 @@ describe("both tools connected", () => {
 
   it("home, hub, detail and both tool tabs show what they showed before", () => {
     cy.visit("/");
-    shows(...HOME, "1.2s", "0.20%", "0.0k/s", "0.95");
+    shows(...HOME, "1.2s", "0.20%", "0.95");
+    // The raw 24h count (one page, traffic.count 40), not a rate. Read from its own tile: "40" alone also matches the header.
+    cy.contains("Page views (24h)").parent().should("contain", "40").and("not.contain", "k/s");
     cy.contains("header p", "1 of 1 pages reporting · 40 views in 24h · 2 open errors").should("be.visible");
 
     cy.visit("/performance");
@@ -96,7 +98,8 @@ describe("Sentry keys only", () => {
       shows("No data yet");
       cy.get('a[href="/connect"]').should("be.visible");
       // Sentry lists pages itself now, so nothing asks for New Relic keys.
-      absent("Sentry is connected", "Add New Relic keys", "0ms", "Healthy", "Avg Load Time", "Avg Response Time");
+      // "0ms" stays: it is formatDuration(0), what a tile or table cell drawn from no data would read (not only the old vitals delta).
+      absent("Sentry is connected", "Add New Relic keys", "0ms", "Healthy", "Avg Load Time", "Avg Page Load Time", "Page views (24h)");
       cy.get("thead").should("not.exist");
     });
   });

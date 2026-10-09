@@ -17,7 +17,7 @@ describe("live metric cards (real .env.local)", () => {
       cy.visit("/");
       cy.wait(2500);
       if (hasPages) {
-        ["Avg Response Time", "Error Rate", "Throughput", "Apdex Score"].forEach((t) => cy.contains(t).should("be.visible"));
+        ["Avg Page Load Time", "Error Rate", "Page views (24h)", "Apdex Score"].forEach((t) => cy.contains(t).should("be.visible"));
         cy.contains(/No data yet/).should("not.exist");
       } else {
         cy.contains("No data yet").should("be.visible");

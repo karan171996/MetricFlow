@@ -1,6 +1,8 @@
-// C1 proof of "no behaviour change": the /api/metrics body and the home-screen transforms, for fixed
-// upstream answers, must equal what main produced before C1 (test/fixtures/c1-*.json).
+// C1 proof of "no behaviour change": the /api/metrics body, for fixed upstream answers, must equal
+// what main produced before C1 (test/fixtures/c1-*.json), and the home-screen transforms must equal the fixtures.
 // The fixtures were written by this file on main (297d396): C1_CAPTURE=1 pnpm run test:cli
+// Their `transforms` sections were then edited by hand for the dashboard-trust fix (honest labels, no delta
+// without a prior value), so they no longer equal main. Do not re-capture: that would rewrite the bodies too.
 // Sentry-only is no longer part of this proof: it changed on purpose when Sentry began to list pages
 // and supply vitals (test/sentry-pages.test.mjs). New Relic only and both tools must still not move.
 import { test, mock } from "node:test";
@@ -15,6 +17,8 @@ const site = "http://localhost:3001";
 // The transforms print clock times; pin locale and zone so the fixtures do not depend on the machine.
 const localTime = Date.prototype.toLocaleTimeString;
 Date.prototype.toLocaleTimeString = function (_locale, options) { return localTime.call(this, "en-US", { ...options, timeZone: "UTC" }); };
+const localNumber = Number.prototype.toLocaleString;
+Number.prototype.toLocaleString = function () { return localNumber.call(this, "en-US"); };
 
 // /a: every kind of row, in two query-string variants. /b: views but no timing rows (LCP/CLS/INP are legacy zeros).
 // /c: discovered, but no New Relic metrics row at all (all legacy zeros), with Sentry errors.
@@ -73,7 +77,7 @@ const withoutNew = (v) =>
   : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).filter(([k]) => !["sources", "metrics", "byTool"].includes(k)).map(([k, x]) => [k, withoutNew(x)]))
   : v;
 
-test("C1: /api/metrics legacy fields and every transform output are the same as on main", async () => {
+test("C1: /api/metrics legacy fields are the same as on main, and every transform output matches the fixtures", async () => {
   mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-01-01T10:00:00Z") });
   console.error = () => {}; // the Sentry-down round logs its status
 

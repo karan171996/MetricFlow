@@ -145,7 +145,36 @@ test("metrics: Sentry only never calls New Relic; Sentry lists the pages, and wi
 
 test("analysis: no error-count alert unless a page carries Sentry data", async () => {
   const { analyzeMetrics } = await load("lib/aiAnalysis.ts");
+  const ai = { provider: "claude", key: "FAKE-CLAUDE-0000" };
+  const reply = { alerts: [{ severity: "high", page: "/", message: "slow", metric: "loadTime" }, { severity: "low", page: "/", message: "errors", metric: "errorCount" }] };
+  handler = () => ({ data: { content: [{ text: JSON.stringify(reply) }] } });
   const metrics = (r) => r.alerts.map((a) => a.metric);
-  assert.ok(!metrics(await analyzeMetrics({ pages: [{ newRelic: {} }] }, null)).includes("errorCount"));
-  assert.ok(metrics(await analyzeMetrics({ pages: [{ newRelic: {}, sentry: { errorCount: 1 } }] }, null)).includes("errorCount"));
+  const nrOnly = await analyzeMetrics({ pages: [{ newRelic: {} }] }, ai);
+  assert.equal(nrOnly.status, "ok");
+  assert.deepEqual(metrics(nrOnly), ["loadTime"]);
+  assert.deepEqual(metrics(await analyzeMetrics({ pages: [{ newRelic: {}, sentry: { errorCount: 1 } }] }, ai)), ["loadTime", "errorCount"]);
+});
+
+test("analysis: no key, a provider failure or an unusable reply is `unavailable` with a fixed reason - never invented alerts", async () => {
+  const { analyzeMetrics } = await load("lib/aiAnalysis.ts");
+  const ai = { provider: "claude", key: "FAKE-CLAUDE-0000" };
+  const pages = { pages: [{ newRelic: {} }] };
+  const says = (text) => () => ({ data: { content: [{ text }] } });
+  const error = console.error;
+  console.error = () => {};
+  try {
+    assert.deepEqual(await analyzeMetrics(pages, null), { status: "unavailable", reason: "no_key" });
+    assert.equal(calls.length, 0, "no key, no call");
+    handler = () => { throw httpError(500); };
+    assert.deepEqual(await analyzeMetrics(pages, ai), { status: "unavailable", reason: "provider_error" });
+    for (const text of ["Sorry, I cannot help.", "{not json}", "{}", '{"analysis":"fine"}', '{"alerts":"none"}', '{"status":"ok"}', '{"alerts":"none","recommendations":["x"]}', '{"alerts":"none","recommendations":[]}']) {
+      handler = says(text);
+      assert.deepEqual(await analyzeMetrics(pages, ai), { status: "unavailable", reason: "bad_response" }, text);
+    }
+    // A reply cannot set its own status.
+    handler = says('{"status":"unavailable","recommendations":["cache it"]}');
+    assert.deepEqual(await analyzeMetrics(pages, ai), { status: "ok", recommendations: ["cache it"] });
+  } finally {
+    console.error = error;
+  }
 });

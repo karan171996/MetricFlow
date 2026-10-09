@@ -12,7 +12,8 @@ export async function POST(request: Request) {
     const ai = activeAi();
     const start = performance.now();
     const analysis = await analyzeMetrics(data.metrics, ai);
-    recordTiming(`${ai ? AI_PROVIDERS[ai.provider].label : 'AI'}: analyze`, performance.now() - start);
+    // No key means no provider call, so there is no response time to show.
+    if (ai) recordTiming(`${AI_PROVIDERS[ai.provider].label}: analyze`, performance.now() - start);
 
     return Response.json(analysis);
   } catch {

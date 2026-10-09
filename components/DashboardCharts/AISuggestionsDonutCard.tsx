@@ -1,6 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, TrendingUp, AlertTriangle, Zap } from "lucide-react";
@@ -27,9 +29,11 @@ const TYPE_STYLE: Record<AISuggestionType, { icon: ReactNode; badgeColor: string
 
 interface AISuggestionsDonutCardProps {
   suggestions: AISuggestion[];
+  /** Why there is no analysis to show; null when there is one (or none was asked for yet). */
+  unavailable?: "no_key" | "provider_error" | "bad_response" | null;
 }
 
-export function AISuggestionsDonutCard({ suggestions }: AISuggestionsDonutCardProps) {
+export function AISuggestionsDonutCard({ suggestions, unavailable }: AISuggestionsDonutCardProps) {
   return (
     <Card className="w-full rounded-xl border-[#2d3748] bg-[#1a202c] shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
       <CardHeader className="p-6 pb-3">
@@ -37,9 +41,21 @@ export function AISuggestionsDonutCard({ suggestions }: AISuggestionsDonutCardPr
           <Sparkles className="h-5 w-5 text-[#3ee0a1]" />
           AI Suggestions
         </CardTitle>
-        <p className="text-xs text-gray-500 mt-1">Insights generated for all tracked pages</p>
+        {!unavailable && <p className="text-xs text-gray-500 mt-1">Insights generated for all tracked pages</p>}
       </CardHeader>
       <CardContent className="p-6 pt-0">
+        {unavailable ? (
+          <div className="flex flex-col items-start gap-3">
+            <p className="text-xs text-muted-foreground">
+              {unavailable === "no_key"
+                ? "AI suggestions are off. Add an AI key to turn them on."
+                : "AI suggestions could not be loaded. Reload to try again, or check your AI key."}
+            </p>
+            <Link href="/setup" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Open setup
+            </Link>
+          </div>
+        ) : (
         <ul className="flex flex-col gap-3">
           {suggestions.length === 0 && (
             <p className="text-xs text-gray-500">No suggestions yet — check back after the next analysis run.</p>
@@ -65,6 +81,7 @@ export function AISuggestionsDonutCard({ suggestions }: AISuggestionsDonutCardPr
             );
           })}
         </ul>
+        )}
       </CardContent>
     </Card>
   );

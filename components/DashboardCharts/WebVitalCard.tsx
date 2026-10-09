@@ -8,7 +8,7 @@ import type { WebVitalCardData } from "@/types";
 
 type WebVitalCardProps = WebVitalCardData;
 
-export function WebVitalCard({ title, description, value, change, isPositive, color, data }: WebVitalCardProps) {
+export function WebVitalCard({ title, description, value, change, direction, isPositive, color, data }: WebVitalCardProps) {
   const [period, setPeriod] = useState("Monthly");
 
   return (
@@ -45,8 +45,9 @@ export function WebVitalCard({ title, description, value, change, isPositive, co
           <span className="text-[32px] font-bold leading-none text-white tracking-tighter">
             {value}
           </span>
-          <div className={`flex items-center text-[12px] font-medium ${isPositive ? 'text-[#3ee0a1]' : 'text-[#ef4444]'}`}>
-            {isPositive ? <ArrowUp className="mr-0.5 h-3 w-3" /> : <ArrowDown className="mr-0.5 h-3 w-3" />}
+          <div className={`flex items-center text-[12px] font-medium ${isPositive === null ? 'text-muted-foreground' : isPositive ? 'text-[#3ee0a1]' : 'text-[#ef4444]'}`}>
+            {direction === 'up' && <ArrowUp className="mr-0.5 h-3 w-3" />}
+            {direction === 'down' && <ArrowDown className="mr-0.5 h-3 w-3" />}
             <span>{change}</span>
           </div>
         </div>

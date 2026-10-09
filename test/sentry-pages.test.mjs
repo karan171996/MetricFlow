@@ -157,5 +157,5 @@ test("screens: sampled traffic is labelled as sampled and shown as a plain count
   mock.timers.tick(61_000);
   const both = (await get({ ...NR, ...SENTRY })).body;
   assert.equal(t.isSampled(both.pages), false);
-  assert.equal(t.computeStats(both.pages, both.history, (cap) => both.sources[cap] !== undefined).find((c) => c.label === "Throughput").value, "0.5k/s");
+  assert.equal(t.computeStats(both.pages, both.history, (cap) => both.sources[cap] !== undefined).find((c) => c.label === "Page views (24h)").value, "500");
 });

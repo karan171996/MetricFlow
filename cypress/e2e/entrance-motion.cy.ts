@@ -1,4 +1,4 @@
-// Entrance motion: titles fade and rise once; the "Rankings Moved" bars grow and count up once, then only move for changed values.
+// Entrance motion: titles fade and rise once; the "MetricFlow API response times" bars grow and count up once, then only move for changed values.
 // The API is stubbed (FAKE fixtures only). Only the 30s refresh timers are faked, so CSS animations and requestAnimationFrame run for real.
 import { formatDuration } from "../../lib/formatDuration";
 
@@ -124,11 +124,11 @@ describe("entrance motion", () => {
     cy.get(".recharts-reference-line line").should("have.attr", "stroke", "none"); // the line that holds the scale is not drawn
     cy.get(".recharts-reference-line text").should("not.exist");
 
-    cy.contains("[data-slot=card-title]", "Rankings Moved").should(($t) => expect(titleStyle($t)).to.deep.equal(ENTERED));
+    cy.contains("[data-slot=card-title]", "MetricFlow API response times").should(($t) => expect(titleStyle($t)).to.deep.equal(ENTERED));
     cy.contains("header h1", "fake-project").should(($t) => expect(titleStyle($t)).to.deep.equal(ENTERED));
     cy.then(() => {
       const texts = entered().map((t) => t.textContent);
-      expect(texts).to.include.members(["Rankings Moved", "fake-project"]);
+      expect(texts).to.include.members(["MetricFlow API response times", "fake-project"]);
       expect(texts, "each title on screen entered once").to.have.length(new Set(entered()).size);
     });
 
@@ -181,7 +181,7 @@ describe("entrance motion", () => {
   it("no timings: the empty text is unchanged", () => {
     items = [];
     visit("/");
-    cy.contains("Rankings Moved").should("be.visible");
+    cy.contains("MetricFlow API response times").should("be.visible");
     cy.contains("No API calls measured yet — refresh once /api/metrics has run.").should("be.visible");
     cy.get(".recharts-bar").should("not.exist");
   });
