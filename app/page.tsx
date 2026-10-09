@@ -23,11 +23,12 @@ import {
 } from "@/lib/dashboardTransforms";
 import { EmptyState } from "@/components/EmptyState";
 import { hasData, provides } from "@/lib/useMetrics";
+import { useThresholds } from "@/lib/useThresholds";
 import { withNeutralShape } from "@/lib/legacyMetrics";
 import type { AnalysisUnavailable } from "@/lib/aiAnalysis";
 import type { MetricsResponse } from "@/lib/metricsHistory";
 import type { Capability } from "@/lib/tools";
-import type { TrafficBarItem } from "@/types";
+import type { PageStatus, TrafficBarItem } from "@/types";
 
 interface AnalysisResponse {
   status?: "ok";
@@ -37,6 +38,8 @@ interface AnalysisResponse {
 }
 
 const REFRESH_INTERVAL_MS = 30000;
+/** Status colours only (DESIGN.md): a tile value over its threshold takes the status colour; a Healthy one stays white. */
+const STATUS_CLASS: Partial<Record<PageStatus, string>> = { Warning: "text-dash-warning", Critical: "text-dash-danger" };
 const ANALYZE_INTERVAL_MS = 24 * 60 * 60 * 1000; // Gemini call: at most once/day for now
 const LAST_ANALYZED_KEY = "dashboard:lastAnalyzedAt";
 
@@ -58,6 +61,7 @@ function markAnalysisRan() {
 }
 
 export default function Home() {
+  const thresholds = useThresholds();
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [aiUnavailable, setAiUnavailable] = useState<AnalysisUnavailable["reason"] | null>(null);
@@ -166,9 +170,9 @@ export default function Home() {
   }
   // A card whose capability no connected tool provides is left out, never drawn with zeros.
   const has = (cap: Capability) => provides(metrics, cap);
-  const stats = computeStats(pages, history, has);
+  const stats = computeStats(pages, history, has, thresholds);
   const webVitals = computeWebVitals(pages, history, has);
-  const visibility = computeVisibilityBreakdown(pages, history, has);
+  const visibility = computeVisibilityBreakdown(pages, history, has, thresholds);
   const whatMoved = computeWhatMoved(pages, history, has);
   const cwvTrend = computeCwvTrend(history, has);
   const suggestions = alertsToSuggestions(analysis);
@@ -193,7 +197,15 @@ export default function Home() {
                 className="rounded-lg border border-dash-border bg-dash-card p-5"
               >
                 <p className="text-label text-dash-muted">{stat.label}</p>
-                <p className="mt-2 text-h2 text-dash-foreground">{stat.value}</p>
+                <p className={`mt-2 text-h2 ${(stat.status && STATUS_CLASS[stat.status]) ?? "text-dash-foreground"}`}>
+                  {stat.value}{stat.status && " "}
+                  {/* The word and the limit carry the status too, so colour is never the only signal. */}
+                  {stat.status && (
+                    <span className="ml-2 text-body-sm text-dash-muted">
+                      {stat.status} · {stat.limit}
+                    </span>
+                  )}
+                </p>
                 <p className={`mt-1 text-body-sm ${stat.changeClass}`}>
                   {stat.change}
                 </p>

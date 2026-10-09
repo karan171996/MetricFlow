@@ -39,7 +39,7 @@ export function ThresholdAlert() {
   return (
     <Alert variant={critical ? "destructive" : "default"} className={`fixed! top-0 right-0 z-50 m-4 max-w-md py-4 shadow-lg ${critical ? "" : "bg-amber-950 text-amber-200"}`}>
       <AlertTriangle />
-      <AlertTitle>{critical ? "Critical: threshold exceeded" : "Warning: approaching threshold"}</AlertTitle>
+      <AlertTitle>{critical ? "Critical: threshold exceeded" : "Warning: threshold exceeded"}</AlertTitle>
       <AlertDescription>
         {breached.map((p) => `${p.name} (${p.status})`).join(", ")} — adjust limits in Settings → Performance Thresholds.
       </AlertDescription>

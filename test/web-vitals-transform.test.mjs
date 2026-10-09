@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { load } from "./helpers.mjs";
 
 const t = await load("lib/dashboardTransforms.ts");
+const { DEFAULT_THRESHOLDS } = await load("lib/thresholds.ts");
 const has = () => true;
 const page = (vitals) => ({ url: "/a", metrics: { vitals, apdex: 0.9, loadTime: 800 } });
 const snap = (vitals) => ({ timestamp: "2026-01-01T10:00:00Z", pages: [page(vitals)] });
@@ -35,8 +36,8 @@ test("web vitals: a decrease is a green down arrow, an increase a red up arrow",
 });
 
 test("breakdown card: no delta without a prior snapshot, a real one with it", () => {
-  const first = t.computeVisibilityBreakdown([page(now)], [snap(now)], has);
+  const first = t.computeVisibilityBreakdown([page(now)], [snap(now)], has, DEFAULT_THRESHOLDS);
   assert.deepEqual([first.scoreDelta, ...first.stats.map((s) => s.delta)], [null, null, null]);
-  const second = t.computeVisibilityBreakdown([page(now)], [{ timestamp: "2026-01-01T09:00:00Z", pages: [{ url: "/a", metrics: { apdex: 0.8, loadTime: 1200 } }] }, snap(now)], has);
+  const second = t.computeVisibilityBreakdown([page(now)], [{ timestamp: "2026-01-01T09:00:00Z", pages: [{ url: "/a", metrics: { apdex: 0.8, loadTime: 1600 } }] }, snap(now)], has, DEFAULT_THRESHOLDS);
   assert.deepEqual([second.scoreDelta, ...second.stats.map((s) => s.delta)], [10, 1, 1]);
 });

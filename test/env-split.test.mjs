@@ -48,5 +48,5 @@ test("basic runner reads .env.test.example, redirects env writes, never touches 
 });
 
 test("real runner fails clearly without .env.local", () => {
-  assert.match(read("scripts/test-env.mjs"), /test:real needs real keys: \.env\.local not found/);
+  assert.match(read("scripts/test-env.mjs"), /test:real needs real credentials: \.env\.local not found/);
 });

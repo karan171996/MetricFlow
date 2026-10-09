@@ -2,7 +2,8 @@
 // what main produced before C1 (test/fixtures/c1-*.json), and the home-screen transforms must equal the fixtures.
 // The fixtures were written by this file on main (297d396): C1_CAPTURE=1 pnpm run test:cli
 // Their `transforms` sections were then edited by hand for the dashboard-trust fix (honest labels, no delta
-// without a prior value), so they no longer equal main. Do not re-capture: that would rewrite the bodies too.
+// without a prior value) and for the one health rule (tile status and limit, the load limit in the row label),
+// so they no longer equal main. Do not re-capture: that would rewrite the bodies too.
 // Sentry-only is no longer part of this proof: it changed on purpose when Sentry began to list pages
 // and supply vitals (test/sentry-pages.test.mjs). New Relic only and both tools must still not move.
 import { test, mock } from "node:test";
@@ -51,6 +52,7 @@ mockAxios((method, url, call) => {
 
 const { GET } = await load("app/api/metrics/route.ts");
 const t = await load("lib/dashboardTransforms.ts");
+const { DEFAULT_THRESHOLDS } = await load("lib/thresholds.ts");
 const { withNeutralShape } = process.env.C1_CAPTURE ? {} : await load("lib/legacyMetrics.ts");
 
 /** One GET with the given keys, plus what the home screen computes from that body. */
@@ -62,10 +64,10 @@ async function run(keys) {
   // The home screen runs the transforms only when there are pages. `has` is new in C1; main ignores the extra argument.
   const has = (cap) => body.sources?.[cap] !== undefined && !(body.failed ?? []).includes(body.sources[cap]);
   const transforms = body.pages.length ? {
-    stats: t.computeStats(body.pages, body.history, has),
+    stats: t.computeStats(body.pages, body.history, has, DEFAULT_THRESHOLDS),
     webVitals: t.computeWebVitals(body.pages, body.history, has),
     cwvTrend: t.computeCwvTrend(body.history, has),
-    visibility: t.computeVisibilityBreakdown(body.pages, body.history, has),
+    visibility: t.computeVisibilityBreakdown(body.pages, body.history, has, DEFAULT_THRESHOLDS),
     whatMoved: t.computeWhatMoved(body.pages, body.history, has),
   } : null;
   return { body, transforms };

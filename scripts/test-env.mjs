@@ -19,11 +19,13 @@ if (mode === "basic") {
   keys = parseEnv(readFileSync(join(root, ".env.test.example"), "utf8"));
 } else {
   const f = join(root, ".env.local");
-  if (!existsSync(f)) { console.error("test:real needs real keys: .env.local not found. Create it from .env.local.example, then rerun."); process.exit(1); }
+  if (!existsSync(f)) { console.error("test:real needs real credentials: .env.local not found. Create it from .env.local.example, then rerun."); process.exit(1); }
   keys = parseEnv(readFileSync(f, "utf8"));
 }
-// Explicit values win over Next's own .env.local loading; the env file for /setup writes goes to a temp file in basic mode.
-const env = { ...process.env, ...keys, ...(mode === "basic" ? { METRICFLOW_ENV_FILE: join(mkdtempSync(join(tmpdir(), "mf-env-")), ".env.local") } : {}) };
+// Explicit values win over Next's own .env.local loading. In basic mode the env file for /setup writes and the settings
+// file go to a temp folder, so specs that do not stub /api/settings see the defaults, not the developer's own settings.
+const tmp = mode === "basic" ? mkdtempSync(join(tmpdir(), "mf-env-")) : null;
+const env = { ...process.env, ...keys, ...(tmp ? { METRICFLOW_ENV_FILE: join(tmp, ".env.local"), METRICFLOW_SETTINGS_FILE: join(tmp, "settings.json") } : {}) };
 const run = (cmd, args, extra = {}) => spawnSync(cmd, args, { cwd: root, env, stdio: "inherit", ...extra }).status ?? 1;
 
 const nodeTests = mode === "basic"

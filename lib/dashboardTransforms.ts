@@ -11,6 +11,7 @@ import type {
   LineChartCardData
 } from '@/types';
 import { formatDuration } from '@/lib/formatDuration';
+import { limitLabel, metricStatus, type ThresholdMetric, type Thresholds } from '@/lib/thresholds';
 
 /** Is this capability provided right now? Each builder returns only the cards it can fill (see `provides` in lib/useMetrics.ts). */
 type Has = (cap: Capability) => boolean;
@@ -48,8 +49,13 @@ export const isSampled = (pages: MetricsPage[]) => pages.some(p => p.metrics.tra
 const traffic = (pages: MetricsPage[]) => pages.reduce((sum, p) => sum + (p.metrics.traffic?.count ?? 0), 0);
 const score = (p: MetricsPage) => (p.metrics.apdex === undefined ? undefined : p.metrics.apdex * 100);
 
-export function computeStats(pages: MetricsPage[], history: MetricsSnapshot[], has: Has): DashboardStatCard[] {
+export function computeStats(pages: MetricsPage[], history: MetricsSnapshot[], has: Has, t: Thresholds): DashboardStatCard[] {
   const prev = previousPages(history);
+  // The tile's average judged by the same rule as a page. No page with the value = no status, never "Healthy" for a 0 that was not measured.
+  const judged = (metric: ThresholdMetric, value: number) => {
+    const status = metricStatus(metric, pages.some(p => p.metrics[metric] !== undefined) ? value : undefined, t);
+    return status && { status, limit: limitLabel(metric, t) };
+  };
 
   const loadTime = avg(pages.map(p => p.metrics.loadTime));
   const errorRate = avg(pages.map(p => p.metrics.errorRate));
@@ -65,12 +71,14 @@ export function computeStats(pages: MetricsPage[], history: MetricsSnapshot[], h
     has('loadTime') && {
       label: 'Avg Page Load Time',
       value: formatDuration(loadTime),
-      ...buildChange(loadTime, prevLoadTime, false)
+      ...buildChange(loadTime, prevLoadTime, false),
+      ...judged('loadTime', loadTime)
     },
     has('errorRate') && {
       label: 'Error Rate',
       value: `${errorRate.toFixed(2)}%`,
-      ...buildChange(errorRate, prevErrorRate, false)
+      ...buildChange(errorRate, prevErrorRate, false),
+      ...judged('errorRate', errorRate)
     },
     has('traffic') && {
       // A sampled count is shown as it is: never scaled up, never called throughput or visitors.
@@ -81,7 +89,8 @@ export function computeStats(pages: MetricsPage[], history: MetricsSnapshot[], h
     has('apdex') && {
       label: 'Apdex Score',
       value: apdex.toFixed(2),
-      ...buildChange(apdex, prevApdex, true)
+      ...buildChange(apdex, prevApdex, true),
+      ...judged('apdex', apdex)
     }
   ].filter((card): card is DashboardStatCard => Boolean(card));
 }
@@ -162,19 +171,17 @@ export function computeCwvTrend(history: MetricsSnapshot[], has: Has): LineChart
   };
 }
 
-const CWV_APDEX_THRESHOLD = 0.9;
-const LOAD_BUDGET_MS = 1000;
-// A page with no value for the metric does not pass.
-const passesCwv = (p: MetricsPage) => p.metrics.apdex !== undefined && p.metrics.apdex >= CWV_APDEX_THRESHOLD;
-const inBudget = (p: MetricsPage) => p.metrics.loadTime !== undefined && p.metrics.loadTime <= LOAD_BUDGET_MS;
-
 export function computeVisibilityBreakdown(
   pages: MetricsPage[],
   history: MetricsSnapshot[],
-  has: Has
+  has: Has,
+  t: Thresholds
 ): VisibilityBreakdownCardData | null {
   if (!has('apdex') || !has('loadTime')) return null;
   const prev = previousPages(history);
+  // Same rule as the page status and the alert (lib/thresholds.ts). A page with no value for the metric does not pass.
+  const passesCwv = (p: MetricsPage) => metricStatus('apdex', p.metrics.apdex, t) === 'Healthy';
+  const inBudget = (p: MetricsPage) => metricStatus('loadTime', p.metrics.loadTime, t) === 'Healthy';
 
   const avgScore = avg(pages.map(p => p.metrics.apdex)) * 100;
   const passingCwv = pages.filter(passesCwv).length;
@@ -194,13 +201,13 @@ export function computeVisibilityBreakdown(
     trend: sparkline(history, score).map(p => ({ value: p.value })),
     stats: [
       {
-        label: 'Pages with Apdex 0.9 or higher',
+        label: `Pages with Apdex ${+t.apdexMin.toFixed(2)} or higher`,
         value: `${passingCwv}/${pages.length}`,
         delta: passingDelta,
         isPositive: passingDelta !== null && passingDelta >= 0
       },
       {
-        label: 'Pages Within Load Budget',
+        label: `Pages Within Load Budget (${+t.loadSeconds.toFixed(1)}s)`,
         value: `${withinBudget}/${pages.length}`,
         delta: budgetDelta,
         isPositive: budgetDelta !== null && budgetDelta >= 0
