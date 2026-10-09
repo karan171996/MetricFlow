@@ -3,7 +3,7 @@ import type { TrafficBarItem } from '@/types';
 /**
  * Holds the most recent measured duration of each named external API call
  * (New Relic, Sentry per-page, Gemini), recorded by the route handlers
- * that actually make those calls. Powers the "Rankings Moved" card, which
+ * that actually make those calls. Powers the "MetricFlow API response times" card, which
  * shows real call latency ranked slowest-first instead of SEO data (no
  * connected platform has ranking data — this does the same "ranked bars"
  * job with something we actually measure).

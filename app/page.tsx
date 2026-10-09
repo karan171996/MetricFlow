@@ -24,11 +24,13 @@ import {
 import { EmptyState } from "@/components/EmptyState";
 import { hasData, provides } from "@/lib/useMetrics";
 import { withNeutralShape } from "@/lib/legacyMetrics";
+import type { AnalysisUnavailable } from "@/lib/aiAnalysis";
 import type { MetricsResponse } from "@/lib/metricsHistory";
 import type { Capability } from "@/lib/tools";
 import type { TrafficBarItem } from "@/types";
 
 interface AnalysisResponse {
+  status?: "ok";
   analysis?: string;
   alerts?: { severity: "high" | "medium" | "low"; page: string; message: string; metric: string }[];
   recommendations?: string[];
@@ -58,6 +60,7 @@ function markAnalysisRan() {
 export default function Home() {
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
+  const [aiUnavailable, setAiUnavailable] = useState<AnalysisUnavailable["reason"] | null>(null);
   const [apiTimings, setApiTimings] = useState<TrafficBarItem[]>([]);
   const [refreshing, setRefreshing] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +68,7 @@ export default function Home() {
   // Loads can overlap (a slow one is still waiting when the next 30s refresh starts). Only the newest may
   // write state, so an older success never hides a newer failure or puts older numbers back.
   const latestLoad = useRef(0);
+  const analysisFailed = useRef(false);
 
   async function fetchData() {
     const load = ++latestLoad.current;
@@ -84,16 +88,27 @@ export default function Home() {
       if (stale()) return;
       setApiTimings(timingsData.items);
 
-      if (metricsData.configured && shouldRunAnalysis()) {
+      if (metricsData.configured && !analysisFailed.current && shouldRunAnalysis()) {
         const analysisRes = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ metrics: { pages: metricsData.pages } })
         });
-        const analysisData: AnalysisResponse = await analysisRes.json();
+        // A non-OK answer ({ error }) counts as unavailable too. A 200 without a status is a real reply.
+        const analysisData: AnalysisResponse | AnalysisUnavailable = analysisRes.ok
+          ? await analysisRes.json()
+          : { status: "unavailable", reason: "provider_error" };
         if (stale()) return;
-        setAnalysis(analysisData);
-        markAnalysisRan();
+        if (analysisData.status === "unavailable") {
+          setAiUnavailable(analysisData.reason);
+          // A failed call is tried again on the next page load, not on each 30s refresh. A missing key costs no call.
+          analysisFailed.current = analysisData.reason !== "no_key";
+        } else {
+          setAnalysis(analysisData);
+          setAiUnavailable(null);
+          // Only a real reply counts as the day's run.
+          markAnalysisRan();
+        }
       }
 
       setError(null);
@@ -201,8 +216,8 @@ export default function Home() {
 
             <div className="flex flex-col gap-6">
               {visibility && <VisibilityBreakdownCard {...visibility} />}
-              <AISuggestionsDonutCard suggestions={suggestions} />
-              <BarChartCard title="Rankings Moved" items={apiTimings} />
+              <AISuggestionsDonutCard suggestions={suggestions} unavailable={aiUnavailable} />
+              <BarChartCard title="MetricFlow API response times" items={apiTimings} />
             </div>
           </div>
         </div>

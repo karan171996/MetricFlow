@@ -22,9 +22,12 @@ function avg(values: (number | undefined)[]): number {
   return present.reduce((sum, v) => sum + v, 0) / present.length;
 }
 
+const NO_PRIOR = 'No prior data yet';
+const NEUTRAL_COLOR = '#9ca3af';
+
 function buildChange(current: number, previous: number | null, higherIsBetter: boolean) {
   if (previous === null || previous === 0) {
-    return { change: 'No prior data yet', changeClass: 'text-dash-muted' };
+    return { change: NO_PRIOR, changeClass: 'text-dash-muted' };
   }
   const delta = current - previous;
   const pct = (delta / previous) * 100;
@@ -60,7 +63,7 @@ export function computeStats(pages: MetricsPage[], history: MetricsSnapshot[], h
 
   return [
     has('loadTime') && {
-      label: 'Avg Response Time',
+      label: 'Avg Page Load Time',
       value: formatDuration(loadTime),
       ...buildChange(loadTime, prevLoadTime, false)
     },
@@ -71,7 +74,8 @@ export function computeStats(pages: MetricsPage[], history: MetricsSnapshot[], h
     },
     has('traffic') && {
       // A sampled count is shown as it is: never scaled up, never called throughput or visitors.
-      ...(isSampled(pages) ? { label: 'Sampled page loads (24h)', value: throughput.toLocaleString() } : { label: 'Throughput', value: `${(throughput / 1000).toFixed(1)}k/s` }),
+      label: isSampled(pages) ? 'Sampled page loads (24h)' : 'Page views (24h)',
+      value: throughput.toLocaleString(),
       ...buildChange(throughput, prevThroughput, true)
     },
     has('apdex') && {
@@ -90,6 +94,23 @@ function sparkline(history: MetricsSnapshot[], pick: (p: MetricsPage) => number 
   });
 }
 
+/**
+ * Same null convention as `buildChange`: no previous snapshot, or one with no value for the vital (an average of 0), is no baseline.
+ * The arrow follows the direction of change; for these vitals a decrease is the good one.
+ */
+function vitalChange(current: number, previous: number | null, format: (v: number) => string) {
+  if (previous === null || previous === 0) return { change: NO_PRIOR, direction: null, isPositive: null, color: NEUTRAL_COLOR };
+  const delta = current - previous;
+  // A change too small to show at the card's precision is not drawn as a "0ms" move.
+  if (format(Math.abs(delta)) === format(0)) return { change: 'No change', direction: null, isPositive: null, color: NEUTRAL_COLOR };
+  return {
+    change: format(Math.abs(delta)),
+    direction: delta < 0 ? ('down' as const) : ('up' as const),
+    isPositive: delta < 0,
+    color: delta < 0 ? '#3ee0a1' : '#ef4444'
+  };
+}
+
 export function computeWebVitals(
   pages: MetricsPage[],
   history: MetricsSnapshot[],
@@ -100,36 +121,30 @@ export function computeWebVitals(
   const ttfb = avg(pages.map(p => p.metrics.vitals?.ttfb));
   const lcp = avg(pages.map(p => p.metrics.vitals?.lcp));
   const cls = avg(pages.map(p => p.metrics.vitals?.cls));
-  const prevTtfb = prev ? avg(prev.map(p => p.metrics.vitals?.ttfb)) : ttfb;
-  const prevLcp = prev ? avg(prev.map(p => p.metrics.vitals?.lcp)) : lcp;
-  const prevCls = prev ? avg(prev.map(p => p.metrics.vitals?.cls)) : cls;
+  const prevTtfb = prev ? avg(prev.map(p => p.metrics.vitals?.ttfb)) : null;
+  const prevLcp = prev ? avg(prev.map(p => p.metrics.vitals?.lcp)) : null;
+  const prevCls = prev ? avg(prev.map(p => p.metrics.vitals?.cls)) : null;
 
   return {
     ttfb: {
       title: 'TTFB',
       description: 'Time to First Byte',
       value: formatDuration(ttfb),
-      change: formatDuration(Math.abs(ttfb - prevTtfb)),
-      isPositive: ttfb <= prevTtfb,
-      color: ttfb <= prevTtfb ? '#3ee0a1' : '#ef4444',
+      ...vitalChange(ttfb, prevTtfb, formatDuration),
       data: sparkline(history, p => p.metrics.vitals?.ttfb)
     },
     lcp: {
       title: 'LCP',
       description: 'Largest Contentful Paint',
       value: formatDuration(lcp),
-      change: formatDuration(Math.abs(lcp - prevLcp)),
-      isPositive: lcp <= prevLcp,
-      color: lcp <= prevLcp ? '#3ee0a1' : '#ef4444',
+      ...vitalChange(lcp, prevLcp, formatDuration),
       data: sparkline(history, p => p.metrics.vitals?.lcp)
     },
     cls: {
       title: 'CLS',
       description: 'Cumulative Layout Shift',
       value: cls.toFixed(2),
-      change: Math.abs(cls - prevCls).toFixed(2),
-      isPositive: cls <= prevCls,
-      color: cls <= prevCls ? '#3ee0a1' : '#ef4444',
+      ...vitalChange(cls, prevCls, v => v.toFixed(2)),
       data: sparkline(history, p => p.metrics.vitals?.cls)
     }
   };
@@ -139,7 +154,7 @@ export function computeWebVitals(
 export function computeCwvTrend(history: MetricsSnapshot[], has: Has): LineChartCardData | null {
   if (!has('apdex')) return null;
   return {
-    title: 'Core Web Vitals Score Trend',
+    title: 'Apdex Trend',
     points: sparkline(history, score).map((point, i) => ({
       month: new Date(history[i].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       value: point.value === null ? null : Math.round(point.value)
@@ -162,31 +177,33 @@ export function computeVisibilityBreakdown(
   const prev = previousPages(history);
 
   const avgScore = avg(pages.map(p => p.metrics.apdex)) * 100;
-  const prevAvgScore = prev ? avg(prev.map(p => p.metrics.apdex)) * 100 : avgScore;
-
   const passingCwv = pages.filter(passesCwv).length;
-  const prevPassingCwv = prev ? prev.filter(passesCwv).length : passingCwv;
-
   const withinBudget = pages.filter(inBudget).length;
-  const prevWithinBudget = prev ? prev.filter(inBudget).length : withinBudget;
+
+  // Same null convention as `buildChange`: no previous snapshot, or one without the metric (an average of 0), gives no delta.
+  const prevApdex = prev && avg(prev.map(p => p.metrics.apdex));
+  const prevLoadTime = prev && avg(prev.map(p => p.metrics.loadTime));
+  const scoreDelta = prev && prevApdex ? Math.round((avgScore - prevApdex * 100) * 10) / 10 : null;
+  const passingDelta = prev && prevApdex ? passingCwv - prev.filter(passesCwv).length : null;
+  const budgetDelta = prev && prevLoadTime ? withinBudget - prev.filter(inBudget).length : null;
 
   return {
     avgScore: Math.round(avgScore * 10) / 10,
-    scoreDelta: Math.round((avgScore - prevAvgScore) * 10) / 10,
-    isPositive: avgScore >= prevAvgScore,
+    scoreDelta,
+    isPositive: scoreDelta !== null && scoreDelta >= 0,
     trend: sparkline(history, score).map(p => ({ value: p.value })),
     stats: [
       {
-        label: 'Pages Passing Core Web Vitals',
+        label: 'Pages with Apdex 0.9 or higher',
         value: `${passingCwv}/${pages.length}`,
-        delta: passingCwv - prevPassingCwv,
-        isPositive: passingCwv >= prevPassingCwv
+        delta: passingDelta,
+        isPositive: passingDelta !== null && passingDelta >= 0
       },
       {
         label: 'Pages Within Load Budget',
         value: `${withinBudget}/${pages.length}`,
-        delta: withinBudget - prevWithinBudget,
-        isPositive: withinBudget >= prevWithinBudget
+        delta: budgetDelta,
+        isPositive: budgetDelta !== null && budgetDelta >= 0
       }
     ]
   };

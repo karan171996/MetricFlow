@@ -60,7 +60,7 @@ export type TrendDirection = "up" | "down" | "stable";
  * Maps to the `stats` array in app/page.tsx.
  */
 export interface DashboardStatCard {
-  /** Display label (e.g. "Avg Response Time"). */
+  /** Display label (e.g. "Avg Page Load Time"). */
   label: string;
   /** Formatted value string (e.g. "124ms"). */
   value: string;
@@ -90,10 +90,12 @@ export interface WebVitalCardData {
   description: string;
   /** Formatted current value string (e.g. "120ms", "1.2s", "0.12"). */
   value: string;
-  /** Formatted change from previous period (e.g. "12ms", "0.04"). */
+  /** Formatted size of the change from the previous snapshot (e.g. "12ms", "0.04"), "No change", or "No prior data yet". */
   change: string;
-  /** true = improvement (green arrow up), false = regression (red arrow down). */
-  isPositive: boolean;
+  /** Which way the value moved; picks the arrow. `null` = no arrow (no prior value, or no change). */
+  direction: 'up' | 'down' | null;
+  /** true = improvement (green), false = regression (red), `null` = neutral (muted). For these vitals a decrease is the improvement. */
+  isPositive: boolean | null;
   /** Hex color used for the sparkline stroke and fill gradient. */
   color: string;
   /** Historical time-series data powering the sparkline chart. */
@@ -102,17 +104,17 @@ export interface WebVitalCardData {
 
 
 // ─────────────────────────────────────────────────────────────────────
-// 4. Core Web Vitals Score Trend  (LineChartCard)
+// 4. Apdex Trend  (LineChartCard)
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * One data point in the monthly CWV trend area chart.
+ * One data point in the Apdex trend area chart.
  * Maps to the `data` array inside LineChartCard.
  */
 export interface CWVTrendPoint {
-  /** Month abbreviation shown on X-axis (e.g. "JAN", "FEB"). */
+  /** X-axis label: the clock time of the snapshot. */
   month: string;
-  /** Aggregate CWV score for that month (0–100). `null` = nothing measured; drawn as a gap. */
+  /** Average Apdex x100 for that snapshot (0–100). `null` = nothing measured; drawn as a gap. */
   value: number | null;
 }
 
@@ -179,22 +181,22 @@ export interface AISuggestionsCardData {
 
 /** A summary stat row shown below the main metric in VisibilityBreakdownCard. */
 export interface VisibilityStat {
-  /** Row label (e.g. "Pages Passing Core Web Vitals"). */
+  /** Row label (e.g. "Pages with Apdex 0.9 or higher"). */
   label: string;
   /** Formatted fraction or count (e.g. "44/47"). */
   value: string;
-  /** Numeric delta shown as a badge (e.g. 18 for "+18"). */
-  delta: number;
-  /** True = delta is an improvement. */
+  /** Numeric delta shown as a badge (e.g. 18 for "+18"). `null` = no prior snapshot to compare with. */
+  delta: number | null;
+  /** True = delta is an improvement. Not shown when delta is `null` or 0. */
   isPositive: boolean;
 }
 
 /** Full data contract for the VisibilityBreakdownCard component. */
 export interface VisibilityBreakdownCardData {
-  /** Primary headline metric (avg performance score, 0–100). */
+  /** Primary headline metric (average Apdex x100, 0–100). */
   avgScore: number;
-  /** Change vs. previous period. */
-  scoreDelta: number;
+  /** Change vs. the previous snapshot. `null` = no prior snapshot to compare with. */
+  scoreDelta: number | null;
   isPositive: boolean;
   /** Sparkline trend data powering the background chart. */
   trend: Array<{ value: number | null }>;

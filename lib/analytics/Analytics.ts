@@ -43,7 +43,7 @@ export function describeFailure(e: unknown, what: string): string {
  */
 export abstract class Analytics<TRaw extends Record<string, unknown>, TPage> {
   abstract readonly id: ToolId;
-  /** Label under which a fresh read is timed in the "Rankings Moved" card. */
+  /** Label under which a fresh read is timed in the "MetricFlow API response times" card. */
   protected abstract readonly timingLabel: string;
   /** @deprecated Name of the vendor-shaped page field this tool fills. Removed in C3. */
   abstract readonly legacyField: 'newRelic' | 'sentry';

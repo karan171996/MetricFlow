@@ -23,7 +23,7 @@ const row = (i: number, expected: string[]) => cy.get("tbody tr").should(($tr) =
 // The first page of a run is slow on a cold server, so the wait is longer than Cypress's 4s default.
 const shows = (...texts: string[]) => texts.forEach((t) => cy.contains(t, { timeout: 15000 }).should("be.visible"));
 const absent = (...texts: string[]) => texts.forEach((t) => cy.contains(t).should("not.exist"));
-const NEW_RELIC_ONLY = ["Avg Response Time", "Apdex", "Throughput", "Avg Load Time", "Avg Load", "Healthy", "Warning", "Critical", "Visitors (24h)", "Traffic Volume", "Add New Relic keys"];
+const NEW_RELIC_ONLY = ["Avg Page Load Time", "Apdex", "Throughput", "Page views (24h)", "Avg Load Time", "Avg Load", "Healthy", "Warning", "Critical", "Visitors (24h)", "Traffic Volume", "Add New Relic keys"];
 
 describe("Sentry keys only, site sending traces", () => {
   beforeEach(() => {

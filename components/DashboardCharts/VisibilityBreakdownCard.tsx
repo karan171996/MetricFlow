@@ -6,6 +6,9 @@ import { AreaChart, Area, ResponsiveContainer } from "recharts";
 import { ArrowUp, ArrowDown, MoreHorizontal, Gauge, Zap } from "lucide-react";
 import type { VisibilityBreakdownCardData } from "@/types";
 
+/** No arrow and muted text when there is nothing to compare with (`null`) or nothing moved (0). */
+const deltaText = (delta: number | null) => (delta === null ? "No prior data yet" : delta === 0 ? "No change" : Math.abs(delta));
+
 export function VisibilityBreakdownCard({
   avgScore,
   scoreDelta,
@@ -34,13 +37,13 @@ export function VisibilityBreakdownCard({
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10">
               <Gauge className="h-3.5 w-3.5" />
             </div>
-            <span className="text-sm font-medium">Avg Performance Score</span>
+            <span className="text-sm font-medium">Avg Apdex (x100)</span>
           </div>
           <div className="mt-2 flex items-end justify-between relative z-10">
             <span className="text-[40px] font-bold leading-none tracking-tight text-white">{avgScore}</span>
-            <div className={`flex items-center text-sm font-medium ${isPositive ? "text-[#3ee0a1]" : "text-[#ef4444]"}`}>
-              {isPositive ? <ArrowUp className="mr-1 h-3.5 w-3.5" /> : <ArrowDown className="mr-1 h-3.5 w-3.5" />}
-              <span>{Math.abs(scoreDelta)}</span>
+            <div className={`flex items-center text-sm font-medium ${!scoreDelta ? "text-muted-foreground" : isPositive ? "text-[#3ee0a1]" : "text-[#ef4444]"}`}>
+              {!!scoreDelta && (isPositive ? <ArrowUp className="mr-1 h-3.5 w-3.5" /> : <ArrowDown className="mr-1 h-3.5 w-3.5" />)}
+              <span>{deltaText(scoreDelta)}</span>
             </div>
           </div>
           {/* Mini Chart Background */}
@@ -75,11 +78,11 @@ export function VisibilityBreakdownCard({
             </div>
             <div
               className={`flex items-center rounded px-2 py-1 text-xs font-bold ${
-                stat.isPositive ? "bg-[#10b981]/15 text-[#10b981]" : "bg-[#ef4444]/15 text-[#ef4444]"
+                !stat.delta ? "bg-white/5 text-muted-foreground" : stat.isPositive ? "bg-[#10b981]/15 text-[#10b981]" : "bg-[#ef4444]/15 text-[#ef4444]"
               }`}
             >
-              {stat.isPositive ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
-              <span>{Math.abs(stat.delta)}</span>
+              {!!stat.delta && (stat.isPositive ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />)}
+              <span>{deltaText(stat.delta)}</span>
             </div>
           </div>
         ))}

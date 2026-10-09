@@ -4,16 +4,16 @@ Each card number is computed from real New Relic and Sentry data. This table sho
 
 | Card | Source | API Field(s) | Formula | Unit | Code Location |
 |------|--------|--------------|---------|------|----------------|
-| **Avg Response Time** | New Relic | `duration` (p75) | average `loadTime` across all pages | ms | `dashboardTransforms.ts:40` |
+| **Avg Page Load Time** | New Relic | `duration` (p75) | average `loadTime` across all pages | ms | `dashboardTransforms.ts:40` |
 | **Error Rate** | New Relic | `JavaScriptError` count vs `PageView` count | `(errors / views) * 100` per page, then average | % | `dashboardTransforms.ts:41` |
-| **Throughput** | New Relic | `PageView` `count(*)` | sum of view counts across all pages | views | `dashboardTransforms.ts:42` |
+| **Page views (24h)** | New Relic | `PageView` `count(*)` | sum of view counts across all pages | views | `dashboardTransforms.ts:42` |
 | **Apdex Score** | New Relic | `apdex(duration, t: 2)` | average `apdexScore` across all pages (0-1) | score | `dashboardTransforms.ts:43` |
 | **TTFB** | New Relic | `backendDuration` (p75) | average `ttfb` across all pages, in milliseconds | ms | `dashboardTransforms.ts:86` |
 | **LCP** | New Relic | `largestContentfulPaint` (p75) | average `lcp` across all pages, in milliseconds | ms | `dashboardTransforms.ts:87` |
 | **CLS** | New Relic | `cumulativeLayoutShift` (p75) | average `cls` across all pages | score | `dashboardTransforms.ts:88` |
-| **CWV Score Trend** | New Relic | `apdexScore` per snapshot | `apdexScore * 100` per snapshot | % | `dashboardTransforms.ts:124-131` |
-| **Visibility Score** | New Relic | `apdexScore >= 0.9` (pages passing) | average `apdexScore * 100` across all pages | % | `dashboardTransforms.ts:143` |
-| **Pages Passing CWV** | New Relic | `apdexScore` | count of pages where `apdexScore >= CWV_APDEX_THRESHOLD (0.9)` | count | `dashboardTransforms.ts:146` |
+| **Apdex Trend** | New Relic | `apdexScore` per snapshot | `apdexScore * 100` per snapshot | % | `dashboardTransforms.ts:124-131` |
+| **Avg Apdex (x100)** | New Relic | `apdexScore >= 0.9` (pages passing) | average `apdexScore * 100` across all pages | % | `dashboardTransforms.ts:143` |
+| **Pages with Apdex 0.9 or higher** | New Relic | `apdexScore` | count of pages where `apdexScore >= CWV_APDEX_THRESHOLD (0.9)` | count | `dashboardTransforms.ts:146` |
 | **Pages Within Load Budget** | New Relic | `loadTime` | count of pages where `loadTime <= LOAD_BUDGET_MS (1000)` | count | `dashboardTransforms.ts:149` |
 | **What Moved** | New Relic | `apdexScore` (baseline vs current) | page-by-page delta in apdex score; sorted by improvement/regression | delta | `dashboardTransforms.ts:179-211` |
 | **Page Status** | New Relic | `errorRate`, `apdexScore` | "Critical" if errorRate > 5%; "Warning" if errorRate > 1% OR apdexScore < 0.9; else "Healthy" | status | `app/api/metrics/route.ts:84-88` |
