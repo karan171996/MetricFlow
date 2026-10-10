@@ -161,7 +161,9 @@ jobs:
             echo "The tarball says $packed, expected $VERSION." >&2
             exit 1
           fi
-          npm publish release/*.tgz --tag "$NPM_TAG" --provenance --access public --ignore-scripts
+          # "./release/…": a bare release/<name>.tgz looks like a GitHub owner/repo shorthand to npm,
+          # which then tries to clone it over ssh and fails.
+          npm publish ./release/*.tgz --tag "$NPM_TAG" --provenance --access public --ignore-scripts
 
   # Stable only. Runs no repository code and installs nothing: it only calls the GitHub CLI, after the
   # npm publish succeeded. contents: write lives in this job alone.
