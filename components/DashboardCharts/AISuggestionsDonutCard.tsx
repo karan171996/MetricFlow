@@ -41,7 +41,7 @@ export function AISuggestionsDonutCard({ suggestions, unavailable }: AISuggestio
           <Sparkles className="h-5 w-5 text-[#3ee0a1]" />
           AI Suggestions
         </CardTitle>
-        {!unavailable && <p className="text-xs text-gray-500 mt-1">Insights generated for all tracked pages</p>}
+        {!unavailable && <p className="text-xs text-dash-muted mt-1">Insights generated for all tracked pages</p>}
       </CardHeader>
       <CardContent className="p-6 pt-0">
         {unavailable ? (
@@ -58,7 +58,7 @@ export function AISuggestionsDonutCard({ suggestions, unavailable }: AISuggestio
         ) : (
         <ul className="flex flex-col gap-3">
           {suggestions.length === 0 && (
-            <p className="text-xs text-gray-500">No suggestions yet — check back after the next analysis run.</p>
+            <p className="text-xs text-dash-muted">No suggestions yet — check back after the next analysis run.</p>
           )}
           {suggestions.map((item, i) => {
             const style = TYPE_STYLE[item.type];
@@ -71,7 +71,7 @@ export function AISuggestionsDonutCard({ suggestions, unavailable }: AISuggestio
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-semibold text-gray-300">{item.page}</span>
-                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${style.badgeColor}`}>
+                    <Badge variant="outline" className={`text-xs px-1.5 py-0 ${style.badgeColor}`}>
                       {item.badge}
                     </Badge>
                   </div>

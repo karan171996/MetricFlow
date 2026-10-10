@@ -69,7 +69,7 @@ export function BarChartCard({ title, items, failed }: BarChartCardData & { fail
           <CardTitle className="text-[18px] font-bold text-white tracking-tight">{title}</CardTitle>
         </CardHeader>
         <CardContent className="p-6 pt-2">
-          <p className={failed ? "text-xs text-dash-muted" : "text-xs text-gray-500"}>
+          <p className="text-xs text-dash-muted">
             {failed ? "Could not load API response times." : "No API calls measured yet — refresh once /api/metrics has run."}
           </p>
         </CardContent>
