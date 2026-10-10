@@ -128,7 +128,7 @@ The app is dark only. `<html>` carries the `dark` class permanently; the light v
 A near-monochrome navy base with one blue accent and four status colours that double as the chart series.
 
 ### Primary
-- **Signal Blue** (`signal-blue`): the single accent. Primary buttons, links, the active sidebar item, and chart series 3.
+- **Signal Blue** (`signal-blue`): the single accent. Primary buttons, links, and chart series 3. The active sidebar item does not use it (see Navigation).
 
 ### Secondary
 - **Healthy Green** (`healthy-green`) and **Healthy Cyan** (`healthy-cyan`): good readings and chart series 1 and 2.
@@ -154,6 +154,13 @@ A near-monochrome navy base with one blue accent and four status colours that do
 
 **The One Accent Rule.** Signal Blue is the only non-status accent. Violet belongs to charts.
 
+**Contrast.** Alarm Red (`#ef4444`) on Panel Navy is 4.34:1 and Signal Blue (`#3b82f6`) is about 4.44:1 on the card; both fall under 4.5:1. Red or blue text must be large (24px bold or larger) or sit beside a white status word.
+
+**Known drift.**
+- A second accent: mint `#3ee0a1` sits on the logo tile, the AI sparkle and good deltas, next to `#10b981` for the same meaning. It is not part of the palette.
+- Decorative green: the API latency bars and the Apdex area chart use green with no status meaning, against The Status-Only Rule.
+- Raw hex: most components use raw hex (`#131518`, `#1a202c`, `#2d3748`, `#9ca3af`, `#1f2937`) instead of theme tokens. Only `app/page.tsx` uses the `dash-*` tokens consistently.
+
 ## Typography
 
 **Display Font:** system UI stack (`-apple-system`, `BlinkMacSystemFont`, `Segoe UI`, `Roboto`, sans-serif)
@@ -163,7 +170,7 @@ A near-monochrome navy base with one blue accent and four status colours that do
 **Character:** native and unbranded. The interface uses whatever the engineer's OS already renders, so it feels like a local tool, loads nothing, and keeps numbers crisp.
 
 ### Hierarchy
-- **Display** (800, 32px, 1.2): the page `h1`.
+- **Display** (800, 32px, 1.2): the global `h1` rule. The header overrides it: the project name renders at 16px, 18px from `md` (`components/header/Header.tsx`), so no page shows the 32px step today.
 - **Headline** (700, 24px, 1.3): section `h2`.
 - **Title** (600, 18px, 1.4): `h3` and panel headings. Card titles are smaller: 16px, weight 500.
 - **Body** (400, 14px, 1.5): default text.
@@ -177,7 +184,7 @@ A near-monochrome navy base with one blue accent and four status colours that do
 
 A fixed sidebar and a fluid content column.
 
-- **Sidebar:** 16rem wide, collapsing to a 3rem icon rail.
+- **Sidebar:** a fixed 70px icon rail (`collapsible="none"` on desktop), not collapsible.
 - **Content:** capped at 1600px. Setup and form screens use narrow columns (`max-w-md`, `max-w-2xl`).
 - **Grids:** one column on mobile, two or three from `md`, up to four at `lg`.
 - **Rhythm:** a 4px base. Gaps are mostly 8px and 12px inside components, 16px and 24px between panels. Page and panel padding is 24px, rising to 32px on roomier screens.
@@ -194,6 +201,8 @@ A hybrid that leans flat. Depth comes first from tone: Panel Navy on Console Bla
 
 ### Named Rules
 **The Ring-First Rule.** A new panel gets the hairline ring and no shadow. Add a shadow only when the surface floats above others.
+
+**Known drift.** The chart cards (`LineChartCard`, `BarChartCard`) add a `#2d3748` border and the panel shadow on top of the card.
 
 ## Shapes
 
@@ -217,6 +226,7 @@ Compact and restrained. Built on shadcn patterns over Base UI primitives, in `co
 - **Ghost:** no fill until hover, then a muted fill.
 - **Destructive:** Alarm Red text on a 20% red tint, not a solid red block.
 - **Focus / Active:** a 3px Focus Slate ring at 50%; pressing nudges the button down 1px.
+- **Known drift:** some controls miss the 32px rule: the header bell is 36px and the sidebar nav buttons are 40px.
 
 ### Badges
 - **Style:** 20px pill, 12px medium text, 8px horizontal padding.
@@ -235,7 +245,17 @@ Compact and restrained. Built on shadcn patterns over Base UI primitives, in `co
 - **Error / Disabled:** red border and red ring when invalid; 50% opacity when disabled.
 
 ### Navigation
-- **Sidebar:** Console Black with a Hairline Slate edge. Items are white text; hover and active use a Recess Navy fill, and the active accent is Signal Blue. Collapses to icons, and becomes a sheet on mobile.
+- **Sidebar:** a fixed 70px icon rail on `#131518` with a Hairline Slate edge (`components/sidebar/Sidebar.tsx`). Items are 40px grey icons; hover and the active item show a grey fill, not Signal Blue. It becomes an off-canvas sheet on mobile.
+
+### KPI tiles
+- Each tile shows a status word and the limit beside the value (`Warning · limit 2%`). The value turns amber (Warning) or red (Critical) over the limit and stays white when healthy, so colour is never the only signal.
+
+### Thresholds
+- Load time, error rate and Apdex Minimum are user thresholds (defaults 1.5s, 2%, 0.9). Status is Warning above the load or error threshold, or below the Apdex minimum; Critical above twice the load or error threshold. Apdex has no Critical step (`lib/thresholds.ts`).
+
+### AI Suggestions and deltas
+- **Unavailable:** one line of copy and an "Open setup" link to `/setup`.
+- **Deltas:** "No prior data yet" and "No change" show no arrow and use the muted colour.
 
 ### Charts
 - **Series order:** green, cyan, blue, violet, amber.
@@ -245,7 +265,7 @@ Compact and restrained. Built on shadcn patterns over Base UI primitives, in `co
 
 ### Do:
 - **Do** keep the app dark only, on Console Black.
-- **Do** use the theme tokens (`bg-card`, `text-muted-foreground`, `border-border`) rather than raw hex.
+- **Do** use the theme tokens (`bg-card`, `text-muted-foreground`, `border-border`) rather than raw hex. (Most components still use raw hex; see Colors.)
 - **Do** keep controls at 32px and body text at 14px.
 - **Do** give new panels the hairline ring first (The Ring-First Rule).
 - **Do** wrap entrance motion in `motion-safe`, as `title-enter` does.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-09T00:00:00.000Z",
+  "generatedAt": "2026-10-10T00:00:00.000Z",
   "title": "Design System: MetricFlow",
   "extensions": {
     "colorMeta": {
@@ -21,7 +21,7 @@
       "soft-slate": { "role": "neutral", "displayName": "Soft Slate", "canonical": "#cbd5e0" }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "The page h1." },
+      "display": { "displayName": "Display", "purpose": "The global h1 rule; the header overrides it at 16-18px, so no page shows 32px today." },
       "headline": { "displayName": "Headline", "purpose": "Section h2." },
       "title": { "displayName": "Title", "purpose": "h3 and panel headings." },
       "body": { "displayName": "Body", "purpose": "Default text." },
@@ -109,12 +109,15 @@
     "rules": [
       { "name": "The Status-Only Rule", "body": "Green, amber and red mean healthy, warning and failing. They are never used as decoration.", "section": "colors" },
       { "name": "The One Accent Rule", "body": "Signal Blue is the only non-status accent. Violet belongs to charts.", "section": "colors" },
+      { "name": "Contrast", "body": "Alarm Red (#ef4444) on Panel Navy is 4.34:1 and Signal Blue (#3b82f6) is about 4.44:1 on the card. Red or blue text under 4.5:1 must be large (24px bold or larger) or paired with a white status word.", "section": "colors" },
+      { "name": "Known drift", "body": "Mint #3ee0a1 appears as a second accent on the logo tile, AI sparkle and good deltas beside #10b981. API latency bars and the Apdex area chart use green with no status meaning. Most components use raw hex instead of theme tokens (only app/page.tsx uses dash-* tokens). Chart cards add a border and shadow against The Ring-First Rule. Controls drift from 32px: bell 36px, sidebar nav 40px. The sidebar is a fixed 70px icon rail with a grey active fill, not Signal Blue.", "section": "colors" },
+      { "name": "Status limits", "body": "KPI tiles show a status word and the limit (Warning · limit 2%); the value turns amber or red over the limit and stays white when healthy. Apdex Minimum is a user threshold (default 0.9): Warning below it, no Critical step; load time and error rate are Critical above twice their threshold. AI Suggestions has an unavailable state with one line and an Open setup link; No prior data yet and No change deltas show no arrow and are muted.", "section": "components" },
       { "name": "The Title Entrance Rule", "body": "Titles fade in and rise 8px once on mount (400ms, ease-out) through the `title-enter` utility. With reduced motion they render in their final state.", "section": "typography" },
       { "name": "The Ring-First Rule", "body": "A new panel gets the hairline ring and no shadow. Add a shadow only when the surface floats above others.", "section": "elevation" }
     ],
     "dos": [
       "Do keep the app dark only, on Console Black.",
-      "Do use the theme tokens (`bg-card`, `text-muted-foreground`, `border-border`) rather than raw hex.",
+      "Do use the theme tokens (`bg-card`, `text-muted-foreground`, `border-border`) rather than raw hex. (Most components still use raw hex.)",
       "Do keep controls at 32px and body text at 14px.",
       "Do give new panels the hairline ring first (The Ring-First Rule).",
       "Do wrap entrance motion in `motion-safe`, as `title-enter` does."
