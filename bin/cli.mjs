@@ -65,12 +65,15 @@ const server = spawn(process.execPath, [nextBin, "start", "-p", port, "-H", host
     ...(process.argv.includes("--no-color") || wantsJson ? { FORCE_COLOR: undefined, NO_COLOR: "1" } : {}),
   },
 });
+// True once this process forwarded a stop signal: the server then exits with 128 + signal (143 for
+// SIGTERM), which is the shutdown we asked for, not a failure, so it must not print the port hint.
+let stopping = false;
 server.on("exit", (code) => {
   stopSpinner();
-  if (code) out.error(`Server exited with code ${code}.`, { code: "server_exit", hint: "Check the output above; the port may be in use (try another port)." });
+  if (code && !stopping) out.error(`Server exited with code ${code}.`, { code: "server_exit", hint: "Check the output above; the port may be in use (try another port)." });
   process.exit(code ?? 0);
 });
-for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => server.kill(s));
+for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { stopping = true; server.kill(s); });
 
 /**
  * Prints the chain from the user's site to the dashboard, so "no data" says which

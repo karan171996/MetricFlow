@@ -100,7 +100,7 @@ There are two channels, named after Node.js's. Both are started by hand and both
 | `canary` | `<version>-canary.g<short sha>`, for example `0.10.1-canary.g4347fdf` | `canary` | `npx @karan171996/metricflow@canary` | Trying what is on `main` before a stable release. It can be broken. |
 
 - **A canary never moves `latest`.** The workflow always passes an explicit `--tag`, and refuses to publish a prerelease version under `latest`.
-- **Stable leaves a marker.** After a successful stable publish the workflow creates the git tag `v<version>` and a GitHub release with generated notes. It fails before publishing if that tag already exists.
+- **Stable leaves a marker.** After a successful stable publish the workflow creates the git tag `v<version>` and a GitHub release with generated notes. It fails before publishing if that tag already exists. Both channels also fail in the first job, before the approval step, if that exact version is already on npm (a version can be published once): bump it for stable, or run from a newer commit for canary.
 - **Ordering.** A canary sorts below the same stable version (`0.10.1-canary.g4347fdf` < `0.10.1`), as semver defines, so after `0.10.1` is released a canary of `main` is still labelled `0.10.1-canary.…` until the next bump lands. The `canary` tag is set explicitly, so ordering never decides what `@canary` installs.
 - **Why the `g`.** The short sha is prefixed with `g` so the identifier can never be all digits with a leading zero, which semver forbids.
 - **LTS is not offered.** An LTS line only means something with a maintained `1.x` branch that gets backports. Revisit at 1.0.

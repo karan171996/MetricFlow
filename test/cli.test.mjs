@@ -143,7 +143,42 @@ test("real start: prints running banner, serves /api/health", { skip: !built && 
   } finally { p.kill("SIGTERM"); }
 });
 
-test("real start --no-open: the browser is not launched (and is without the flag)", { skip: !built && "no .next/BUILD_ID (run npm run build)", timeout: 60000 }, async () => {
+// A deliberate stop (SIGTERM, as the test runner and Ctrl+C do) is not an error: no "Server exited" line, no port hint.
+// A server that dies on its own (port already taken) still prints it.
+test("real start: a stop signal prints no server_exit error; a taken port still does", { skip: !built && "no .next/BUILD_ID (run npm run build)", timeout: 90000 }, async () => {
+  const bin = mkdtempSync(join(tmpdir(), "fakeopen-"));
+  for (const n of ["open", "xdg-open"]) { writeFileSync(join(bin, n), "#!/bin/sh\n"); chmodSync(join(bin, n), 0o755); }
+  const freePort = () => new Promise((res) => { const s = createServer().listen(0, "127.0.0.1", () => { const { port } = s.address(); s.close(() => res(String(port))); }); });
+  const run = (port) => {
+    const p = spawn(process.execPath, [cli, port, "--json", "--no-open"], { env: { PATH: `${bin}:${process.env.PATH}` } });
+    let out = "";
+    p.stdout.on("data", (d) => (out += d));
+    const exited = new Promise((res) => p.on("exit", (code) => res(code)));
+    return { p, exited, output: () => out };
+  };
+
+  const port = await freePort();
+  const a = run(port);
+  try {
+    await new Promise((res, rej) => { const t = setInterval(() => /"event":"ok"/.test(a.output()) && (clearInterval(t), res()), 200); a.exited.then(() => { clearInterval(t); rej(new Error("server exited early: " + a.output())); }); });
+    a.p.kill("SIGTERM");
+    const code = await a.exited;
+    assert.ok(!/server_exit|Server exited/.test(a.output()), `a deliberate stop must not print a server_exit error: ${a.output()}`);
+    assert.ok(code === 0 || code === 143, `a deliberate stop exits 0 or 143, got ${code}`);
+  } finally { a.p.kill("SIGKILL"); }
+
+  // Second start on a port that is already bound: next start fails on its own.
+  const taken = createServer();
+  const takenPort = await new Promise((res) => taken.listen(0, "127.0.0.1", () => res(String(taken.address().port))));
+  const b = run(takenPort);
+  try {
+    const code = await Promise.race([b.exited, new Promise((_, rej) => setTimeout(() => rej(new Error("start on a taken port did not exit")), 60000))]);
+    assert.notEqual(code, 0, "a taken port is a failure");
+    assert.match(b.output(), /"code":"server_exit"/, `a server that dies on its own still reports server_exit: ${b.output()}`);
+  } finally { b.p.kill("SIGKILL"); taken.close(); }
+});
+
+test("real start --no-open: the browser is not launched (and is without the flag)",{ skip: !built && "no .next/BUILD_ID (run npm run build)", timeout: 60000 }, async () => {
   // Fake `open` that records being called, so the test can tell and no browser ever launches.
   // A free port each time: a fixed one collides with a server left over from an earlier run.
   const freePort = () => new Promise((res) => { const s = createServer().listen(0, "127.0.0.1", () => { const { port } = s.address(); s.close(() => res(String(port))); }); });
