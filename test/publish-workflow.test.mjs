@@ -44,6 +44,15 @@ test("stable refuses a prerelease base version and an existing tag", () => {
   assert.match(build, /git ls-remote --exit-code --tags origin "refs\/tags\/v\$\{base\}"/);
 });
 
+test("the build job fails before the approval when the version is already on npm", () => {
+  const view = build.indexOf('npm view "${name}@${version}" version');
+  assert.ok(view > 0, "build job asks the registry for the version");
+  assert.ok(view > build.indexOf('tag="latest"'), "the check runs after the version is decided");
+  assert.ok(view < build.indexOf('echo "version=$version" >> "$GITHUB_OUTPUT"'), "and before the outputs are written");
+  assert.match(build, /is already on npm/);
+  assert.doesNotMatch(publish, /npm view/);
+});
+
 test("the canary version is written only in the build job, and the tarball version is checked", () => {
   assert.match(build, /npm pkg set version="\$VERSION"/);
   assert.doesNotMatch(publish, /npm pkg set/);
