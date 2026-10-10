@@ -32,7 +32,8 @@ const TEXT_LINK = `font-medium text-dash-foreground underline underline-offset-4
 // Every column but Page and Status is for lg and up; below that the Page cell carries a one-line summary instead.
 const NUMERIC = "hidden px-3 text-right tabular-nums lg:table-cell";
 
-function StatusBadge({ page }: { page: MetricsPage }) {
+/** Icon and word for a page's status. `page.status` must be the judged one (`deriveStatus`), never the server's. */
+export function StatusBadge({ page }: { page: MetricsPage }) {
   const word = page.status ?? (hasData(page) ? "No performance data" : "No data yet");
   const { Icon, icon, badge } = page.status ? STATUS[page.status] : NO_STATUS;
   return (
