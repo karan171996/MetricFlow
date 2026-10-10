@@ -1,6 +1,6 @@
 {
   "name": "@karan171996/metricflow",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Local performance dashboard: New Relic page metrics and Sentry errors per page, with AI suggestions. Run with one npx command.",
   "keywords": [
     "performance",

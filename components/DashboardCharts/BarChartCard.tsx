@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LabelList, ReferenceLine } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LabelList, Rectangle, ReferenceLine, type RectangleProps } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { BarChartCardData } from "@/types";
 import { formatDuration } from "@/lib/formatDuration";
@@ -31,6 +31,28 @@ const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
     );
   }
   return null;
+};
+
+const DEPTH = 5; // px the block extends back
+
+// Each bar drawn as a solid block: the flat front, plus a lit top face and a dark end cap. The two extra
+// faces carry .depth-face, which app/globals.css hides when 3D is off, leaving the plain bar.
+const Bar3D = (props: RectangleProps) => {
+  const { x = 0, y = 0, width = 0, height = 0 } = props;
+  const r = x + width;
+  const b = y + height;
+  return (
+    <g>
+      {width > 0 && (
+        <>
+          <polygon className="depth-face" fill="#6ee7b7" points={`${x},${y} ${r},${y} ${r + DEPTH},${y - DEPTH} ${x + DEPTH},${y - DEPTH}`} />
+          <polygon className="depth-face" fill="#047857" points={`${r},${y} ${r + DEPTH},${y - DEPTH} ${r + DEPTH},${b - DEPTH} ${r},${b}`} />
+        </>
+      )}
+      {/* recharts' own rectangle, so the front face is the same <path name=...> as before */}
+      <Rectangle {...props} radius={2} />
+    </g>
+  );
 };
 
 /** `failed`: the last load of the items failed. Bars already on screen stay; with none, the card says so. */
@@ -121,12 +143,13 @@ export function BarChartCard({ title, items, failed }: BarChartCardData & { fail
                 dataKey="shown" 
                 isAnimationActive={false}
                 fill="#10b981" 
-                radius={4}
+                shape={<Bar3D />}
                 background={{ fill: '#2d3748', radius: 4 }}
               >
                 <LabelList 
                   dataKey="label" 
                   position="right" 
+                  offset={DEPTH + 6}
                   fill="#9ca3af" 
                   fontSize={12}
                 />

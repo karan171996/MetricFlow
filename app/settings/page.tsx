@@ -6,7 +6,8 @@ import {
   ApiKeys,
   ExportSettings,
   ThresholdSettings,
-  NotificationPrefs
+  NotificationPrefs,
+  ThreeDPrefs
   // TeamMembers, // later: team access feature
 } from "@/components/Settings";
 
@@ -43,6 +44,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <TabsContent value="general" className="space-y-6 mt-0">
               <ApiKeys />
               <ExportSettings />
+              <ThreeDPrefs />
             </TabsContent>
 
             <TabsContent value="thresholds" className="mt-0">

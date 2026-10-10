@@ -224,6 +224,8 @@ export default function Home() {
             {stats.map((stat) => (
               <div
                 key={stat.label}
+                data-slot="stat-tile"
+                data-status={stat.status ?? "none"}
                 className="rounded-lg border border-dash-border bg-dash-card p-5"
               >
                 <p className="text-label text-dash-muted">{stat.label}</p>
