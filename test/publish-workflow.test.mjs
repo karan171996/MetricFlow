@@ -27,7 +27,9 @@ test("the channel input offers stable and canary and defaults to stable", () => 
 
 test("npm publish is called once and always with an explicit dist-tag from the build job", () => {
   assert.equal((yml.match(/npm publish/g) || []).length, 1);
-  assert.match(publish, /npm publish release\/\*\.tgz --tag "\$NPM_TAG" /);
+  // "./release/…" on purpose: without the "./" npm reads release/<name>.tgz as a GitHub owner/repo shorthand and clones it.
+  assert.match(publish, /npm publish \.\/release\/\*\.tgz --tag "\$NPM_TAG" /);
+  assert.doesNotMatch(publish, /npm publish release\//);
   assert.match(publish, /NPM_TAG: \$\{\{ needs\.build\.outputs\.tag \}\}/);
 });
 
