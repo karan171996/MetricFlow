@@ -183,30 +183,234 @@
   100% { background-position: -200% center; }
 }
 
-/* ── Page skyline (components/DashboardCharts/PageSkyline.tsx): a slow sway of the scene, none under reduced motion ── */
-@keyframes skyline-sway {
-  from { transform: rotateX(58deg) rotateZ(-50deg); }
-  to   { transform: rotateX(58deg) rotateZ(-22deg); }
+/* ═══ 3D depth for the whole dashboard (components/Depth3D.tsx) ═══
+   Everything below applies unless <html data-depth="off">, which Depth3D sets for reduced motion, low power,
+   data saver, or when the user turns 3D off in Settings. No layout changes: it is light, glass and shadow,
+   so the tables and forms stay as easy to read and click as before. */
+
+/* The scene: a deep gradient with two soft lights, and a perspective grid floor that drifts toward you. */
+html:not([data-depth="off"]) {
+  background:
+    radial-gradient(1100px 620px at 82% -8%, rgba(59, 130, 246, 0.34), transparent 62%),
+    radial-gradient(900px 560px at 4% 108%, rgba(6, 182, 212, 0.24), transparent 58%),
+    radial-gradient(800px 520px at 14% 8%, rgba(139, 92, 246, 0.2), transparent 66%),
+    #080b10;
 }
-@utility skyline-sway {
-  animation: skyline-sway 18s ease-in-out infinite alternate;
+/* Soft lights drifting behind everything: the glass panels blur and tint them, which is what makes them read as glass. */
+html:not([data-depth="off"])::before {
+  content: "";
+  position: fixed;
+  inset: -10%;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(34vmax 34vmax at 22% 28%, rgba(99, 102, 241, 0.42), transparent 70%),
+    radial-gradient(30vmax 30vmax at 82% 72%, rgba(6, 182, 212, 0.34), transparent 70%),
+    radial-gradient(26vmax 26vmax at 62% 12%, rgba(59, 130, 246, 0.4), transparent 70%),
+    radial-gradient(22vmax 22vmax at 38% 88%, rgba(168, 85, 247, 0.26), transparent 70%);
 }
-.skyline-tower {
-  position: absolute;
-  display: block;
-  transform-style: preserve-3d;
-  transition: transform 0.25s ease;
-  outline: none;
+html:not([data-depth="off"]) body {
+  background: transparent;
 }
-.skyline-tower:hover,
-.skyline-tower:focus-visible {
-  transform: translateZ(16px);
+html:not([data-depth="off"]) [data-slot="sidebar-inset"] {
+  background: transparent;
 }
-.skyline-tower:focus-visible > span:first-child {
-  outline: 2px solid #ffffff;
+html:not([data-depth="off"]) body::before {
+  content: "";
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 58vh;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(96, 165, 250, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(96, 165, 250, 0.16) 1px, transparent 1px);
+  background-size: 72px 72px;
+  transform: perspective(540px) rotateX(64deg);
+  transform-origin: 50% 100%;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 82%);
+  mask-image: linear-gradient(to top, #000 0%, transparent 82%);
+  opacity: 0.6;
 }
-@media (prefers-reduced-motion: reduce) {
-  .skyline-tower { transition: none; }
+
+/* Glass panels: a lit top edge, a layered shadow so they float, and a lift on hover. Compact ones also tilt
+   toward the pointer (Depth3D sets --tilt-x / --tilt-y). */
+html:not([data-depth="off"]) [data-slot="card"],
+html:not([data-depth="off"]) [data-slot="stat-tile"] {
+  background-color: rgba(24, 30, 41, 0.72);
+  /* First layer is the glare: invisible until hover, and it follows the pointer (Depth3D sets --glare-x / --glare-y). */
+  background-image:
+    radial-gradient(420px circle at var(--glare-x, 50%) var(--glare-y, 0%), rgba(147, 197, 253, var(--glare, 0)), transparent 62%),
+    linear-gradient(150deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015) 42%, rgba(0, 0, 0, 0.14));
+  -webkit-backdrop-filter: blur(16px) saturate(1.25);
+  backdrop-filter: blur(16px) saturate(1.25);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-top-color: rgba(255, 255, 255, 0.24);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    0 22px 44px -18px rgba(0, 0, 0, 0.75);
+  transform: perspective(1000px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 0.18s ease-out, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+html:not([data-depth="off"]) [data-slot="card"]:hover,
+html:not([data-depth="off"]) [data-slot="stat-tile"]:hover {
+  --glare: 0.16;
+  border-top-color: rgba(147, 197, 253, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 4px 10px rgba(0, 0, 0, 0.4),
+    0 30px 56px -18px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(96, 165, 250, 0.12);
+}
+
+/* KPI tiles are slabs: an extruded base edge below them, and a status glow only when something is wrong. */
+html:not([data-depth="off"]) [data-slot="stat-tile"] {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 4px 0 0 rgba(30, 41, 59, 0.95),
+    0 8px 0 0 rgba(7, 10, 15, 0.95),
+    0 8px 0 1px rgba(148, 163, 184, 0.16),
+    0 30px 44px -14px rgba(0, 0, 0, 0.85);
+}
+html:not([data-depth="off"]) [data-slot="stat-tile"][data-status="Warning"] {
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 5px 0 0 rgba(7, 10, 15, 0.95),
+    0 5px 0 1px rgba(245, 158, 11, 0.25),
+    0 22px 44px -14px rgba(245, 158, 11, 0.4);
+}
+html:not([data-depth="off"]) [data-slot="stat-tile"][data-status="Critical"] {
+  border-color: rgba(239, 68, 68, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 5px 0 0 rgba(7, 10, 15, 0.95),
+    0 5px 0 1px rgba(239, 68, 68, 0.3),
+    0 22px 44px -14px rgba(239, 68, 68, 0.5);
+}
+
+/* The chrome floats too: the sidebar as a glass dock, the header as a frosted bar. */
+html:not([data-depth="off"]) [data-slot="sidebar"] {
+  background-color: rgba(14, 18, 25, 0.72);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 30%);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border-right-color: rgba(148, 163, 184, 0.14);
+  box-shadow: 10px 0 44px -14px rgba(0, 0, 0, 0.75), inset -1px 0 0 rgba(255, 255, 255, 0.05);
+}
+html:not([data-depth="off"]) header {
+  background-color: rgba(11, 15, 21, 0.62);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-bottom-color: rgba(148, 163, 184, 0.14);
+}
+
+/* Table rows light up under the pointer; chart bars cast a soft shadow so they stand off the glass. */
+html:not([data-depth="off"]) [data-slot="table-row"]:hover {
+  background-image: linear-gradient(90deg, rgba(59, 130, 246, 0.14), rgba(59, 130, 246, 0) 70%);
+  box-shadow: inset 3px 0 0 rgba(96, 165, 250, 0.85);
+}
+html:not([data-depth="off"]) .recharts-bar-rectangle path,
+html:not([data-depth="off"]) .recharts-area-area {
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.5));
+}
+
+/* The block faces of the bar chart (components/DashboardCharts/BarChartCard.tsx) exist only in 3D. */
+html[data-depth="off"] .depth-face {
+  display: none;
+}
+
+/* Panels inside a panel are wells pressed into the glass, and so are text fields: depth goes both ways. */
+html:not([data-depth="off"]) [data-slot="card"] [class*="bg-[#0f1419]"],
+html:not([data-depth="off"]) [data-slot="input"] {
+  background-color: rgba(4, 7, 12, 0.55);
+  border-color: rgba(148, 163, 184, 0.12);
+  border-bottom-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Raised keys: the logo tile, the current nav item and the switch thumb stand on an edge. */
+html:not([data-depth="off"]) [data-slot="sidebar"] [class*="bg-[#3ee0a1]"] {
+  background-image: linear-gradient(160deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 55%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 4px 0 #1b8f63, 0 14px 22px -8px rgba(62, 224, 161, 0.55);
+}
+html:not([data-depth="off"]) [data-slot="sidebar"] [data-active]:not([data-active="false"]) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 3px 0 rgba(4, 7, 12, 0.95), 0 10px 16px -8px rgba(0, 0, 0, 0.8);
+  transform: translateY(-1px);
+}
+html:not([data-depth="off"]) [data-slot="switch-thumb"] {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 0 rgba(0, 0, 0, 0.45), 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* The rest of the controls and charts. Only shadows, filters and highlights: no size, position or colour
+   meaning changes, so nothing moves and the status colours stay exactly what they were. */
+
+/* Donut rings get a thickness, and the area / line strokes sit a little above their fill. */
+html:not([data-depth="off"]) .recharts-pie-sector path {
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.55)) drop-shadow(0 2px 0 rgba(0, 0, 0, 0.4)) drop-shadow(0 8px 8px rgba(0, 0, 0, 0.5));
+}
+html:not([data-depth="off"]) .recharts-area-curve,
+html:not([data-depth="off"]) .recharts-line-curve {
+  filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.55));
+}
+
+/* Chart tooltips float above the glass: blurred, with a lit edge. */
+html:not([data-depth="off"]) .recharts-tooltip-wrapper > div {
+  background-color: rgba(15, 20, 28, 0.82) !important;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  border-top-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 14px 30px -10px rgba(0, 0, 0, 0.8);
+}
+
+/* Primary buttons are keys with a lit top and a lower edge; the existing 1px press still works. */
+html:not([data-depth="off"]) [data-slot="button"][class*="bg-primary"] {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 2px 0 rgba(23, 53, 110, 0.9), 0 8px 14px -6px rgba(59, 130, 246, 0.5);
+}
+html:not([data-depth="off"]) [data-slot="button"][class*="bg-primary"]:active {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 0 rgba(23, 53, 110, 0.9);
+}
+
+/* Tabs: the list is a recessed track and the current tab a raised slab inside it. */
+html:not([data-depth="off"]) [data-slot="tabs-list"] {
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+html:not([data-depth="off"]) [data-slot="tabs-trigger"][data-active] {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 2px 0 rgba(4, 7, 12, 0.9), 0 8px 12px -6px rgba(0, 0, 0, 0.8);
+}
+
+/* Sliders: the thumb is a raised bead on a recessed rail, like the switch. */
+html:not([data-depth="off"]) [data-slot="slider-track"] {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+html:not([data-depth="off"]) [data-slot="slider-thumb"] {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 0 rgba(0, 0, 0, 0.45), 0 5px 9px rgba(0, 0, 0, 0.5);
+}
+
+/* Motion, only for people who have not asked for less: panels rise into place once, and the floor drifts. */
+@keyframes depth-rise {
+  from { opacity: 0; transform: perspective(1000px) translateY(26px) rotateX(14deg) scale(0.985); }
+}
+@keyframes depth-floor {
+  to { background-position: 0 72px, 0 0; }
+}
+@keyframes depth-orbs {
+  from { transform: translate3d(-3%, -2%, 0) scale(1); }
+  to   { transform: translate3d(4%, 3%, 0) scale(1.14); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-depth="off"]) [data-slot="card"],
+  html:not([data-depth="off"]) [data-slot="stat-tile"] {
+    animation: depth-rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+  html:not([data-depth="off"]) body::before {
+    animation: depth-floor 7s linear infinite;
+  }
+  html:not([data-depth="off"])::before {
+    animation: depth-orbs 24s ease-in-out infinite alternate;
+  }
 }
 
 /* ── Titles: fade + 8px rise once on mount; reduced motion gets the final state ── */

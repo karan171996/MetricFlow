@@ -13,6 +13,8 @@ const KEY = "metricflow:3d";
 export interface Use3d extends Result3d {
   /** What the Settings switch is set to, whatever the device allows. */
   userChoice: boolean;
+  /** False until the browser has been read, so a caller can tell "not known yet" from "off". */
+  ready: boolean;
 }
 
 export interface Use3dOptions {
@@ -23,7 +25,7 @@ export interface Use3dOptions {
   needsWebgl?: boolean;
 }
 
-const OFF: Use3d = { enabled: false, reason: "off", userChoice: false };
+const OFF: Use3d = { enabled: false, reason: "off", userChoice: false, ready: false };
 const listeners = new Set<() => void>();
 let cache: Env3d | null = null;
 let webgl: boolean | null = null;
@@ -93,6 +95,6 @@ export function use3dEnabled({ needsWebgl = true }: Use3dOptions = {}): Use3d {
   const env = useSyncExternalStore(subscribe, read, () => null);
   return useMemo(() => {
     if (!env) return OFF;
-    return { ...evaluate3d({ ...env, webgl: needsWebgl ? env.webgl : true }), userChoice: env.userChoice };
+    return { ...evaluate3d({ ...env, webgl: needsWebgl ? env.webgl : true }), userChoice: env.userChoice, ready: true };
   }, [env, needsWebgl]);
 }
