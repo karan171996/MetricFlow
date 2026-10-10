@@ -15,8 +15,8 @@ Each card number is computed from real New Relic and Sentry data. This table sho
 | **Avg Apdex (x100)** | New Relic | `apdexScore >=` the Apdex minimum from Settings (default 0.9) (pages passing) | average `apdexScore * 100` across all pages | % | `dashboardTransforms.ts:143` |
 | **Pages with Apdex 0.9 or higher** | New Relic | `apdexScore` | count of pages where `apdexScore >=` the user's Apdex minimum (default 0.9, shown in the label) | count | `dashboardTransforms.ts`, rule in `lib/thresholds.ts` |
 | **Pages Within Load Budget (1.5s)** | New Relic | `loadTime` | count of pages where `loadTime <=` the user's load time threshold (default 1.5s, shown in the label) | count | `dashboardTransforms.ts`, rule in `lib/thresholds.ts` |
-| **What Moved** | New Relic | `apdexScore` (baseline vs current) | page-by-page delta in apdex score; sorted by improvement/regression | delta | `dashboardTransforms.ts:179-211` |
 | **Page Status** | New Relic | `loadTime`, `errorRate`, `apdexScore` | the worst of the three, judged against the thresholds from Settings: "Critical" if loadTime or errorRate is above 2x its threshold; "Warning" if loadTime or errorRate is above its threshold OR apdexScore is below the Apdex minimum (Apdex has no Critical step); else "Healthy". No status at all unless all three values are present | status | `lib/thresholds.ts` |
+| **Fix first / All pages table order** | New Relic, Sentry | `loadTime`, `errorRate`, `apdexScore`, Sentry error count, traffic | `rankPages`: Critical, then Warning, then pages with Sentry errors but no status, then Healthy, then pages with no status and no errors, then pages with no data. Inside a group: worst overage ratio (the highest of `loadTime / limit`, `errorRate / limit`, `Apdex minimum / apdexScore`), then Sentry errors, then traffic, then name. Home shows the first 5 | order | `lib/thresholds.ts` |
 
 ## How Metrics Flow
 

@@ -1,5 +1,5 @@
 export {}; // make this file a module so top-level names do not clash across specs
-// One health rule: the KPI tiles, the breakdown counts, the page status and the threshold alert all judge a value
+// One health rule: the KPI tiles, the breakdown counts, the page status, the table summary and the breach banner all judge a value
 // against the user's thresholds (lib/thresholds.ts). The API is stubbed (FAKE fixtures only), /api/settings included,
 // so the run never depends on, or writes, a real .metricflow-settings.json.
 const at = "2026-01-01T00:00:00.000Z";
@@ -55,6 +55,10 @@ const breakdown = (label: string, count: string) =>
     expect($label.next().text()).to.equal(count);
   });
 const alertBox = () => cy.get('[data-slot="alert"]');
+/** The breach banner's line for one page: "{status} · {name}: {reasons, worst first}". */
+const bannerLine = (slug: string, line: string) => alertBox().find(`li[data-slug="${slug}"] > span`).should("have.text", line);
+const summary = (text: string) => cy.get('[data-slot="table-summary"]', { timeout: 15000 }).should(($p) => expect($p.text().trim()).to.equal(text));
+const statusOf = (slug: string, status: string) => cy.get(`tbody tr[data-slug="${slug}"] [data-slot="badge"]`, { timeout: 15000 }).should("have.attr", "data-status", status);
 
 describe("KPI tiles show their status and limit", () => {
   it("under every limit → Healthy with the value left white, each with its limit; Page views has no status line", () => {
@@ -80,7 +84,8 @@ describe("KPI tiles show their status and limit", () => {
     tileReads("Error Rate", "3.00%", "Warning", "limit 2%");
     tileReads("Apdex Score", "0.85", "Warning", "min 0.9");
     tileHasNoStatus("Page views (24h)", "40");
-    alertBox().should("contain", "Warning: threshold exceeded").and("contain", "FAKE blog (Warning)");
+    alertBox().should("have.attr", "data-severity", "warning").find('[data-slot="banner-title"]').should("have.text", "1 page is over a limit");
+    bannerLine("blog", "Warning · FAKE blog: error rate 3.00% (limit 2%), load time 2s (limit 1.5s), Apdex 0.85 (min 0.9)");
     cy.contains("approaching threshold").should("not.exist");
   });
 
@@ -88,7 +93,8 @@ describe("KPI tiles show their status and limit", () => {
     visitHome([page("blog", { loadTime: 3000, errorRate: 4, apdex: 0.95 })]);
     tileReads("Avg Page Load Time", "3s", "Warning", "limit 1.5s");
     tileReads("Error Rate", "4.00%", "Warning", "limit 2%");
-    alertBox().should("contain", "Warning: threshold exceeded");
+    bannerLine("blog", "Warning · FAKE blog: load time 3s (limit 1.5s), error rate 4.00% (limit 2%)");
+    alertBox().should("have.attr", "data-severity", "warning");
   });
 
   it("over twice the limit → Critical in the danger colour; Apdex has no Critical step", () => {
@@ -96,7 +102,8 @@ describe("KPI tiles show their status and limit", () => {
     tileReads("Avg Page Load Time", "3.2s", "Critical", "limit 1.5s");
     tileReads("Error Rate", "4.50%", "Critical", "limit 2%");
     tileReads("Apdex Score", "0.30", "Warning", "min 0.9");
-    alertBox().should("contain", "Critical: threshold exceeded").and("contain", "FAKE blog (Critical)");
+    alertBox().should("have.attr", "data-severity", "critical");
+    bannerLine("blog", "Critical · FAKE blog: Apdex 0.30 (min 0.9), error rate 4.50% (limit 2%), load time 3.2s (limit 1.5s)");
   });
 
   it("a metric no page measured → that tile has no colour and no status line, and nothing is alerted", () => {
@@ -108,7 +115,7 @@ describe("KPI tiles show their status and limit", () => {
   });
 });
 
-describe("one rule: tiles, breakdown counts, page status and alert agree", () => {
+describe("one rule: tiles, breakdown counts, page status, table summary and banner agree", () => {
   const fast = page("fast", { loadTime: 1200, errorRate: 0.2, apdex: 0.95 });
   const slow = page("slow", { loadTime: 2000, errorRate: 0.2, apdex: 0.95 });
 
@@ -117,12 +124,26 @@ describe("one rule: tiles, breakdown counts, page status and alert agree", () =>
     breakdown("Pages Within Load Budget (1.5s)", "1/2");
     breakdown("Pages with Apdex 0.9 or higher", "2/2");
     tileReads("Avg Page Load Time", "1.6s", "Warning", "limit 1.5s"); // the average of the two
-    alertBox().should("contain", "Warning: threshold exceeded").and("contain", "FAKE slow (Warning)").and("not.contain", "FAKE fast");
+    summary("1 of 2 pages is over a limit.");
+    statusOf("slow", "Warning");
+    statusOf("fast", "Healthy");
+    alertBox().find("li").should("have.length", 1);
+    bannerLine("slow", "Warning · FAKE slow: load time 2s (limit 1.5s)");
 
     // The hub gives each page the same verdict.
     cy.visit("/performance");
-    cy.contains("tbody tr", "FAKE fast", { timeout: 15000 }).find("td").last().should("have.text", "Healthy");
-    cy.contains("tbody tr", "FAKE slow").find("td").last().should("have.text", "Warning");
+    statusOf("fast", "Healthy");
+    statusOf("slow", "Warning");
+    summary("1 of 2 pages is over a limit.");
+  });
+
+  it("a page over only its error-rate limit → in the summary's count and Warning in the table, while both breakdown counts still pass it", () => {
+    visitHome([fast, page("flaky", { loadTime: 1200, errorRate: 3, apdex: 0.95 })]);
+    breakdown("Pages Within Load Budget (1.5s)", "2/2");
+    breakdown("Pages with Apdex 0.9 or higher", "2/2");
+    summary("1 of 2 pages is over a limit.");
+    statusOf("flaky", "Warning");
+    bannerLine("flaky", "Warning · FAKE flaky: error rate 3.00% (limit 2%)");
   });
 
   it("only the 1.2s page → counted within budget, tile Healthy, no alert", () => {
@@ -136,7 +157,9 @@ describe("one rule: tiles, breakdown counts, page status and alert agree", () =>
     visitHome([fast, page("rough", { loadTime: 1200, errorRate: 0.2, apdex: 0.85 })]);
     breakdown("Pages with Apdex 0.9 or higher", "1/2");
     breakdown("Pages Within Load Budget (1.5s)", "2/2");
-    alertBox().should("contain", "FAKE rough (Warning)").and("not.contain", "FAKE fast");
+    statusOf("rough", "Warning");
+    alertBox().find("li").should("have.length", 1);
+    bannerLine("rough", "Warning · FAKE rough: Apdex 0.85 (min 0.9)");
   });
 });
 
@@ -155,7 +178,8 @@ describe("custom thresholds", () => {
     tile("Apdex Score").should("contain", "min 0.8").and("not.contain", "min 0.9");
     cy.contains("(1.5s)").should("not.exist");
     cy.contains("Apdex 0.9 or higher").should("not.exist");
-    alertBox().should("contain", "FAKE b (Warning)").and("not.contain", "FAKE a");
+    alertBox().find("li").should("have.length", 1);
+    bannerLine("b", "Warning · FAKE b: load time 1.2s (limit 1s), Apdex 0.75 (min 0.8)");
   });
 
   it("a looser load limit of 3s → both pages are within budget", () => {
@@ -170,7 +194,9 @@ describe("custom thresholds", () => {
     tileReads("Avg Page Load Time", "1.1s", "Healthy", "limit 3s");
     tileReads("Apdex Score", "0.80", "Warning", "min 0.9");
     breakdown("Pages with Apdex 0.9 or higher", "0/2");
-    alertBox().should("contain", "FAKE a (Warning)").and("contain", "FAKE b (Warning)");
+    alertBox().find("li").should("have.length", 2);
+    bannerLine("a", "Warning · FAKE a: Apdex 0.85 (min 0.9)");
+    bannerLine("b", "Warning · FAKE b: Apdex 0.75 (min 0.9)");
   });
 
   it("a browser cache written before apdexMin existed → the minimum is 0.9 while the server is unreachable", () => {

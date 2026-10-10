@@ -17,7 +17,7 @@ export function VisibilityBreakdownCard({
   stats
 }: VisibilityBreakdownCardData) {
   return (
-    <Card className="w-full min-w-[350px] flex-1 rounded-xl border-[#2d3748] bg-[#1a202c] shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
+    <Card className="w-full flex-1 rounded-xl border-[#2d3748] bg-[#1a202c] shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
       <CardHeader className="flex flex-row items-center justify-between p-6 pb-4">
         <div>
           <CardTitle className="text-[18px] font-bold text-white tracking-tight">Web Vitals Breakdown</CardTitle>

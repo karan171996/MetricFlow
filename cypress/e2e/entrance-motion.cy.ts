@@ -16,7 +16,7 @@ const FIRST: Item[] = [{ name: "FAKE slow", value: 1840 }, { name: "FAKE mid", v
 const SECOND: Item[] = [FIRST[0], { name: "FAKE mid", value: 350 }, FIRST[2], { name: "FAKE new", value: 300 }];
 const REFRESH_MS = 30000;
 const GROW_MS = 800;
-const READERS = 3; // the screen, the header and the threshold alert each read /api/metrics
+const READERS = 2; // the screen and the header each read /api/metrics
 
 type Frame = Record<string, { w: number; label: string }>;
 let items: Item[];

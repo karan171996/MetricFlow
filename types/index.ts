@@ -20,7 +20,6 @@
  *  5. Traffic bar chart     (BarChartCard)
  *  6. AI Suggestions list   (AISuggestionsDonutCard)
  *  7. Visibility Breakdown  (VisibilityBreakdownCard)
- *  8. Page Performance Changes (WhatMovedCard)
  *  9. Performance Hub       (HubMetrics + HubTable)
  * 10. Performance Detail page (PerformanceKPIs, PerformanceCharts,
  *                              HourlyBreakdownTable, RelatedErrorsList)
@@ -206,39 +205,6 @@ export interface VisibilityBreakdownCardData {
   trend: Array<{ value: number | null }>;
   /** Summary stat rows rendered below the chart. */
   stats: VisibilityStat[];
-}
-
-
-// ─────────────────────────────────────────────────────────────────────
-// 8. Page Performance Changes  (WhatMovedCard)
-//    Gainers and decliners in Core Web Vital scores.
-// ─────────────────────────────────────────────────────────────────────
-
-/** A single page entry in the Gainers or Decliners list. */
-export interface PageMovement {
-  /** Current performance score (0–100). */
-  score: string;
-  /** Route path (e.g. "/checkout", "/blog/[slug]"). */
-  page: string;
-  /** Human-readable description of what metric changed (e.g. "LCP 1.4s → 0.9s"). */
-  metricChange: string;
-  /**
-   * Numeric point change (positive = improvement, negative = regression).
-   * The component uses Math.abs() for display in the decliners column.
-   */
-  scoreDelta: number;
-  /** Formatted monthly traffic for context (e.g. "8,400 views/mo"). */
-  monthlyTraffic: string;
-}
-
-/** Full data contract for the WhatMovedCard component. */
-export interface WhatMovedCardData {
-  /** Pages whose performance improved this period. */
-  improved: PageMovement[];
-  /** Pages whose performance regressed this period. */
-  regressed: PageMovement[];
-  /** Period label (e.g. "last 7 days"). */
-  period: string;
 }
 
 

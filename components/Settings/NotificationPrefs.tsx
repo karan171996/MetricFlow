@@ -26,7 +26,7 @@ export function NotificationPrefs() {
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <Label className="text-gray-300 text-sm">In-app Alert</Label>
-            <p className="text-xs text-gray-500">Show an alert on every page when a threshold is breached.</p>
+            <p className="text-xs text-gray-500">Show a banner on the dashboard when a page is over a limit.</p>
           </div>
           <Switch checked={prefs.alert} onCheckedChange={(v) => setNotificationPrefs({ alert: v })} />
         </div>

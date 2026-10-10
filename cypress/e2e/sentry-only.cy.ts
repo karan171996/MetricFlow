@@ -19,7 +19,8 @@ const pages = [
 ];
 
 const headers = (expected: string[]) => cy.get("thead th").should(($th) => expect([...$th].map((th) => th.innerText.trim())).to.deep.equal(expected));
-const row = (i: number, expected: string[]) => cy.get("tbody tr").should(($tr) => expect([...$tr[i].children].map((td) => (td as HTMLElement).innerText.trim())).to.deep.equal(expected));
+// The Page cell reads as its link's title (the name); the path and a hidden ", view page details" are in it too.
+const row = (i: number, expected: string[]) => cy.get("tbody tr").should(($tr) => expect([...$tr[i].children].map((td) => td.querySelector("a[title]")?.getAttribute("title") ?? (td as HTMLElement).innerText.trim())).to.deep.equal(expected));
 // The first page of a run is slow on a cold server, so the wait is longer than Cypress's 4s default.
 const shows = (...texts: string[]) => texts.forEach((t) => cy.contains(t, { timeout: 15000 }).should("be.visible"));
 const absent = (...texts: string[]) => texts.forEach((t) => cy.contains(t).should("not.exist"));
@@ -47,10 +48,12 @@ describe("Sentry keys only, site sending traces", () => {
     cy.visit("/performance");
     cy.wait("@metrics");
     shows("Pages Reporting", "3 of 3", "Open Errors");
-    headers(["Page Name", "Path", "Page loads (sampled)", "Errors"]);
-    row(0, ["FAKE Blog", "/blog", "9", "2"]);
-    row(1, ["FAKE Docs", "/docs", "3", "0"]);
-    row(2, ["FAKE Cart", "/cart", "—", "7"]); // errors only: no page load was sampled, so no number
+    cy.get("thead th").should(($th) => expect([...$th].map((th) => th.innerText.replace(/\s+/g, " ").trim())).to.deep.equal(["Page", "Sentry errors last 24h, no limit", "Page loads (sampled)"]));
+    // Worst first: by Sentry errors, as nothing has a status.
+    row(0, ["FAKE Cart", "7", "—"]); // errors only: no page load was sampled, so no number
+    row(1, ["FAKE Blog", "2", "9"]);
+    row(2, ["FAKE Docs", "0", "3"]);
+    cy.get("tbody tr").should(($tr) => expect([...$tr].map((tr) => tr.querySelector("th span[title]")?.textContent)).to.deep.equal(["/cart", "/blog", "/docs"]));
     cy.get('[data-slot="alert"]').should("not.exist"); // no status, so nothing to alert on
     absent(...NEW_RELIC_ONLY);
   });

@@ -10,7 +10,12 @@ import {
   // TeamMembers, // later: team access feature
 } from "@/components/Settings";
 
-export default function SettingsPage() {
+const TABS = ["general", "thresholds", "team"];
+
+/** `?tab=thresholds` opens that tab (the dashboard banner's "Edit limits" link). Anything else opens the first one. */
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const { tab } = await searchParams;
+  const openTab = typeof tab === "string" && TABS.includes(tab) ? tab : "general";
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -22,7 +27,7 @@ export default function SettingsPage() {
             <p className="text-sm text-gray-400">Manage your account, team, and dashboard preferences.</p>
           </div>
 
-          <Tabs defaultValue="general" className="w-full">
+          <Tabs defaultValue={openTab} className="w-full">
             <TabsList className="bg-[#0f1419] border border-[#2d3748] mb-8 p-1 h-auto">
               <TabsTrigger value="general" className="data-[state=active]:bg-[#1a202c] data-[state=active]:text-white text-gray-400">
                 General & API

@@ -248,11 +248,6 @@
             "isPositive": false
           }
         ]
-      },
-      "whatMoved": {
-        "improved": [],
-        "regressed": [],
-        "period": "not enough history yet — check back shortly"
       }
     }
   }

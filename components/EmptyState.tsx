@@ -12,7 +12,8 @@ export function EmptyState({
 }: {
   title?: string;
   reason?: string;
-  href?: string;
+  /** `null` = no link, e.g. a failed load where Retry is the only thing to do. */
+  href?: string | null;
   cta?: string;
   onRetry?: () => void;
 }) {
@@ -22,9 +23,11 @@ export function EmptyState({
         <h3 className="text-lg font-semibold text-white">{title}</h3>
         <p className="max-w-md text-sm text-gray-400">{reason}</p>
         <div className="flex gap-3">
-          <Link href={href} className={buttonVariants()}>
-            {cta}
-          </Link>
+          {href && (
+            <Link href={href} className={buttonVariants()}>
+              {cta}
+            </Link>
+          )}
           {onRetry && (
             <Button variant="outline" onClick={onRetry}>
               Retry

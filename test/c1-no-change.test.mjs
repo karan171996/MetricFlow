@@ -4,6 +4,7 @@
 // Their `transforms` sections were then edited by hand for the dashboard-trust fix (honest labels, no delta
 // without a prior value) and for the one health rule (tile status and limit, the load limit in the row label),
 // so they no longer equal main. Do not re-capture: that would rewrite the bodies too.
+// The `whatMoved` sections were removed with the card itself ("Page Performance Changes"), also by hand.
 // Sentry-only is no longer part of this proof: it changed on purpose when Sentry began to list pages
 // and supply vitals (test/sentry-pages.test.mjs). New Relic only and both tools must still not move.
 import { test, mock } from "node:test";
@@ -68,7 +69,6 @@ async function run(keys) {
     webVitals: t.computeWebVitals(body.pages, body.history, has),
     cwvTrend: t.computeCwvTrend(body.history, has),
     visibility: t.computeVisibilityBreakdown(body.pages, body.history, has, DEFAULT_THRESHOLDS),
-    whatMoved: t.computeWhatMoved(body.pages, body.history, has),
   } : null;
   return { body, transforms };
 }
@@ -91,7 +91,6 @@ test("C1: /api/metrics legacy fields are the same as on main, and every transfor
   sentryDown = true;
   got.both.push(await run(FAKE));
 
-  assert.equal(got.both[1].transforms.whatMoved.improved.length + got.both[1].transforms.whatMoved.regressed.length, 2, "fixture must move pages");
   for (const [name, runs] of Object.entries(got)) {
     const file = join(root, "test/fixtures", `c1-${name}.json`);
     if (process.env.C1_CAPTURE) { writeFileSync(file, JSON.stringify(runs, null, 2) + "\n"); continue; }

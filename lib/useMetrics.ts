@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { MetricsPage, MetricsResponse, Sources } from "@/lib/metricsHistory";
+import type { MetricsResponse, Sources } from "@/lib/metricsHistory";
 import { withNeutralShape } from "@/lib/legacyMetrics";
 import type { Capability } from "@/lib/tools";
-import { deriveStatus } from "@/lib/thresholds";
+import { deriveStatus, hasData } from "@/lib/thresholds";
 import { useThresholds } from "@/lib/useThresholds";
 
 export type MetricsState =
@@ -18,11 +18,8 @@ const REFRESH_INTERVAL_MS = 30000;
 export const provides = (s: { sources: Sources; failed: string[] }, cap: Capability): boolean =>
   s.sources[cap] !== undefined && !s.failed.includes(s.sources[cap]!);
 
-/** A page that has never reported has no beacon hit: show "No data yet", never 0ms/Healthy. */
-export function hasData(p: MetricsPage): boolean {
-  const m = p.metrics;
-  return (m.traffic?.count ?? 0) > 0 || (m.loadTime ?? 0) > 0 || (m.errors?.count ?? 0) > 0;
-}
+// Defined beside the ranking that needs it (pure, no React); still exported from here for the screens.
+export { hasData };
 
 export function useMetrics() {
   const [state, setState] = useState<MetricsState>({ status: "loading" });

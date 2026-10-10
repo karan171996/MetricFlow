@@ -10,14 +10,14 @@ import {
   AISuggestionsDonutCard,
   BarChartCard,
   VisibilityBreakdownCard,
-  WhatMovedCard,
   WebVitalCard
 } from "@/components/DashboardCharts";
+import { HubTable } from "@/components/PerformanceHub";
+import { ThresholdAlert } from "@/components/header/ThresholdAlert";
 import {
   computeStats,
   computeWebVitals,
   computeVisibilityBreakdown,
-  computeWhatMoved,
   computeCwvTrend,
   alertsToSuggestions
 } from "@/lib/dashboardTransforms";
@@ -66,8 +66,10 @@ export default function Home() {
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [aiUnavailable, setAiUnavailable] = useState<AnalysisUnavailable["reason"] | null>(null);
   const [apiTimings, setApiTimings] = useState<TrafficBarItem[]>([]);
+  const [timingsFailed, setTimingsFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  /** The last load of /api/metrics failed. Timings and the AI analysis never set this: each fails inside its own card. */
+  const [error, setError] = useState(false);
 
   // Loads can overlap (a slow one is still waiting when the next 30s refresh starts). Only the newest may
   // write state, so an older success never hides a newer failure or puts older numbers back.
@@ -86,39 +88,58 @@ export default function Home() {
       const metricsData = withNeutralShape(await metricsRes.json());
       if (stale()) return;
       setMetrics(metricsData);
+      setError(false);
 
-      const timingsRes = await fetch("/api/timings");
-      const timingsData: { items: TrafficBarItem[] } = await timingsRes.json();
-      if (stale()) return;
-      setApiTimings(timingsData.items);
-
-      if (metricsData.configured && !analysisFailed.current && shouldRunAnalysis()) {
-        const analysisRes = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ metrics: { pages: metricsData.pages } })
-        });
-        // A non-OK answer ({ error }) counts as unavailable too. A 200 without a status is a real reply.
-        const analysisData: AnalysisResponse | AnalysisUnavailable = analysisRes.ok
-          ? await analysisRes.json()
-          : { status: "unavailable", reason: "provider_error" };
+      // MetricFlow's own timings: a failure stays inside that card. It is not a dashboard error and does not
+      // stop the analysis below. The card keeps its last good bars; the next refresh tries again.
+      try {
+        const timingsRes = await fetch("/api/timings");
+        if (!timingsRes.ok) throw new Error(`HTTP ${timingsRes.status}`);
+        const timingsData: { items?: TrafficBarItem[] } = await timingsRes.json();
+        if (!Array.isArray(timingsData?.items)) throw new Error("no items in the reply");
         if (stale()) return;
-        if (analysisData.status === "unavailable") {
-          setAiUnavailable(analysisData.reason);
-          // A failed call is tried again on the next page load, not on each 30s refresh. A missing key costs no call.
-          analysisFailed.current = analysisData.reason !== "no_key";
-        } else {
-          setAnalysis(analysisData);
-          setAiUnavailable(null);
-          // Only a real reply counts as the day's run.
-          markAnalysisRan();
-        }
+        setApiTimings(timingsData.items);
+        setTimingsFailed(false);
+      } catch (err) {
+        console.error("Error fetching API timings:", err);
+        if (stale()) return;
+        setTimingsFailed(true);
       }
 
-      setError(null);
+      // The same for the analysis: a rejected fetch or a body that is not JSON is "unavailable" in the AI card,
+      // not a stale dashboard. Only the error is logged, never the request.
+      try {
+        if (metricsData.configured && !analysisFailed.current && shouldRunAnalysis()) {
+          const analysisRes = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ metrics: { pages: metricsData.pages } })
+          });
+          // A non-OK answer ({ error }) counts as unavailable too. A 200 without a status is a real reply.
+          const analysisData: AnalysisResponse | AnalysisUnavailable = analysisRes.ok
+            ? await analysisRes.json()
+            : { status: "unavailable", reason: "provider_error" };
+          if (stale()) return;
+          if (analysisData.status === "unavailable") {
+            setAiUnavailable(analysisData.reason);
+            // A failed call is tried again on the next page load, not on each 30s refresh. A missing key costs no call.
+            analysisFailed.current = analysisData.reason !== "no_key";
+          } else {
+            setAnalysis(analysisData);
+            setAiUnavailable(null);
+            // Only a real reply counts as the day's run.
+            markAnalysisRan();
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching AI analysis:", err);
+        if (stale()) return;
+        setAiUnavailable("provider_error");
+        analysisFailed.current = true;
+      }
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
-      if (!stale()) setError("Failed to load live data.");
+      if (!stale()) setError(true);
     } finally {
       if (!stale()) setRefreshing(false);
     }
@@ -137,10 +158,10 @@ export default function Home() {
         <AppSidebar />
         <SidebarInset className="bg-dash-surface">
           <Header />
-          {/* The first load failed: an error with Retry, not an endless skeleton or the setup prompt. */}
+          {/* The first load failed: an error with Retry only, not an endless skeleton or the setup prompt. */}
           {error && !refreshing ? (
             <div className="flex flex-1 flex-col p-6 md:p-8">
-              <EmptyState title="Could not load metrics" reason={error} onRetry={fetchData} />
+              <EmptyState title="Could not load metrics" reason="Failed to load live data." href={null} onRetry={fetchData} />
             </div>
           ) : (
             <DashboardBodySkeleton />
@@ -173,7 +194,6 @@ export default function Home() {
   const stats = computeStats(pages, history, has, thresholds);
   const webVitals = computeWebVitals(pages, history, has);
   const visibility = computeVisibilityBreakdown(pages, history, has, thresholds);
-  const whatMoved = computeWhatMoved(pages, history, has);
   const cwvTrend = computeCwvTrend(history, has);
   const suggestions = alertsToSuggestions(analysis);
 
@@ -182,14 +202,24 @@ export default function Home() {
       <AppSidebar />
       <SidebarInset className="bg-dash-surface">
         <Header />
-        <div className="flex flex-1 flex-col p-6 md:p-8">
+        <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col p-6 md:p-8">
           {error && (
-            <div className="mb-4 rounded-lg border border-dash-warning/40 bg-dash-warning/10 px-4 py-2 text-body-sm text-dash-warning">
-              {error}
+            <div role="status" className="mb-4 rounded-lg border border-dash-warning/40 bg-dash-warning/10 px-4 py-2 text-body-sm text-dash-warning">
+              Could not load the latest data.
+              {metrics.timestamp && ` Showing numbers from ${new Date(metrics.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`}
               {refreshing && <span className="ml-2 text-dash-muted">Retrying…</span>}
             </div>
           )}
 
+          {/* What to fix first, then what to do about it. Both rank and judge with lib/thresholds.ts, as the tiles and the breakdown below do. */}
+          <ThresholdAlert pages={pages} thresholds={thresholds} />
+          <HubTable title="Fix first" pages={pages} has={has} thresholds={thresholds} failed={metrics.failed} limit={5} />
+          <div className="mt-6">
+            <AISuggestionsDonutCard suggestions={suggestions} unavailable={aiUnavailable} />
+          </div>
+
+          {/* Site-wide numbers rank nothing, so they sit below the table. */}
+          <h2 className="mt-8 mb-4 text-h3 text-dash-foreground">Across all pages</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((stat) => (
               <div
@@ -213,24 +243,19 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            <div className="flex flex-col gap-6 xl:col-span-2">
-              {webVitals && (
-                <div className="grid gap-6 md:grid-cols-3">
-                  <WebVitalCard {...webVitals.ttfb} />
-                  <WebVitalCard {...webVitals.lcp} />
-                  <WebVitalCard {...webVitals.cls} />
-                </div>
-              )}
-              {whatMoved && <WhatMovedCard {...whatMoved} />}
-              {cwvTrend && <LineChartCard {...cwvTrend} />}
+          {webVitals && (
+            <div className="mt-6 grid gap-6 md:grid-cols-3">
+              <WebVitalCard {...webVitals.ttfb} />
+              <WebVitalCard {...webVitals.lcp} />
+              <WebVitalCard {...webVitals.cls} />
             </div>
+          )}
 
-            <div className="flex flex-col gap-6">
-              {visibility && <VisibilityBreakdownCard {...visibility} />}
-              <AISuggestionsDonutCard suggestions={suggestions} unavailable={aiUnavailable} />
-              <BarChartCard title="MetricFlow API response times" items={apiTimings} />
-            </div>
+          {/* One grid: a card left out by capability leaves no gap. */}
+          <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {cwvTrend && <LineChartCard {...cwvTrend} />}
+            {visibility && <VisibilityBreakdownCard {...visibility} />}
+            <BarChartCard title="MetricFlow API response times" items={apiTimings} failed={timingsFailed} />
           </div>
         </div>
       </SidebarInset>

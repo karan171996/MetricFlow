@@ -402,11 +402,6 @@
             "isPositive": true
           }
         ]
-      },
-      "whatMoved": {
-        "improved": [],
-        "regressed": [],
-        "period": "since 10:02:02 AM"
       }
     }
   },
@@ -931,27 +926,6 @@
             "isPositive": false
           }
         ]
-      },
-      "whatMoved": {
-        "improved": [
-          {
-            "score": "80",
-            "page": "/b",
-            "metricChange": "Load 3.2s → 2.2s",
-            "scoreDelta": 20,
-            "monthlyTraffic": "40"
-          }
-        ],
-        "regressed": [
-          {
-            "score": "84",
-            "page": "/a",
-            "metricChange": "Load 900ms → 1.8s",
-            "scoreDelta": -9,
-            "monthlyTraffic": "1.6k"
-          }
-        ],
-        "period": "since 10:02:02 AM"
       }
     }
   },
@@ -1526,27 +1500,6 @@
             "isPositive": true
           }
         ]
-      },
-      "whatMoved": {
-        "improved": [
-          {
-            "score": "80",
-            "page": "/b",
-            "metricChange": "Load 3.2s → 2.2s",
-            "scoreDelta": 20,
-            "monthlyTraffic": "40"
-          }
-        ],
-        "regressed": [
-          {
-            "score": "84",
-            "page": "/a",
-            "metricChange": "Load 900ms → 1.8s",
-            "scoreDelta": -9,
-            "monthlyTraffic": "1.6k"
-          }
-        ],
-        "period": "since 10:02:02 AM"
       }
     }
   }

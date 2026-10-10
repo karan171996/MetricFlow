@@ -184,97 +184,59 @@ export function VisibilityBreakdownCardSkeleton() {
 }
 
 /* ────────────────────────────────────────────────
-   What Moved card skeleton (Gainers / Decliners)
-──────────────────────────────────────────────── */
-export function WhatMovedCardSkeleton() {
-  return (
-    <SkeletonCard>
-      <CardHeader>
-        <Shimmer className="h-5 w-40 rounded-md" />
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4">
-          {Array.from({ length: 2 }).map((_, col) => (
-            <div key={col} className="flex flex-col gap-3">
-              <Shimmer className="h-4 w-20 rounded-full" />
-              {Array.from({ length: 4 }).map((_, row) => (
-                <div key={row} className="flex items-center gap-2">
-                  <Shimmer className="h-4 w-8 rounded-md" />
-                  <Shimmer className="h-3 flex-1 rounded-full" />
-                  <Shimmer className="h-3 w-8 rounded-full" />
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </SkeletonCard>
-  );
-}
-
-/* ────────────────────────────────────────────────
    Full dashboard body skeleton (KPI row + charts grid)
    Shared by app/loading.tsx (route-level Suspense) and
    app/page.tsx (client-side first-fetch state).
 ──────────────────────────────────────────────── */
 export function DashboardBodySkeleton() {
   return (
-    <div className="flex flex-1 flex-col p-6 md:p-8">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col p-6 md:p-8">
+      {/* Same order as the loaded screen: the page table, AI, tiles, vitals, then the site-wide cards. */}
+      <HubTableSkeleton />
+      <div className="mt-6">
+        <AISuggestionsCardSkeleton />
+      </div>
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <StatCardSkeleton key={i} />
         ))}
       </div>
 
-      <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        <div className="flex flex-col gap-6 xl:col-span-2">
-          <div className="grid gap-6 md:grid-cols-3">
-            <WebVitalCardSkeleton />
-            <WebVitalCardSkeleton />
-            <WebVitalCardSkeleton />
-          </div>
-          <WhatMovedCardSkeleton />
-          <LineChartCardSkeleton />
-        </div>
+      <div className="mt-6 grid gap-6 md:grid-cols-3">
+        <WebVitalCardSkeleton />
+        <WebVitalCardSkeleton />
+        <WebVitalCardSkeleton />
+      </div>
 
-        <div className="flex flex-col gap-6">
-          <VisibilityBreakdownCardSkeleton />
-          <AISuggestionsCardSkeleton />
-          <BarChartCardSkeleton />
-        </div>
+      <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <LineChartCardSkeleton />
+        <VisibilityBreakdownCardSkeleton />
+        <BarChartCardSkeleton />
       </div>
     </div>
   );
 }
 
 /* ────────────────────────────────────────────────
-   Hub table skeleton  (Performance hub page)
+   Page table skeleton  (home "Fix first" and the Performance hub)
 ──────────────────────────────────────────────── */
 export function HubTableSkeleton() {
   return (
-    <SkeletonCard className="flex-1">
+    <Card className="w-full bg-dash-card">
       <CardHeader>
-        <Shimmer className="h-5 w-52 rounded-md" />
+        <Skeleton className="h-6 w-28 rounded-md bg-dash-border" />
+        <Skeleton className="h-4 w-64 max-w-full rounded-full bg-dash-border" />
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border border-[#2d3748] overflow-hidden">
-          {/* Header row */}
-          <div className="flex items-center gap-4 px-4 py-3 bg-[#0f1419] border-b border-[#2d3748]">
-            {[40, 20, 20, 15, 10, 12].map((w, i) => (
-              <Skeleton key={i} className="h-3 rounded-full bg-[#2d3748]" style={{ width: `${w}%` }} />
-            ))}
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="flex h-14 items-center gap-4 border-b border-dash-border px-3 last:border-b-0 lg:h-12">
+            <Skeleton className="h-4 flex-1 rounded-md bg-dash-border" />
+            <Skeleton className="h-4 w-20 rounded-md bg-dash-border" />
           </div>
-          {/* Data rows */}
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-[#2d3748] last:border-b-0">
-              {[40, 20, 20, 15, 10, 12].map((w, j) => (
-                <Skeleton key={j} className="h-4 rounded-md bg-[#2d3748]" style={{ width: `${w}%` }} />
-              ))}
-            </div>
-          ))}
-        </div>
+        ))}
       </CardContent>
-    </SkeletonCard>
+    </Card>
   );
 }
 
