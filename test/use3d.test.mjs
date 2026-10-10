@@ -8,7 +8,7 @@ const { evaluate3d, explain3d, isLimit, LOW_CORES } = await load("lib/use3d.ts")
 
 const ok = { reducedMotion: false, cores: 8, saveData: false, webgl: true, userChoice: true };
 
-test("3D is off by default: with no limit and no choice the 2D view stays", () => {
+test("with the user's choice off and no limit, the 2D view stays", () => {
   assert.deepEqual(evaluate3d({ ...ok, userChoice: false }), { enabled: false, reason: "off" });
 });
 
@@ -47,6 +47,6 @@ test("isLimit is true for device limits and false for 'off' and no reason", () =
 test("every limit has its own plain-language explanation and the default text is the help line", () => {
   const texts = ["reduced-motion", "low-cores", "save-data", "no-webgl"].map((r) => explain3d(r));
   assert.equal(new Set(texts).size, 4);
-  assert.match(explain3d("off"), /Off by default/);
+  assert.match(explain3d("off"), /Turned off automatically/);
   assert.equal(explain3d(undefined), explain3d("off"));
 });

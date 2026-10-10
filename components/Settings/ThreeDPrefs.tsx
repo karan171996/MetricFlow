@@ -8,9 +8,12 @@ import { Label } from "@/components/ui/label";
 import { explain3d, isLimit } from "@/lib/use3d";
 import { setUse3dChoice, use3dEnabled } from "@/lib/use3dEnabled";
 
-/** Settings switch for optional 3D views. Off by default; the 2D view stays the accessible default. */
+/**
+ * Settings switch for 3D views. On by default where the device allows; the 2D view is always there.
+ * It does not ask for WebGL: only a view that draws with WebGL needs it, and the CSS 3D ones do not.
+ */
 export function ThreeDPrefs() {
-  const { userChoice, reason } = use3dEnabled();
+  const { userChoice, reason } = use3dEnabled({ needsWebgl: false });
   const blocked = isLimit(reason);
 
   return (
@@ -20,7 +23,7 @@ export function ThreeDPrefs() {
           <Box className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
           Display
         </CardTitle>
-        <CardDescription>Optional views. Nothing changes unless you switch them on.</CardDescription>
+        <CardDescription>How the dashboard looks. The 2D views are always available.</CardDescription>
       </CardHeader>
       <CardContent className="max-w-lg">
         <div className="flex items-center justify-between gap-4">

@@ -183,6 +183,32 @@
   100% { background-position: -200% center; }
 }
 
+/* ── Page skyline (components/DashboardCharts/PageSkyline.tsx): a slow sway of the scene, none under reduced motion ── */
+@keyframes skyline-sway {
+  from { transform: rotateX(58deg) rotateZ(-50deg); }
+  to   { transform: rotateX(58deg) rotateZ(-22deg); }
+}
+@utility skyline-sway {
+  animation: skyline-sway 18s ease-in-out infinite alternate;
+}
+.skyline-tower {
+  position: absolute;
+  display: block;
+  transform-style: preserve-3d;
+  transition: transform 0.25s ease;
+  outline: none;
+}
+.skyline-tower:hover,
+.skyline-tower:focus-visible {
+  transform: translateZ(16px);
+}
+.skyline-tower:focus-visible > span:first-child {
+  outline: 2px solid #ffffff;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skyline-tower { transition: none; }
+}
+
 /* ── Titles: fade + 8px rise once on mount; reduced motion gets the final state ── */
 @utility title-enter {
   @apply motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-400 motion-safe:ease-out;

@@ -13,6 +13,7 @@ import {
   WebVitalCard
 } from "@/components/DashboardCharts";
 import { HubTable } from "@/components/PerformanceHub";
+import { PageSkyline } from "@/components/DashboardCharts/PageSkyline";
 import { ThresholdAlert } from "@/components/header/ThresholdAlert";
 import {
   computeStats,
@@ -213,6 +214,8 @@ export default function Home() {
 
           {/* What to fix first, then what to do about it. Both rank and judge with lib/thresholds.ts, as the tiles and the breakdown below do. */}
           <ThresholdAlert pages={pages} thresholds={thresholds} />
+          {/* 3D by default where the device allows it (lib/use3dEnabled.ts); renders nothing otherwise, and the table below is the answer either way. */}
+          <PageSkyline pages={pages} thresholds={thresholds} />
           <HubTable title="Fix first" pages={pages} has={has} thresholds={thresholds} failed={metrics.failed} limit={5} />
           <div className="mt-6">
             <AISuggestionsDonutCard suggestions={suggestions} unavailable={aiUnavailable} />

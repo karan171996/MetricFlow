@@ -2,6 +2,7 @@ export {}; // make this file a module so top-level names do not clash across spe
 // The 3D guard (lib/use3d.ts, lib/use3dEnabled.ts) and its Settings switch. The browser is told what it
 // is (cores, WebGL, reduced motion, data saver) before the page loads, so the run never depends on the
 // machine's own graphics or OS settings. FAKE fixtures only; the API is stubbed.
+// 3D is ON by default where the device allows it; the user can switch it off.
 const KEY = "metricflow:3d";
 const DEFAULTS = { loadSeconds: 1.5, errorPercent: 2, apdexMin: 0.9, uptimeSLA: 99.9 };
 
@@ -41,21 +42,21 @@ const disabled = ($el: JQuery<HTMLElement>) =>
   $el.prop("disabled") === true || $el.attr("aria-disabled") === "true" || $el.is("[data-disabled]");
 
 describe("Settings: 3D views", () => {
-  it("is off by default and can be switched on, and the choice survives a reload", () => {
+  it("is on by default, can be switched off, and the choice survives a reload", () => {
     visitSettings();
-    sw().should("have.attr", "aria-checked", "false").and(($el) => expect(disabled($el), "enabled").to.equal(false));
-    cy.contains("Off by default").should("be.visible");
-
-    sw().click();
-    sw().should("have.attr", "aria-checked", "true");
-    cy.window().then((win) => expect(win.localStorage.getItem(KEY)).to.equal("1"));
-
-    visitSettings(); // a fresh load keeps what was stored
-    sw().should("have.attr", "aria-checked", "true");
+    sw().should("have.attr", "aria-checked", "true").and(($el) => expect(disabled($el), "enabled").to.equal(false));
+    cy.get("#three-d-views-help").should("contain.text", "Turned off automatically");
 
     sw().click();
     sw().should("have.attr", "aria-checked", "false");
     cy.window().then((win) => expect(win.localStorage.getItem(KEY)).to.equal("0"));
+
+    visitSettings(); // a fresh load keeps what was stored
+    sw().should("have.attr", "aria-checked", "false");
+
+    sw().click();
+    sw().should("have.attr", "aria-checked", "true");
+    cy.window().then((win) => expect(win.localStorage.getItem(KEY)).to.equal("1"));
   });
 
   it("is disabled with the reason when the system asks for reduced motion", () => {
@@ -64,16 +65,18 @@ describe("Settings: 3D views", () => {
     cy.get("#three-d-views-help").should("have.attr", "data-reason", "reduced-motion").and("contain.text", "reduced motion");
   });
 
-  it("is disabled with its own reason for a low-power device, data saver and no WebGL", () => {
+  it("is disabled with its own reason for a low-power device and for data saver", () => {
     visitSettings({ cores: 2 });
     cy.get("#three-d-views-help").should("have.attr", "data-reason", "low-cores").and("contain.text", "too few processor cores");
     sw().should(($el) => expect(disabled($el), "disabled").to.equal(true));
 
     visitSettings({ saveData: true });
     cy.get("#three-d-views-help").should("have.attr", "data-reason", "save-data").and("contain.text", "data saver");
+  });
 
+  it("a browser without WebGL does not disable the setting: the CSS 3D views do not need it", () => {
     visitSettings({ webgl: false });
-    cy.get("#three-d-views-help").should("have.attr", "data-reason", "no-webgl").and("contain.text", "WebGL");
+    sw().should("have.attr", "aria-checked", "true").and(($el) => expect(disabled($el), "enabled").to.equal(false));
   });
 
   it("a stored 'on' does not force 3D onto a device that is limited", () => {

@@ -2,10 +2,11 @@
 
 // use3dEnabled(): the hook every 3D view uses. The decision itself is lib/use3d.ts; this reads the real
 // browser (reduced motion, cores, data saver, WebGL) and the user's saved choice.
+// 3D is ON by default where the device allows it, and the user can switch it off in Settings.
 // The first render is always "off" (server and hydration agree), then it settles on the client.
 
-import { useSyncExternalStore } from "react";
-import { evaluate3d, type Result3d } from "./use3d";
+import { useMemo, useSyncExternalStore } from "react";
+import { evaluate3d, type Env3d, type Result3d } from "./use3d";
 
 const KEY = "metricflow:3d";
 
@@ -14,11 +15,19 @@ export interface Use3d extends Result3d {
   userChoice: boolean;
 }
 
-const SERVER: Use3d = { enabled: false, reason: "off", userChoice: false };
+export interface Use3dOptions {
+  /**
+   * Whether this view draws with WebGL. Default true. A CSS 3D view passes false, so a browser
+   * without WebGL still gets it; reduced motion, low power and data saver apply either way.
+   */
+  needsWebgl?: boolean;
+}
+
+const OFF: Use3d = { enabled: false, reason: "off", userChoice: false };
 const listeners = new Set<() => void>();
-let cache: Use3d | null = null;
+let cache: Env3d | null = null;
 let webgl: boolean | null = null;
-let memoryChoice = false; // used when localStorage is unavailable (private window, blocked site data)
+let memoryChoice = true; // used when localStorage is unavailable (private window, blocked site data)
 
 function hasWebgl(): boolean {
   if (webgl !== null) return webgl;
@@ -40,18 +49,17 @@ function readChoice(): boolean {
   }
 }
 
-function read(): Use3d {
+/** The browser's facts, cached until something changes, so the snapshot is referentially stable. */
+function read(): Env3d {
   if (cache) return cache;
   const nav = navigator as Navigator & { connection?: { saveData?: boolean } };
-  const userChoice = readChoice();
-  const result = evaluate3d({
+  return (cache = {
     reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     cores: nav.hardwareConcurrency,
     saveData: nav.connection?.saveData === true,
     webgl: hasWebgl(),
-    userChoice,
+    userChoice: readChoice(),
   });
-  return (cache = { ...result, userChoice });
 }
 
 function notify() {
@@ -81,6 +89,10 @@ function subscribe(cb: () => void) {
   };
 }
 
-export function use3dEnabled(): Use3d {
-  return useSyncExternalStore(subscribe, read, () => SERVER);
+export function use3dEnabled({ needsWebgl = true }: Use3dOptions = {}): Use3d {
+  const env = useSyncExternalStore(subscribe, read, () => null);
+  return useMemo(() => {
+    if (!env) return OFF;
+    return { ...evaluate3d({ ...env, webgl: needsWebgl ? env.webgl : true }), userChoice: env.userChoice };
+  }, [env, needsWebgl]);
 }

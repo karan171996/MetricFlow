@@ -28,8 +28,8 @@ export const LOW_CORES = 2;
 
 /**
  * Limits (accessibility, power, data, no WebGL) always win over the user's choice, so a switch left on
- * in one browser can never force 3D onto a device that cannot or should not draw it. 3D is opt-in:
- * with no limit and no choice the answer is "off" and the 2D view stays the default.
+ * in one browser can never force 3D onto a device that cannot or should not draw it. The user's choice
+ * defaults to ON (lib/use3dEnabled.ts); when it is off, the answer is "off" and the 2D view stays.
  */
 export function evaluate3d(e: Env3d): Result3d {
   if (e.reducedMotion) return { enabled: false, reason: "reduced-motion" };
@@ -50,6 +50,6 @@ export function explain3d(r?: Reason3d): string {
     case "low-cores": return "Unavailable on this device: it has too few processor cores for smooth 3D.";
     case "save-data": return "Unavailable because your browser has data saver turned on.";
     case "no-webgl": return "Unavailable because this browser cannot draw WebGL graphics.";
-    default: return "Show optional 3D charts where available. Off by default.";
+    default: return "Show 3D views where available. Turned off automatically for reduced motion, low power or data saver.";
   }
 }
