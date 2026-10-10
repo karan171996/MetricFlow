@@ -44,8 +44,7 @@ describe("/performance states", () => {
 
   it("row click opens that page's detail", () => {
     stub({ configured: true, pages: [page("blog", { nr: { loadTime: 1200, throughput: 5 } }), page("docs", { nr: { loadTime: 700, throughput: 9 } })] });
-    // The threshold alert also names these pages, so switch it off here to keep cy.contains unambiguous.
-    cy.visit("/performance", { onBeforeLoad: (w) => w.localStorage.setItem("notification-prefs", JSON.stringify({ alert: false })) });
+    cy.visit("/performance");
     cy.contains("FAKE docs").click();
     cy.location("pathname").should("eq", "/performance/docs");
     cy.contains("FAKE docs").should("be.visible");
@@ -53,12 +52,19 @@ describe("/performance states", () => {
   });
 });
 
-describe("threshold alert", () => {
-  it("shows when a page breaches a threshold, names it, and Dismiss hides it", () => {
-    stub({ configured: true, tools: ["new-relic"], pages: [page("slow", { nr: { loadTime: 9000, throughput: 5 } })] });
+// The breach banner is on home only (cypress/e2e/fix-first.cy.ts covers it in full). This is the old response shape.
+describe("breach banner", () => {
+  it("home: shows when a page breaches a threshold, names it, and Dismiss hides it; /performance has none", () => {
+    stub({ configured: true, tools: ["new-relic"], pages: [page("slow", { nr: { loadTime: 9000, throughput: 5 } })], history: [] }); // home reads history; the real route always sends it
+    cy.intercept("GET", "/api/timings", { items: [] });
+    cy.intercept("POST", "/api/analyze", { alerts: [], recommendations: [] });
+    cy.visit("/");
+    cy.get('[data-slot="alert"]', { timeout: 15000 }).should("contain", "Critical · FAKE slow").and("contain", "1 page is over a limit");
+    cy.contains('[data-slot="banner-actions"] button', "Dismiss").click();
+    cy.get('[data-slot="alert"]').should("not.exist");
+
     cy.visit("/performance");
-    cy.get('[data-slot="alert"]').should("contain", "Critical").and("contain", "FAKE slow");
-    cy.contains('[data-slot="alert-action"] button', "Dismiss").click();
+    cy.get('tbody tr[data-slug="slow"] [data-slot="badge"]', { timeout: 15000 }).should("have.attr", "data-status", "Critical");
     cy.get('[data-slot="alert"]').should("not.exist");
   });
 });

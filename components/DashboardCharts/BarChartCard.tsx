@@ -33,7 +33,8 @@ const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   return null;
 };
 
-export function BarChartCard({ title, items }: BarChartCardData) {
+/** `failed`: the last load of the items failed. Bars already on screen stay; with none, the card says so. */
+export function BarChartCard({ title, items, failed }: BarChartCardData & { failed?: boolean }) {
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
     () => window.matchMedia(REDUCED_MOTION).matches,
@@ -63,13 +64,13 @@ export function BarChartCard({ title, items }: BarChartCardData) {
 
   if (items.length === 0) {
     return (
-      <Card className="w-full min-w-[350px] rounded-xl border-[#2d3748] bg-[#1a202c] shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
+      <Card className="w-full rounded-xl border-[#2d3748] bg-[#1a202c] shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
         <CardHeader className="p-6 pb-2">
           <CardTitle className="text-[18px] font-bold text-white tracking-tight">{title}</CardTitle>
         </CardHeader>
         <CardContent className="p-6 pt-2">
-          <p className="text-xs text-gray-500">
-            No API calls measured yet — refresh once /api/metrics has run.
+          <p className={failed ? "text-xs text-dash-muted" : "text-xs text-gray-500"}>
+            {failed ? "Could not load API response times." : "No API calls measured yet — refresh once /api/metrics has run."}
           </p>
         </CardContent>
       </Card>
@@ -89,7 +90,7 @@ export function BarChartCard({ title, items }: BarChartCardData) {
   const finalMax = Math.max(...items.map((item) => item.value));
 
   return (
-    <Card className="w-full min-w-[350px] rounded-xl border-[#2d3748] bg-[#1a202c] shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
+    <Card className="w-full rounded-xl border-[#2d3748] bg-[#1a202c] shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
       <CardHeader className="p-6 pb-2">
         <CardTitle className="text-[18px] font-bold text-white tracking-tight">{title}</CardTitle>
       </CardHeader>

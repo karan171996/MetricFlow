@@ -12,8 +12,13 @@ let analyzeDelay = 0;
 let analyzeAsked = false;
 const REFRESH_MS = 30000;
 const STALE = "Could not load the latest data.";
-// Every screen here has three readers of /api/metrics: the screen itself, the header and the threshold alert.
-const READERS = 3;
+// Home's strip under the header. Found by its role, never by its text: the header prints the same sentence.
+// Recharts' tooltip is role="status" too.
+const STRIP = 'div[role="status"]:not(.recharts-default-tooltip)';
+// The time is locale-formatted, e.g. "05:30", "5:30 AM".
+const STRIP_TEXT = /^Could not load the latest data\. Showing numbers from \d{1,2}[:.]\d{2}(\s?[AP]\.?M\.?)?\.(Retrying…)?$/i;
+// Every screen here has two readers of /api/metrics: the screen itself and the header.
+const READERS = 2;
 
 beforeEach(() => {
   down = false;
@@ -42,21 +47,22 @@ describe("a failed refresh", () => {
     allRead();
     cy.wait("@analyze"); // the first load is only over after its last request; a tick before that overlaps two loads
     cy.contains("Avg Page Load Time", { timeout: 15000 }).should("be.visible");
-    cy.contains("1.2s").should("be.visible");
+    cy.contains("td", /^1\.2s$/).should("be.visible");
 
     refresh(true);
-    cy.contains("Failed to load live data.").should("be.visible");
+    cy.get(STRIP).should("be.visible").invoke("text").should("match", STRIP_TEXT);
     cy.contains("header p", STALE).should("be.visible");
-    cy.contains("1.2s").should("be.visible");
+    cy.contains("td", /^1\.2s$/).should("be.visible");
+    cy.get('tbody tr[data-slug="blog"]').should("be.visible");
     cy.contains("Avg Page Load Time").should("be.visible");
     cy.contains("Connect your data").should("not.exist");
     cy.contains("Set up keys").should("not.exist");
 
     refresh(false);
     cy.wait("@timings");
-    cy.contains("Failed to load live data.").should("not.exist");
+    cy.get(STRIP).should("not.exist");
     cy.contains(STALE).should("not.exist");
-    cy.contains("1.2s").should("be.visible");
+    cy.contains("td", /^1\.2s$/).should("be.visible");
   });
 
   it("home: a slow load that finishes after a newer failed refresh does not hide the failure", () => {
@@ -68,11 +74,11 @@ describe("a failed refresh", () => {
     cy.contains("Avg Page Load Time", { timeout: 15000 }).should("be.visible");
 
     refresh(true);
-    cy.contains("Failed to load live data.").should("be.visible");
+    cy.get(STRIP).should("be.visible");
     cy.wait("@analyze"); // now the older, successful load has finished
     cy.contains("header p", STALE).should("be.visible"); // gives the page a render after that
-    cy.contains("Failed to load live data.").should("be.visible");
-    cy.contains("1.2s").should("be.visible");
+    cy.get(STRIP).should("be.visible").invoke("text").should("match", STRIP_TEXT);
+    cy.contains("td", /^1\.2s$/).should("be.visible");
   });
 
   it("home: a failed first load shows an error with Retry, not the setup prompt or an endless skeleton", () => {
@@ -80,7 +86,8 @@ describe("a failed refresh", () => {
     cy.visit("/");
     allRead();
     cy.contains("Could not load metrics", { timeout: 15000 }).should("be.visible");
-    cy.contains("Failed to load live data.").should("be.visible");
+    cy.contains("Failed to load live data.").should("be.visible"); // the first-load card keeps this reason
+    cy.contains("Send your first events").should("not.exist"); // Retry is the only action
     cy.contains("Connect your data").should("not.exist");
     cy.contains("Set up keys").should("not.exist");
     cy.then(() => { down = false; });
@@ -100,7 +107,7 @@ describe("a failed refresh", () => {
     cy.contains("header p", STALE).should("be.visible");
     cy.contains("header p", "1 of 1 pages reporting").should("be.visible");
     cy.contains("FAKE Blog").should("be.visible");
-    cy.contains("1.2s").should("be.visible");
+    cy.contains("td", /^1\.2s$/).should("be.visible");
     cy.contains("Could not load metrics").should("not.exist");
 
     refresh(false);

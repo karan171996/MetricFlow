@@ -57,8 +57,6 @@ const SETTLE_MS = 1200;
 const shot = (path: string, name: string, ready: string, scrollTo?: string) => {
   cy.visit(path);
   cy.contains(ready, { timeout: 15000 }).should("exist");
-  // The threshold alert floats over the top-right corner; dismiss it so it does not cover the screen being shown.
-  cy.get("body").then(($body) => { if ($body.find('[data-slot="alert"]').length) cy.contains("button", "Dismiss").click(); });
   if (scrollTo) cy.contains(scrollTo).scrollIntoView({ offset: { top: -24, left: 0 } });
   cy.wait(SETTLE_MS); // titles and bars animate in; a capture mid-animation is half-drawn
   cy.screenshot(`tour-${name}`, { capture: "viewport", overwrite: true });

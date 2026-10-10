@@ -29,7 +29,10 @@ const stub = (tools: string[]) => {
   cy.intercept("POST", "/api/analyze", { alerts: [], recommendations: [] });
 };
 
-const headers = (expected: string[]) => cy.get("thead th").should(($th) => expect([...$th].map((th) => th.innerText.trim())).to.deep.equal(expected));
+const headers = (expected: string[]) => cy.get("thead th").should(($th) => expect([...$th].map((th) => th.innerText.replace(/\s+/g, " ").trim())).to.deep.equal(expected));
+/** A row of the page table: the page's name (its link's title), then each cell as shown at 1440. */
+const pageRow = (slug: string, expected: string[]) => cy.get(`tbody tr[data-slug="${slug}"]`, { timeout: 15000 }).should(($tr) =>
+  expect([$tr.find("th a").attr("title"), ...[...$tr.find("td")].map((td) => td.innerText.trim())]).to.deep.equal(expected));
 // The first page of a run is slow on a cold server, so the wait is longer than Cypress's 4s default.
 const shows = (...texts: string[]) => texts.forEach((t) => cy.contains(t, { timeout: 15000 }).should("be.visible"));
 const absent = (...texts: string[]) => texts.forEach((t) => cy.contains(t).should("not.exist"));
@@ -42,15 +45,17 @@ describe("both tools connected", () => {
 
   it("home, hub, detail and both tool tabs show what they showed before", () => {
     cy.visit("/");
-    shows(...HOME, "1.2s", "0.20%", "0.95");
+    shows(...HOME);
+    // The values: in the "Fix first" table (at 1440 the small-screen line holding the same numbers is hidden).
+    pageRow("blog", ["FAKE Blog", "Healthy", "1.2s", "0.20%", "0.95", "2", "40"]);
     // The raw 24h count (one page, traffic.count 40), not a rate. Read from its own tile: "40" alone also matches the header.
     cy.contains("Page views (24h)").parent().should("contain", "40").and("not.contain", "k/s");
     cy.contains("header p", "1 of 1 pages reporting · 40 views in 24h · 2 open errors").should("be.visible");
 
     cy.visit("/performance");
     shows("Pages Reporting", "1 of 1", "Avg Load Time", "Open Errors");
-    headers(["Page Name", "Path", "Visitors (24h)", "Avg Load", "Errors", "Status"]);
-    cy.get("tbody tr").should(($tr) => expect([...$tr[0].children].map((td) => (td as HTMLElement).innerText.trim())).to.deep.equal(["FAKE Blog", "/blog", "40", "1.2s", "2", "Healthy"]));
+    headers(["Page", "Status", "Load time limit 1.5s", "Error rate limit 2%", "Apdex min 0.9", "Sentry errors last 24h, no limit", "Views (24h)"]);
+    pageRow("blog", ["FAKE Blog", "Healthy", "1.2s", "0.20%", "0.95", "2", "40"]);
     cy.get('[data-slot="alert"]').should("not.exist");
 
     cy.visit("/performance/blog");
@@ -78,7 +83,8 @@ describe("New Relic keys only", () => {
     cy.visit("/performance");
     shows("Pages Reporting", "Avg Load Time");
     absent("Open Errors");
-    headers(["Page Name", "Path", "Visitors (24h)", "Avg Load", "Status"]);
+    headers(["Page", "Status", "Load time limit 1.5s", "Error rate limit 2%", "Apdex min 0.9", "Views (24h)"]);
+    pageRow("blog", ["FAKE Blog", "Healthy", "1.2s", "0.20%", "0.95", "40"]);
 
     cy.visit("/performance/blog");
     shows("Average Load Time", "Error Rate", "Traffic Volume");

@@ -4,8 +4,6 @@ import type {
   DashboardStatCard,
   WebVitalCardData,
   VisibilityBreakdownCardData,
-  WhatMovedCardData,
-  PageMovement,
   AISuggestion,
   TimeSeriesPoint,
   LineChartCardData
@@ -214,48 +212,6 @@ export function computeVisibilityBreakdown(
       }
     ]
   };
-}
-
-/**
- * Needs two snapshots to diff. Real page-by-page deltas — no fabricated
- * gainers/decliners before the in-memory history buffer has anything to
- * compare against.
- */
-export function computeWhatMoved(pages: MetricsPage[], history: MetricsSnapshot[], has: Has): WhatMovedCardData | null {
-  if (!has('pages') || !has('apdex') || !has('loadTime')) return null;
-  if (history.length < 2) {
-    return { improved: [], regressed: [], period: 'not enough history yet — check back shortly' };
-  }
-
-  const baseline = history[0].pages;
-  const improved: PageMovement[] = [];
-  const regressed: PageMovement[] = [];
-
-  pages.forEach(page => {
-    const before = baseline.find(b => b.url === page.url);
-    if (!before || before.metrics.apdex === undefined || page.metrics.apdex === undefined) return;
-
-    const scoreBefore = Math.round(before.metrics.apdex * 100);
-    const scoreAfter = Math.round(page.metrics.apdex * 100);
-    const scoreDelta = scoreAfter - scoreBefore;
-    if (scoreDelta === 0) return;
-
-    const movement: PageMovement = {
-      score: String(scoreAfter),
-      page: page.url,
-      // formatDuration prints "—" for a load time that is not there.
-      metricChange: `Load ${formatDuration(before.metrics.loadTime ?? NaN)} → ${formatDuration(page.metrics.loadTime ?? NaN)}`,
-      scoreDelta,
-      monthlyTraffic: page.visitors
-    };
-
-    (scoreDelta > 0 ? improved : regressed).push(movement);
-  });
-
-  improved.sort((a, b) => b.scoreDelta - a.scoreDelta);
-  regressed.sort((a, b) => a.scoreDelta - b.scoreDelta);
-
-  return { improved, regressed, period: `since ${new Date(history[0].timestamp).toLocaleTimeString()}` };
 }
 
 interface Alert {

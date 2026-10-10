@@ -78,7 +78,8 @@ describe("AI suggestions card", () => {
       stamp().should("equal", null);
       // The rest of the dashboard is untouched by the failure.
       cy.contains("Avg Page Load Time").should("be.visible");
-      cy.contains("Failed to load live data.").should("not.exist");
+      cy.get('div[role="status"]:not(.recharts-default-tooltip)').should("not.exist"); // no stale-data strip
+      cy.get('tbody tr[data-slug="blog"]').should("be.visible");
     });
   });
 });
@@ -86,7 +87,7 @@ describe("AI suggestions card", () => {
 // A failed analysis call is tried again on the next page load, not on each 30s refresh. A missing key costs no
 // call, so it is checked again on each refresh. Only the refresh timers are faked, as in refresh-failure.cy.ts.
 describe("asking for the analysis again on the 30s refresh", () => {
-  const READERS = 3; // the screen, the header and the threshold alert each read /api/metrics
+  const READERS = 2; // the screen and the header each read /api/metrics
   const allRead = () => { for (let i = 0; i < READERS; i++) cy.wait("@metrics"); };
   const loadThenRefresh = (reason: string) => {
     cy.clock(Date.parse(at), ["setInterval", "clearInterval"]);
