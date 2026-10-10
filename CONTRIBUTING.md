@@ -88,7 +88,23 @@ One-time set-up, done by the maintainer:
 3. **Same page, Publishing access:** choose "Require two-factor authentication and disallow tokens", so nothing but this workflow and a 2FA login can publish.
 4. **GitHub > Settings > Environments:** create `npm`, add yourself as a required reviewer, and limit it to the `main` branch.
 
-To release: merge the version bump to `main`, then run **Actions > Publish > Run workflow** on `main`. The run has two jobs. The first builds, tests and packs the tarball; it cannot publish. The second waits for your approval, then publishes that exact tarball and runs nothing else. Approve it once the first job is green.
+To release: merge the version bump to `main`, then run **Actions > Publish > Run workflow** on `main` and pick a channel (see "Release channels" below; the default is `stable`). The run has three jobs. The first builds, tests and packs the tarball; it cannot publish. The second waits for your approval, then publishes that exact tarball and runs nothing else. Approve it once the first job is green. The third runs only after a stable publish and only calls the GitHub CLI to create the tag and the release.
+
+### Release channels
+
+There are two channels, named after Node.js's. Both are started by hand and both wait for the same approval.
+
+| Channel | Version | npm dist-tag | Install | What it is for |
+| --- | --- | --- | --- | --- |
+| `stable` | `package.json`'s version, for example `0.10.1` | `latest` | `npx @karan171996/metricflow` | What users get by default. |
+| `canary` | `<version>-canary.g<short sha>`, for example `0.10.1-canary.g4347fdf` | `canary` | `npx @karan171996/metricflow@canary` | Trying what is on `main` before a stable release. It can be broken. |
+
+- **A canary never moves `latest`.** The workflow always passes an explicit `--tag`, and refuses to publish a prerelease version under `latest`.
+- **Stable leaves a marker.** After a successful stable publish the workflow creates the git tag `v<version>` and a GitHub release with generated notes. It fails before publishing if that tag already exists.
+- **Ordering.** A canary sorts below the same stable version (`0.10.1-canary.g4347fdf` < `0.10.1`), as semver defines, so after `0.10.1` is released a canary of `main` is still labelled `0.10.1-canary.…` until the next bump lands. The `canary` tag is set explicitly, so ordering never decides what `@canary` installs.
+- **Why the `g`.** The short sha is prefixed with `g` so the identifier can never be all digits with a leading zero, which semver forbids.
+- **LTS is not offered.** An LTS line only means something with a maintained `1.x` branch that gets backports. Revisit at 1.0.
+- **Not in the repo.** The canary version is written only inside the build job. `package.json` on `main` keeps the plain version.
 
 Before the first release that contains `./browser`, also do the two checks a machine cannot: install the packed tarball into a scratch app outside this repo and build it (no secret name, `axios` or `node:` in its client bundle; no Sentry file requested by a New Relic-only `init`), and start the CLI from that installed copy.
 
