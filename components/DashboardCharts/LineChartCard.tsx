@@ -14,7 +14,7 @@ export function LineChartCard({ title, points }: LineChartCardData) {
       <CardContent className="p-6 pt-2">
         <div className="h-[250px] w-full mt-4">
           {points.length === 0 ? (
-            <p className="text-xs text-gray-500">Not enough history yet — check back shortly.</p>
+            <p className="text-xs text-dash-muted">Not enough history yet — check back shortly.</p>
           ) : (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={points} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>

@@ -59,8 +59,8 @@ export function AppSidebar() {
           <div key={section.label} className={isMobile ? "w-full" : "flex w-full flex-col items-center gap-3"}>
             {i > 0 && <div className={isMobile ? "my-3 h-px bg-[#2d3748]" : "h-px w-8 bg-[#2d3748]"} />}
             <span className={isMobile
-              ? "mb-2 block px-3 text-xs font-medium uppercase tracking-wider text-gray-500"
-              : "text-[9px] font-medium uppercase tracking-wider text-gray-500"}>
+              ? "mb-2 block px-3 text-xs font-medium uppercase tracking-wider text-dash-muted"
+              : "text-[11px] font-medium uppercase tracking-wider text-dash-muted"}>
               {section.label}
             </span>
             <SidebarMenu className={isMobile ? "gap-2" : "flex flex-col items-center gap-4"}>
@@ -70,6 +70,8 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     render={<NextLink href={item.href} />}
                     isActive={pathname === item.href}
+                    aria-label={item.label}
+                    aria-current={pathname === item.href ? "page" : undefined}
                     tooltip={item.label}
                     className={isMobile
                       ? "w-full justify-start gap-4 p-3 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white text-base"
@@ -91,6 +93,8 @@ export function AppSidebar() {
             <SidebarMenuButton
               render={<NextLink href="/settings" />}
               isActive={pathname === "/settings"}
+              aria-label="Settings"
+              aria-current={pathname === "/settings" ? "page" : undefined}
               tooltip="Settings"
               className={isMobile
                 ? "w-full justify-start gap-4 p-3 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white text-base"

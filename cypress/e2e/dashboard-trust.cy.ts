@@ -13,7 +13,7 @@ const now = pageWith({ ttfb: 400, lcp: 2100, cls: 0.05 }, at);
 // TTFB was slower, LCP was faster and CLS was the same.
 const before = pageWith({ ttfb: 500, lcp: 2000, cls: 0.05 }, earlier);
 
-const GREEN = "rgb(62, 224, 161)";
+const GREEN = "rgb(16, 185, 129)"; // the dash-success status token
 const RED = "rgb(239, 68, 68)";
 const ARROWS = "svg.lucide-arrow-up, svg.lucide-arrow-down";
 const STAMP = "dashboard:lastAnalyzedAt";

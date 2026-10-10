@@ -3,7 +3,7 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
-import { ArrowUp, ArrowDown, MoreHorizontal, Gauge, Zap } from "lucide-react";
+import { ArrowUp, ArrowDown, Gauge, Zap } from "lucide-react";
 import type { VisibilityBreakdownCardData } from "@/types";
 
 /** No arrow and muted text when there is nothing to compare with (`null`) or nothing moved (0). */
@@ -25,9 +25,6 @@ export function VisibilityBreakdownCard({
             Core Web Vitals across your tracked pages
           </CardDescription>
         </div>
-        <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#2d3748] bg-[#0f1419] text-gray-400 hover:text-white transition-colors">
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
       </CardHeader>
       
       <CardContent className="flex flex-col gap-4 p-6 pt-0">
@@ -41,7 +38,7 @@ export function VisibilityBreakdownCard({
           </div>
           <div className="mt-2 flex items-end justify-between relative z-10">
             <span className="text-[40px] font-bold leading-none tracking-tight text-white">{avgScore}</span>
-            <div className={`flex items-center text-sm font-medium ${!scoreDelta ? "text-muted-foreground" : isPositive ? "text-[#3ee0a1]" : "text-[#ef4444]"}`}>
+            <div className={`flex items-center text-sm font-medium ${!scoreDelta ? "text-muted-foreground" : isPositive ? "text-dash-success" : "text-[#ef4444]"}`}>
               {!!scoreDelta && (isPositive ? <ArrowUp className="mr-1 h-3.5 w-3.5" /> : <ArrowDown className="mr-1 h-3.5 w-3.5" />)}
               <span>{deltaText(scoreDelta)}</span>
             </div>

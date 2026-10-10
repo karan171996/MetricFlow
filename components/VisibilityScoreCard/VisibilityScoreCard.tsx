@@ -20,7 +20,7 @@ export function VisibilityScoreCard() {
 
   return (
     <Card 
-      className="group w-full min-w-[300px] max-w-[400px] rounded-xl border-[#2d3748] bg-[#1a202c] shadow-[0_4px_6px_rgba(0,0,0,0.3)] transition-all duration-300 hover:scale-[1.02] hover:cursor-pointer hover:shadow-lg"
+      className="group w-full min-w-[300px] max-w-[400px] rounded-xl border-[#2d3748] bg-[#1a202c] shadow-[0_4px_6px_rgba(0,0,0,0.3)] transition-all duration-300 motion-safe:hover:scale-[1.02] hover:cursor-pointer hover:shadow-lg"
     >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
@@ -52,7 +52,7 @@ export function VisibilityScoreCard() {
           <span className="text-[48px] font-bold leading-none text-white tracking-tighter">
             78.4
           </span>
-          <div className="flex items-center text-[14px] font-medium text-[#3ee0a1]">
+          <div className="flex items-center text-[14px] font-medium text-dash-success">
             <ArrowUp className="mr-1 h-4 w-4" />
             <span>2.3 vs last 30d</span>
           </div>
