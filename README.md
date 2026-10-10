@@ -83,6 +83,15 @@ Options, privacy defaults and Content Security Policy hosts are in [Sending data
 
 Early and still changing. Bug reports and feedback are welcome in [Issues](https://github.com/karan171996/MetricFlow/issues).
 
+## Release channels
+
+| Channel | Install | For |
+| --- | --- | --- |
+| Stable (default) | `npx @karan171996/metricflow` | Everyday use. |
+| Canary | `npx @karan171996/metricflow@canary` | Trying what is on `main` before it is released. It can be broken. |
+
+`--version` prints the full version, so a canary shows as for example `0.10.1-canary.g4347fdf`.
+
 ## Contributing
 
 Fork, branch, and open a pull request. The steps, the commit format and the PR checklist are in [CONTRIBUTING.md](https://github.com/karan171996/MetricFlow/blob/main/CONTRIBUTING.md).
