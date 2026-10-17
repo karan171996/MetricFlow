@@ -79,6 +79,11 @@ Options, privacy defaults and Content Security Policy hosts are in [Sending data
 | [Configuration](https://github.com/karan171996/MetricFlow/blob/main/docs/configuration.md) | Every environment variable MetricFlow reads |
 | [Developing MetricFlow](https://github.com/karan171996/MetricFlow/blob/main/docs/development.md) | Run from source, run the tests, project structure |
 
+## Free vs hosted
+
+- **Free (this package, MIT):** runs on your machine with no account. Lighthouse, New Relic and Sentry for the site you run on localhost, with the last 24 hours of data.
+- **Hosted (coming):** adds your staging and production sites, history beyond 24 hours, alerts, and Lighthouse runs hosted for you. The hosted service is closed source and not part of this repository.
+
 ## Status
 
 Early and still changing. Bug reports and feedback are welcome in [Issues](https://github.com/karan171996/MetricFlow/issues).

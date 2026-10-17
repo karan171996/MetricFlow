@@ -16,7 +16,7 @@ MetricFlow is a local dashboard for one website. It reads real-user performance 
 
 ## Positioning
 
-- **Local, no account.** Runs on the user's machine with their own keys. There is no MetricFlow server and nothing to sign up for.
+- **Free locally, paid hosted.** The free CLI (MIT) runs on the user's machine against localhost, with their own keys and no account. A paid hosted service, closed source and still to come, adds staging and production, history, alerts and hosted Lighthouse.
 - **Per-page join.** New Relic performance and Sentry errors for the same page sit in one view.
 - **AI "fix first" advice.** The metrics become a prioritised list of what to fix. The AI key is optional.
 - **One-command start.** `npx @karan171996/metricflow` goes from nothing to a running dashboard.
@@ -51,5 +51,5 @@ MetricFlow is a local dashboard for one website. It reads real-user performance 
 1. **Never fake data.** No invented metrics, testimonials or benchmarks. Sample data is always labelled as sample.
 2. **The page is the unit.** Performance and errors are shown together for a page, not as separate tool views.
 3. **Answer "what first".** Every view should help the engineer rank problems, not just list numbers.
-4. **Stay local.** Nothing may imply or require a MetricFlow account, server or upload of the user's keys.
+4. **Free stays local.** Nothing in the free CLI may require a MetricFlow account, server or upload of the user's keys; those belong only to the paid hosted service.
 5. **Work without AI.** The dashboard is complete without an AI key; AI advice is an addition.
