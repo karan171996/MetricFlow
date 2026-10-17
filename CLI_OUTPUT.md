@@ -11,7 +11,7 @@ Code: `bin/output.mjs` (formatter, no dependencies). `bin/cli.mjs` holds the com
 - `--json`: one JSON object per line on stdout, always with `event` (`ok`, `info`, `warn`, `error`, `summary`). Next.js's own logs are sent to stderr so stdout stays parseable.
 
 ## Flags
-`-h/--help`, `-v/--version`, `--json`, `--no-color`, `--host <addr>` (default `127.0.0.1`; non-loopback prints two `warn` lines (network exposure; /setup and /connect disabled) and sets `METRICFLOW_EXPOSED=1` for the server / `{"event":"warn","host":...}`), optional `[port]` (or `PORT` env).
+`-h/--help`, `-v/--version`, `--json`, `--no-color`, `--show-keys` (browser key and app ID in full; without it they are full only when stdout is a TTY, otherwise a prefix plus `…` and `full values: open /connect`; `--json` is always masked unless this is passed), `--host <addr>` (default `127.0.0.1`; non-loopback prints two `warn` lines (network exposure; /setup and /connect disabled) and sets `METRICFLOW_EXPOSED=1` for the server / `{"event":"warn","host":...}`), optional `[port]` (or `PORT` env).
 
 ## Examples
 `performance-dashboard` (TTY, spinner replaced when ready):

@@ -75,6 +75,15 @@ server.on("exit", (code) => {
 });
 for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { stopping = true; server.kill(s); });
 
+// Browser key and app ID: full on a terminal or with --show-keys. Captured stdout (logs, CI) and --json
+// get a prefix only; /connect always shows the full values.
+const showKeys = process.argv.includes("--show-keys") || (!wantsJson && process.stdout.isTTY === true);
+const mask = (v) => {
+  if (v == null || showKeys) return v;
+  const n = String(v).length; // keys start "NRJS-", so keep 7; short values keep 3, tiny ones nothing
+  return `${String(v).slice(0, n > 8 ? 7 : n > 3 ? 3 : 0)}…`;
+};
+
 /**
  * Prints the chain from the user's site to the dashboard, so "no data" says which
  * link is broken. Reuses /api/connect rather than re-implementing the checks.
@@ -88,15 +97,17 @@ async function printConnection() {
   }
   if (!s?.configured) return out.warn("No keys yet. Open /setup to add them.", { configured: false });
 
+  const { applicationId, browserKey } = s.setup ?? {};
   const rows = [
     ["Reading New Relic", s.accountId ? `account ${s.accountId}` : "no account id"],
-    ["Browser app", s.setup?.appCount > 0 ? `${s.setup.appName} (application ID ${s.setup.applicationId})` : "none - create one: New Relic > Add data > Browser monitoring"],
-    ["Browser key", s.setup?.browserKey ?? "could not read (copy the key VALUE, not the ID beside it)"],
+    ["Browser app", s.setup?.appCount > 0 ? `${s.setup.appName} (application ID ${mask(applicationId)})` : "none - create one: New Relic > Add data > Browser monitoring"],
+    ["Browser key", mask(browserKey) ?? "could not read (copy the key VALUE, not the ID beside it)"],
+    ...(!showKeys && (applicationId != null || browserKey != null) ? [["", "full values: open /connect"]] : []),
     ["Site sending data", s.browser?.recent > 0 ? "yes, page views arriving" : "no page views yet"],
     ["Custom events", s.custom?.recent > 0 ? "yes" : "none yet"],
     ["Sentry", s.sentry?.error ? s.sentry.error : s.sentry?.recent > 0 ? "errors arriving" : "no errors in the last 5 min"],
   ];
-  out.kv(rows, { event: "connection", ...s });
+  out.kv(rows, { event: "connection", ...s, ...(s.setup && { setup: { ...s.setup, applicationId: mask(applicationId), browserKey: mask(browserKey) } }) });
   if (!(s.browser?.recent > 0)) {
     if (!(s.setup?.appCount > 0)) out.warn("New Relic is not receiving data: no Browser app exists yet, so your site has no application ID to send to.", { reason: "no_browser_app" });
     else out.warn("New Relic is not receiving data. Load your site, then check for blocked requests to nr-data.net - ad and privacy blockers drop them silently.", { reason: "no_page_views" });

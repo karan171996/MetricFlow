@@ -75,6 +75,8 @@ ${c.bold("Options")}
   --json           Machine-readable output: one JSON object per line
   --no-color       Disable colors (also honors NO_COLOR and non-TTY)
   --no-open        Start the server without opening a browser
+  --show-keys      Print the browser key and app ID in full, even when output
+                   is piped or --json (default: full only on a terminal)
 
 ${c.bold("Environment")}
   PORT             Port to listen on (default 3000)
