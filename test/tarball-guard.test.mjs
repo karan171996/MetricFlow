@@ -42,8 +42,10 @@ for (const path of [
   });
 }
 
-test("denylisted paths match at any depth, not as look-alikes", () => {
+test("denylisted paths match at any depth and in any case, not as look-alikes", () => {
   assert.equal(check({ ...clean, "package/.next/server/lib/hosted/db.js": "" }).length, 1);
+  assert.equal(check({ ...clean, "package/.ENV": "", "package/a.js.MAP": "", "package/components/hosted/A.js": "" }).length, 3);
+  assert.match(check({ ...clean, "package/.env": "" })[0], /remove it, or exclude it in package\.json "files"/);
   assert.deepEqual(check({ ...clean, "package/public/factory-logo.svg": "", "package/bin/environment.mjs": "" }), []);
 });
 
@@ -59,7 +61,7 @@ for (const [name, value] of Object.entries(secrets)) {
   test(`secret content is reported with file and pattern: ${name}`, () => {
     const v = check({ ...clean, "package/.next/server/chunks/1.js": `var a="${value}";` });
     assert.equal(v.length, 1);
-    assert.match(v[0], /^package\/\.next\/server\/chunks\/1\.js: content matches \/.+\/$/);
+    assert.match(v[0], /^package\/\.next\/server\/chunks\/1\.js: content looks like .+ \(matches \/.+\/\)$/);
     // A name is its own pattern; a key's value must stay out of CI logs.
     if (!value.startsWith("METRICFLOW_")) assert.ok(!v[0].includes(value), "the matched value itself is never printed");
   });
@@ -73,13 +75,14 @@ test("binary files are not scanned", () => {
   assert.deepEqual(check({ ...clean, "package/public/x.png": Buffer.concat([Buffer.from([0]), Buffer.from(secrets.sk)]) }), []);
 });
 
-test("a packed size over the ceiling is reported; today's size is not", () => {
-  assert.equal(MAX_PACKED_BYTES, 1_700_000);
+test("a packed size over the ceiling is reported; today's sizes are not", () => {
+  assert.equal(MAX_PACKED_BYTES, 2_100_000);
   assert.deepEqual(check(clean, TODAY), []);
+  assert.deepEqual(check(clean, 1_842_089), []); // Turbopack build of a3b5080, what publish.yml packs
   assert.deepEqual(check(clean, MAX_PACKED_BYTES), []);
   const v = check(clean, MAX_PACKED_BYTES + 1);
   assert.equal(v.length, 1);
-  assert.match(v[0], /packed size 1700001 bytes is over the ceiling of 1700000/);
+  assert.match(v[0], /packed size 2100001 bytes is over the ceiling of 2100000 .*CONTRIBUTING\.md "Publishing"/);
 });
 
 const packTgz = (fixture) => {
@@ -94,17 +97,22 @@ const packTgz = (fixture) => {
 };
 const runCli = (...args) => spawnSync(process.execPath, [script, ...args], { cwd: root, encoding: "utf8" });
 
-test("CLI: exits 0 on a clean .tgz and 1 on a bad one, naming each violation", () => {
+test("CLI: exits 0 on a clean .tgz and 1 on a bad one, naming each violation; checks every .tgz given", () => {
   const good = packTgz(clean);
   const bad = packTgz({ ...clean, "package/lib/hosted/x.js": "", "package/bin/key.mjs": `const k = "${secrets.AKIA}";` });
   try {
     const ok = runCli(good.tgz);
     assert.equal(ok.status, 0, ok.stderr);
-    assert.match(ok.stdout, /Tarball check passed: 5 files/);
+    assert.match(ok.stdout, /Tarball check passed for .*pkg\.tgz: 5 files/);
     const r = runCli(bad.tgz);
     assert.equal(r.status, 1);
     assert.match(r.stderr, /package\/lib\/hosted\/x\.js: path is not allowed/);
-    assert.match(r.stderr, /package\/bin\/key\.mjs: content matches \/AKIA/);
+    assert.match(r.stderr, /package\/bin\/key\.mjs: content looks like an AWS access key ID \(matches \/AKIA/);
+    // release/*.tgz may expand to more than one file: a bad one after a good one still fails.
+    const both = runCli(good.tgz, bad.tgz);
+    assert.equal(both.status, 1);
+    assert.match(both.stdout, /Tarball check passed for /);
+    assert.match(both.stderr, /Tarball check failed for .*pkg\.tgz \(2\)/);
   } finally {
     rmSync(good.dir, { recursive: true, force: true });
     rmSync(bad.dir, { recursive: true, force: true });

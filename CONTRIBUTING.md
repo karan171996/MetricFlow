@@ -90,7 +90,7 @@ One-time set-up, done by the maintainer:
 
 To release: merge the version bump to `main`, then run **Actions > Publish > Run workflow** on `main` and pick a channel (see "Release channels" below; the default is `stable`). The run has three jobs. The first builds, tests and packs the tarball; it cannot publish. The second waits for your approval, then publishes that exact tarball and runs nothing else. Approve it once the first job is green. The third runs only after a stable publish and only calls the GitHub CLI to create the tag and the release.
 
-Before the upload, the first job runs `node scripts/check-tarball.mjs` on the packed tarball (CI runs it on every pull request too). It fails on hosted-only code, `.env*` files, source maps, planning docs, key-shaped strings, or a tarball over the size ceiling. If the package grows on purpose, raise `MAX_PACKED_BYTES` in that script in its own commit.
+Before the upload, the first job runs `node scripts/check-tarball.mjs` on the packed tarball (CI runs it on every pull request too). It fails on hosted-only code, `.env*` files, source maps, planning docs, key-shaped strings, or a tarball over the size ceiling. If the package grows on purpose, measure it after a clean `pnpm run build` (the publish build) with `npm pack --dry-run --json` (the `size` field, in bytes), check the file list for junk, then raise `MAX_PACKED_BYTES` in that script in its own commit.
 
 ### Release channels
 
