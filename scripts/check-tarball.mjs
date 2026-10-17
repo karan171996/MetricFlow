@@ -17,12 +17,13 @@ export const MAX_PACKED_BYTES = 2_100_000;
 
 // The closed-source hosted service and private plans: never in the package, and never in this repo either
 // (scripts/check-hosted-paths.mjs runs the same list against `git ls-files`). Matched at any depth, ignoring case.
+// (\/|$): the folder's contents and a file or symlink with the folder's exact name, but not lib/hostedness.ts.
 export const HOSTED_PATHS = [
-  /(^|\/)lib\/hosted\//i,
-  /(^|\/)components\/Hosted\//i,
-  /(^|\/)lighthouse-runner\//i,
-  /(^|\/)LICENSE-HOSTED$/i,
-  /(^|\/)docs\/plans\//i,
+  /(^|\/)lib\/hosted(\/|$)/i,
+  /(^|\/)components\/Hosted(\/|$)/i,
+  /(^|\/)lighthouse-runner(\/|$)/i,
+  /(^|\/)LICENSE-HOSTED[^/]*(\/|$)/i,
+  /(^|\/)docs\/plans(\/|$)/i,
 ];
 
 // Matched at any depth under package/, ignoring case. The last three are fine in the repo, not in the package.

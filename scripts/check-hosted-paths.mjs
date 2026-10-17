@@ -11,7 +11,7 @@ import { HOSTED_PATHS } from "./check-tarball.mjs";
 export function checkHostedPaths(files) {
   return files
     .filter((file) => HOSTED_PATHS.some((re) => re.test(file)))
-    .map((file) => `${file}: hosted-only path, not allowed in this MIT repo (it belongs in the private hosted repo)`);
+    .map((file) => `${file}: hosted-only path, not allowed in this MIT repo (it belongs in the private hosted repo); untrack it with: git rm --cached "${file}"`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
