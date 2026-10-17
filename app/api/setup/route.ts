@@ -1,8 +1,8 @@
 import { SERVER_TOOLS, type KeyResult, type ToolUpdate } from '@/lib/analytics';
-import { EnvWriteRefused, SETUP_KEYS, UNSAFE, connectedTools, env, isToolConnected, setupKeysOf, writeEnvLocal } from '@/lib/env';
+import { EnvWriteRefused, SETUP_KEYS, UNSAFE, connectedTools, env, isHosted, isToolConnected, setupKeysOf, writeEnvLocal } from '@/lib/env';
 import { startRun } from '@/lib/lighthouseRun';
 import { KEY_LABELS, TOOLS, TOOL_IDS, type Tool, type ToolId } from '@/lib/tools';
-import { isLocalRequest, requireJson, REFUSAL_MESSAGE } from '@/lib/localRequest';
+import { isLocalRequest, modeRefusal, requireJson, REFUSAL_MESSAGE } from '@/lib/localRequest';
 
 // writeEnvLocal refuses these too; checking here first gives the message under the field.
 const UNSAFE_MSG = 'Contains spaces or special characters (# " \' ` $ \\). Paste the value without them.';
@@ -23,6 +23,7 @@ const writeFailed = (error: unknown, fsMessage: string) =>
 
 /** Which keys are set. Values are never returned. */
 export async function GET(request: Request) {
+  if (isHosted()) return modeRefusal();
   if (!isLocalRequest(request)) return refuse();
   return Response.json({
     configured: connectedTools().length > 0,
@@ -32,6 +33,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (isHosted()) return modeRefusal();
   if (!isLocalRequest(request)) return refuse();
 
   let body: Record<string, unknown>;

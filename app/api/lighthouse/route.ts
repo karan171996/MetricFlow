@@ -1,17 +1,19 @@
-import { env } from '@/lib/env';
+import { env, isHosted } from '@/lib/env';
 import { getStatus, startRun } from '@/lib/lighthouseRun';
-import { isLocalRequest, requireJson, PROXY_REFUSAL } from '@/lib/localRequest';
+import { isLocalRequest, modeRefusal, requireJson, PROXY_REFUSAL } from '@/lib/localRequest';
 
 const refuse = () => Response.json({ error: PROXY_REFUSAL }, { status: 403 });
 
 /** The run status: `{ state, done, total, lastRunAt, error? }`, plus `target`: whether a project address is set. */
 export async function GET(request: Request) {
+  if (isHosted()) return modeRefusal();
   if (!isLocalRequest(request)) return refuse();
   return Response.json({ ...getStatus(), target: Boolean(env('LIGHTHOUSE_TARGET')) });
 }
 
 /** "Run now": starts a run in the background, or joins the one in progress. */
 export async function POST(request: Request) {
+  if (isHosted()) return modeRefusal();
   if (!isLocalRequest(request)) return refuse();
   const notJson = requireJson(request);
   if (notJson) return notJson;

@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { AI_PROVIDERS, AI_PROVIDER_KEY, EnvWriteRefused, UNSAFE, activeAi, writeEnvLocal, type AiProvider } from '@/lib/env';
-import { isLocalRequest, requireJson, REFUSAL_MESSAGE } from '@/lib/localRequest';
+import { AI_PROVIDERS, AI_PROVIDER_KEY, EnvWriteRefused, UNSAFE, activeAi, isHosted, writeEnvLocal, type AiProvider } from '@/lib/env';
+import { isLocalRequest, modeRefusal, requireJson, REFUSAL_MESSAGE } from '@/lib/localRequest';
 
 const refuse = () => Response.json({ error: REFUSAL_MESSAGE() }, { status: 403 });
 
@@ -14,6 +14,7 @@ const CHECKS: Record<AiProvider, (key: string) => Promise<unknown>> = {
 
 /** Which provider is active and which keys are set. Values are never returned. */
 export async function GET(request: Request) {
+  if (isHosted()) return modeRefusal();
   if (!isLocalRequest(request)) return refuse();
   return Response.json({
     provider: activeAi()?.provider ?? null,
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (isHosted()) return modeRefusal();
   if (!isLocalRequest(request)) return refuse();
 
   let body: Record<string, unknown>;

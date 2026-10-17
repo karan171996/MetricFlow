@@ -1,5 +1,5 @@
-import { INSERT_KEY, REGION_KEY, connectedTools, env, isToolConnected } from '@/lib/env';
-import { isLocalRequest, requireJson, REFUSAL_MESSAGE } from '@/lib/localRequest';
+import { INSERT_KEY, REGION_KEY, connectedTools, env, isHosted, isToolConnected } from '@/lib/env';
+import { isLocalRequest, modeRefusal, requireJson, REFUSAL_MESSAGE } from '@/lib/localRequest';
 import { publicDsn } from '@/lib/sentryDsn';
 import { browserSetup, newRelicStatus, sendTestEvent, sentryStatus } from '@/lib/connectStatus';
 
@@ -7,6 +7,7 @@ const refuse = () => Response.json({ error: REFUSAL_MESSAGE() }, { status: 403 }
 
 /** Per-source "events received" status. Never returns secrets: the DSN is re-serialised from its parsed public parts. */
 export async function GET(request: Request) {
+  if (isHosted()) return modeRefusal();
   if (!isLocalRequest(request)) return refuse();
   const tools = connectedTools();
   if (!tools.length) return Response.json({ configured: false });
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
 
 /** Sends one test event so the user can watch it arrive. */
 export async function POST(request: Request) {
+  if (isHosted()) return modeRefusal();
   if (!isLocalRequest(request)) return refuse();
   const notJson = requireJson(request);
   if (notJson) return notJson;

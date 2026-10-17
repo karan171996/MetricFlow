@@ -62,6 +62,8 @@ const server = spawn(process.execPath, [nextBin, "start", "-p", port, "-H", host
     ...process.env,
     // app's isLocalRequest honors this. On loopback it is emptied, so a METRICFLOW_EXPOSED left in the user's shell cannot switch the API guard off.
     METRICFLOW_EXPOSED: loopback ? "" : "1",
+    // app's isHosted honors this. Always emptied, so a METRICFLOW_MODE left in the user's shell cannot switch local writes off.
+    METRICFLOW_MODE: "",
     ...(process.argv.includes("--no-color") || wantsJson ? { FORCE_COLOR: undefined, NO_COLOR: "1" } : {}),
   },
 });

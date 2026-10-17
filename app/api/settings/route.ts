@@ -1,7 +1,7 @@
 import { readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { isLocalRequest, requireJson, REFUSAL_MESSAGE } from '@/lib/localRequest';
-import { projectDir } from '@/lib/env';
+import { isLocalRequest, modeRefusal, requireJson, REFUSAL_MESSAGE } from '@/lib/localRequest';
+import { isHosted, projectDir } from '@/lib/env';
 import { DEFAULT_THRESHOLDS, type Thresholds } from '@/lib/thresholds';
 
 // ponytail: single JSON file = one shared config per host. Use a DB/KV on serverless (no persistent disk).
@@ -23,10 +23,13 @@ function load(): Thresholds {
 }
 
 export async function GET() {
+  // The defaults are constants: nothing is read from disk.
+  if (isHosted()) return Response.json(DEFAULT_THRESHOLDS);
   return Response.json(load());
 }
 
 export async function PUT(request: Request) {
+  if (isHosted()) return modeRefusal();
   if (!isLocalRequest(request)) return Response.json({ error: REFUSAL_MESSAGE() }, { status: 403 });
 
   let body: Record<string, unknown>;
