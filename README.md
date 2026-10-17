@@ -30,7 +30,7 @@ npx @karan171996/metricflow
 ```
 
 The dashboard opens on `http://localhost:3000`. Paste your keys on the Setup page and you are done.
-There is no MetricFlow server and no account to create: it runs on your machine, with your keys.
+The free package has no MetricFlow server and no account to create: it runs on your machine, with your keys.
 
 ## Why MetricFlow
 
