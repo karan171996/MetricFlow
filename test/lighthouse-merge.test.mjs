@@ -9,7 +9,7 @@ import { FAKE, load, mockAxios } from "./helpers.mjs";
 mockAxios(() => { throw new Error("no network in this test"); });
 const { GET } = await load("app/api/metrics/route.ts");
 const { SERVER_TOOLS } = await load("lib/analytics/index.ts");
-const { sourcesFor, mergeMetrics } = await load("lib/tools.ts");
+const { sourcesFor, mergeMetrics, TOOLS } = await load("lib/tools.ts");
 
 const dir = mkdtempSync(join(tmpdir(), "lh-merge-"));
 process.env.METRICFLOW_PROJECT_DIR = dir;
@@ -115,4 +115,17 @@ test("a New Relic failure leaves Lighthouse's output intact", async () => {
   // New Relic lists the pages here, so with it down there is nothing to list: a clean 500, not a crash
   assert.equal(res.status, 500);
   SERVER_TOOLS["new-relic"].poll = realNr;
+});
+
+test("stat cards: a dash when no page has the value, a real 0 score is shown as 0", () => {
+  const stats = (pages) => Object.fromEntries(TOOLS.lighthouse.stats(pages).map((s) => [s.label, s.value]));
+  const page = (lighthouse) => ({ name: "p", slug: "p", url: "/p", metrics: {}, byTool: lighthouse ? { lighthouse: { lighthouse } } : {} });
+  for (const pages of [[], [page()], [page({})]]) {
+    assert.deepEqual(stats(pages), { "Avg Score": "—", "Avg LCP": "—", "Avg CLS": "—", "Avg TBT": "—" });
+  }
+  const zero = stats([page({ score: 0, cls: 0 }), page()]);
+  assert.equal(zero["Avg Score"], "0");
+  assert.equal(zero["Avg CLS"], "0.00");
+  assert.equal(zero["Avg LCP"], "—");
+  assert.equal(stats([page({ score: 40 }), page({ score: 61 }), page()])["Avg Score"], "51");
 });

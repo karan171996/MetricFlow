@@ -99,7 +99,7 @@ export function SetupForm() {
                   type={f.secret ? "password" : "text"}
                   autoComplete="off"
                   spellCheck={false}
-                  placeholder={isSet[f.name] ? "•••••••• (leave blank to keep, type to replace)" : ""}
+                  placeholder={isSet[f.name] ? "•••••••• (leave blank to keep, type to replace)" : (f.placeholder ?? "")}
                   value={values[f.name] ?? ""}
                   onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}
                   aria-invalid={r && !r.ok ? true : undefined}

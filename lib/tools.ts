@@ -40,8 +40,18 @@ const ms = (v: number | undefined) => (v === undefined ? "—" : formatDuration(
 const sentryErrors = (p: MetricsPage) => p.byTool?.sentry?.errors ?? (p.sentry && { count: p.sentry.errorCount, latest: p.sentry.latestErrors });
 // Lighthouse numbers for a page; averaged only over pages that have the value, never counting a missing one as 0.
 const lh = (p: MetricsPage) => p.byTool?.lighthouse?.lighthouse;
-const avgOf = (live: MetricsPage[], pick: (l: NonNullable<ReturnType<typeof lh>>) => number | undefined) =>
-  avg(live.map((p) => { const l = lh(p); return l && pick(l); }).filter((v): v is number => v !== undefined));
+// undefined when no page has the value, so the card shows "—" (a real score of 0 still shows "0").
+const avgOf = (live: MetricsPage[], pick: (l: NonNullable<ReturnType<typeof lh>>) => number | undefined) => {
+  const xs: number[] = [];
+  for (const p of live) {
+    const l = lh(p);
+    const v = l === undefined ? undefined : pick(l);
+    if (v !== undefined) xs.push(v);
+  }
+  return xs.length ? avg(xs) : undefined;
+};
+const scoreText = (v: number | undefined) => (v === undefined ? "—" : String(Math.round(v)));
+const clsText = (v: number | undefined) => (v === undefined ? "—" : v.toFixed(2));
 const errorCount = (p: MetricsPage) => sentryErrors(p)?.count ?? 0;
 
 export const TOOLS = {
@@ -106,27 +116,32 @@ export const TOOLS = {
     keys: { required: ["LIGHTHOUSE_REPORT"], optional: [] },
     capabilities: ["pages", "lighthouse"],
     stats: (live) => [
-      { label: "Avg Score", value: String(Math.round(avgOf(live, (l) => l.score))) },
-      { label: "Avg LCP", value: formatDuration(avgOf(live, (l) => l.lcp)) },
-      { label: "Avg CLS", value: avgOf(live, (l) => l.cls).toFixed(2) },
-      { label: "Avg TBT", value: formatDuration(avgOf(live, (l) => l.tbt)) },
+      { label: "Avg Score", value: scoreText(avgOf(live, (l) => l.score)) },
+      { label: "Avg LCP", value: ms(avgOf(live, (l) => l.lcp)) },
+      { label: "Avg CLS", value: clsText(avgOf(live, (l) => l.cls)) },
+      { label: "Avg TBT", value: ms(avgOf(live, (l) => l.tbt)) },
     ],
     columns: [
-      { needs: "lighthouse", header: "Score", cell: (p) => { const v = lh(p)?.score; return v === undefined ? "—" : String(Math.round(v)); } },
+      { needs: "lighthouse", header: "Score", cell: (p) => scoreText(lh(p)?.score) },
       { needs: "lighthouse", header: "LCP", cell: (p) => ms(lh(p)?.lcp) },
-      { needs: "lighthouse", header: "CLS", cell: (p) => lh(p)?.cls?.toFixed(2) ?? "—" },
+      { needs: "lighthouse", header: "CLS", cell: (p) => clsText(lh(p)?.cls) },
       { needs: "lighthouse", header: "TBT", cell: (p) => ms(lh(p)?.tbt) },
     ],
   },
 } satisfies Record<ToolId, Tool>;
 
 /** One /setup field per required env key: its label, whether to mask it, and the help line under it. */
-export const KEY_FIELDS: Record<string, { label: string; secret: boolean; help: string }> = {
+export const KEY_FIELDS: Record<string, { label: string; secret: boolean; help: string; placeholder?: string }> = {
   NEWRELIC_API_KEY: { label: "New Relic User API key", secret: true, help: "READS your data (starts NRAK-). Create it under API keys > key type \"User\"." },
   NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: { label: "New Relic account ID", secret: false, help: "A plain number, shown next to your keys in New Relic." },
   SENTRY_API_KEY: { label: "Sentry auth token", secret: true, help: "Lets the dashboard read issues (scopes: project:read, event:read)." },
   SENTRY_DSN: { label: "Sentry DSN", secret: false, help: "Project settings, then Client Keys (DSN). The project and host are read from it." },
-  LIGHTHOUSE_REPORT: { label: "Lighthouse report", secret: false, help: "Path or URL of a Lighthouse CI JSON report. Values containing spaces, #, $, quotes or backslashes are not accepted." },
+  LIGHTHOUSE_REPORT: {
+    label: "Lighthouse report",
+    secret: false,
+    help: "A Lighthouse CI JSON report, or a folder of them. A relative path starts from the project folder. URLs must be public http(s); for a report on localhost, use its file path. Spaces, #, $, quotes and backslashes are not accepted.",
+    placeholder: ".lighthouseci/ or https://example.com/lhr.json",
+  },
 };
 
 /** Field labels for each env key, used by the setup form and its error messages. */
