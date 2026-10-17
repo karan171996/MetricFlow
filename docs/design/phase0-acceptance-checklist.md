@@ -88,7 +88,7 @@ _Evidence 2026-10-02 (Toby): `cypress/e2e/performance-states.cy.ts` 8/8 pass cov
 
 ## Evidence (Toby, 2026-10-02). Ticking boxes stays with Andy/Meredith.
 
-Run: `npm run test:cli` (node, 67 tests) and `npx cypress run --headed` (30 tests). All keys in tests are `FAKE-`; env writes go to `METRICFLOW_ENV_FILE` temp files; the real `.env.local` was never touched (mtime unchanged). Full file-by-file list: `docs/plans/phase0-test-evidence.md`.
+Run: `npm run test:cli` (node, 67 tests) and `npx cypress run --headed` (30 tests). All keys in tests are `FAKE-`; env writes go to `METRICFLOW_ENV_FILE` temp files; the real `.env.local` was never touched (mtime unchanged). Full file-by-file list: `docs/design/phase0-test-evidence.md`.
 
 | Box | Evidence |
 |---|---|

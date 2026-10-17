@@ -1,6 +1,6 @@
 # UI spec: show a tool only when its keys are provided (T2)
 
-Designer spec for `docs/plans/tool-tabs-by-key.md`. Design only, no app code changed. Not checked in a browser: nothing is built yet, so the wireframes below are the reference.
+Designer spec for `docs/design/tool-tabs-by-key.md`. Design only, no app code changed. Not checked in a browser: nothing is built yet, so the wireframes below are the reference.
 
 **Ground rules for every screen**
 - No new components. Reuse `Card`, `Badge`, `Button`, `Input`, `Skeleton`, `EmptyState`, `SidebarMenuButton`; the form groups are native `<fieldset>`/`<legend>`.

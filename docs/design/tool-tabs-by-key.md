@@ -81,7 +81,7 @@ Tech lead: tool-to-keys model and the Sentry-only page list approach. Developer:
 
 ## 11. Additions from Product review (2026-10-07, approved by the human)
 
-Checked against the code on `feat/tool-tabs-by-key`. UI detail lives in `docs/plans/tool-tabs-ui-spec.md`; nothing here repeats it.
+Checked against the code on `feat/tool-tabs-by-key`. UI detail lives in `docs/design/tool-tabs-ui-spec.md`; nothing here repeats it.
 
 **A. Gaps in section 2 (more places that need all four keys)**
 - `app/api/connect/route.ts:10` returns `configured: false` unless all four keys are set, so `/connect` is dead for a one-tool user.

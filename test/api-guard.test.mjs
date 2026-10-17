@@ -1,4 +1,4 @@
-// F1 (docs/plans/tool-contract-design.md 12.1): every /api route answers local requests only, unless exposed with --host.
+// F1 (docs/design/tool-contract-design.md 12.1): every /api route answers local requests only, unless exposed with --host.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
