@@ -47,9 +47,9 @@ export async function GET() {
     for (const id of tools) {
       if (failed.includes(id)) continue;
       const tool = SERVER_TOOLS[id];
-      const row = reads[id].legacy[url] ? { metrics: reads[id].byPath[url], legacy: reads[id].legacy[url] } : tool.emptyPage();
+      const row = reads[id].byPath[url] ? { metrics: reads[id].byPath[url], legacy: reads[id].legacy[url] } : tool.emptyPage();
       byTool[id] = row.metrics;
-      legacy[tool.legacyField] = row.legacy;
+      if (tool.legacyField) legacy[tool.legacyField] = row.legacy;
     }
     const metrics = mergeMetrics(byTool, sources, failed);
     return {

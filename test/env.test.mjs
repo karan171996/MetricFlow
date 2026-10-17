@@ -63,7 +63,7 @@ test("isConfigured is true when ONE tool's keys are all set; half a tool is not 
     for (const k of TOOLS[id].keys.required) delete process.env[k];
     assert.equal(isConfigured(), false);
   }
-  Object.assign(process.env, FAKE);
+  Object.assign(process.env, FAKE, { LIGHTHOUSE_REPORT: "./lhr.json" });
   assert.deepEqual(connectedTools(), TOOL_IDS);
   for (const k of SETUP_KEYS) delete process.env[k];
 });

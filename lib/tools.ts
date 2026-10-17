@@ -1,14 +1,14 @@
-import { Activity, Bug, type LucideIcon } from "lucide-react";
+import { Activity, Bug, Gauge, type LucideIcon } from "lucide-react";
 import type { MetricsPage, PageMetrics, Sources } from "@/lib/metricsHistory";
 import { formatDuration } from "@/lib/formatDuration";
 
 /** What a tool can provide. Screens ask "is this capability provided?", never "is this New Relic?". */
-export const CAPABILITIES = ["pages", "traffic", "loadTime", "apdex", "vitals", "ajax", "errorRate", "errors"] as const;
+export const CAPABILITIES = ["pages", "traffic", "loadTime", "apdex", "vitals", "ajax", "errorRate", "errors", "lighthouse"] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
 // Spelled out, not `keyof typeof TOOLS`: a page's `byTool` is keyed by tool id and a tool's cells take a page, so deriving it would be a type cycle.
 // `satisfies Record<ToolId, Tool>` below keeps the two in step: an id without an entry, or an entry without an id, does not compile.
-export type ToolId = "new-relic" | "sentry";
+export type ToolId = "new-relic" | "sentry" | "lighthouse";
 
 /** One sidebar entry + one /tools/[id] page per data source. Add a tool here (and its id above) and both appear. */
 export interface Tool {
@@ -38,6 +38,10 @@ const nr = (p: MetricsPage) => p.newRelic!;
 const ms = (v: number | undefined) => (v === undefined ? "—" : formatDuration(v));
 // Sentry's own errors for a page: from `byTool`, or from the deprecated `sentry` field on a body that only carries that.
 const sentryErrors = (p: MetricsPage) => p.byTool?.sentry?.errors ?? (p.sentry && { count: p.sentry.errorCount, latest: p.sentry.latestErrors });
+// Lighthouse numbers for a page; averaged only over pages that have the value, never counting a missing one as 0.
+const lh = (p: MetricsPage) => p.byTool?.lighthouse?.lighthouse;
+const avgOf = (live: MetricsPage[], pick: (l: NonNullable<ReturnType<typeof lh>>) => number | undefined) =>
+  avg(live.map((p) => { const l = lh(p); return l && pick(l); }).filter((v): v is number => v !== undefined));
 const errorCount = (p: MetricsPage) => sentryErrors(p)?.count ?? 0;
 
 export const TOOLS = {
@@ -94,6 +98,26 @@ export const TOOLS = {
       { needs: "vitals", header: "INP", cell: (p) => ms(p.byTool?.sentry?.vitals?.inp) },
     ],
   },
+  lighthouse: {
+    label: "Lighthouse CI",
+    icon: Gauge,
+    description: "Lab scores per page from a Lighthouse CI report: performance score, LCP, CLS and total blocking time.",
+    connectReason: "Add the path or URL of a Lighthouse CI JSON report to see lab scores for each page. Localhost and private URLs are blocked, so use a file path when running locally.",
+    keys: { required: ["LIGHTHOUSE_REPORT"], optional: [] },
+    capabilities: ["pages", "lighthouse"],
+    stats: (live) => [
+      { label: "Avg Score", value: String(Math.round(avgOf(live, (l) => l.score))) },
+      { label: "Avg LCP", value: formatDuration(avgOf(live, (l) => l.lcp)) },
+      { label: "Avg CLS", value: avgOf(live, (l) => l.cls).toFixed(2) },
+      { label: "Avg TBT", value: formatDuration(avgOf(live, (l) => l.tbt)) },
+    ],
+    columns: [
+      { needs: "lighthouse", header: "Score", cell: (p) => { const v = lh(p)?.score; return v === undefined ? "—" : String(Math.round(v)); } },
+      { needs: "lighthouse", header: "LCP", cell: (p) => ms(lh(p)?.lcp) },
+      { needs: "lighthouse", header: "CLS", cell: (p) => lh(p)?.cls?.toFixed(2) ?? "—" },
+      { needs: "lighthouse", header: "TBT", cell: (p) => ms(lh(p)?.tbt) },
+    ],
+  },
 } satisfies Record<ToolId, Tool>;
 
 /** One /setup field per required env key: its label, whether to mask it, and the help line under it. */
@@ -102,6 +126,7 @@ export const KEY_FIELDS: Record<string, { label: string; secret: boolean; help: 
   NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: { label: "New Relic account ID", secret: false, help: "A plain number, shown next to your keys in New Relic." },
   SENTRY_API_KEY: { label: "Sentry auth token", secret: true, help: "Lets the dashboard read issues (scopes: project:read, event:read)." },
   SENTRY_DSN: { label: "Sentry DSN", secret: false, help: "Project settings, then Client Keys (DSN). The project and host are read from it." },
+  LIGHTHOUSE_REPORT: { label: "Lighthouse report", secret: false, help: "Path or URL of a Lighthouse CI JSON report. Values containing spaces, #, $, quotes or backslashes are not accepted." },
 };
 
 /** Field labels for each env key, used by the setup form and its error messages. */

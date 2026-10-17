@@ -35,7 +35,7 @@ test("empty input: 400, asks for at least one tool, no results map, no external 
   assert.equal(res.status, 400);
   const body = await res.json();
   assert.equal(body.saved, false);
-  assert.equal(body.error, "Fill in both fields for at least one tool.");
+  assert.equal(body.error, "Fill in every field for at least one tool.");
   assert.equal(body.results, undefined);
   assert.equal(calls.length, 0);
   assert.ok(!existsSync(envFile));

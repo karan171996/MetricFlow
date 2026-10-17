@@ -122,7 +122,7 @@ export function SetupForm() {
             <Button type="submit" disabled={busy || !FIELDS.some((f) => values[f.name]?.trim())}>{busy ? "Checking…" : "Check and save"}</Button>
             <span aria-live="polite" className={`text-sm ${message?.ok ? "text-[#3ee0a1]" : "text-[#f87171]"}`}>{message?.text}</span>
             {!FIELDS.some((f) => values[f.name]?.trim()) && !message && !saved && (
-              <span className="text-sm text-gray-400">{connected?.length ? "Type a new key to change what is saved." : "Fill in both fields for at least one tool."}</span>
+              <span className="text-sm text-gray-400">{connected?.length ? "Type a new key to change what is saved." : "Fill in every field for at least one tool."}</span>
             )}
             {saved && <Link href="/connect" className={buttonVariants({ variant: "outline" })}>Next: connect your app</Link>}
           </div>

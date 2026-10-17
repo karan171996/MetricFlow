@@ -40,12 +40,12 @@ describe("fresh install, New Relic keys only", () => {
   });
 });
 
-describe("both tools connected: same as before", () => {
+describe("every tool connected: same as before", () => {
   it("shows the Sentry tab and no 'Add a tool'", () => {
-    stub(["new-relic", "sentry"]);
+    stub(["new-relic", "sentry", "lighthouse"]);
     cy.visit("/performance");
     cy.contains("FAKE Blog").should("be.visible");
     cy.get('a[href="/tools/sentry"]').should("exist");
-    cy.get('a[href="/setup"]').should("not.exist"); // no "Add a tool" when both are connected
+    cy.get('a[href="/setup"]').should("not.exist"); // no "Add a tool" when every tool is connected
   });
 });

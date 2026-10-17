@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     for (const k of keys.filter(k => !typed.includes(k) && env(k))) input[k] = group[k] = env(k);
   }
   const touched = Object.keys(groupValues) as ToolId[];
-  if (!touched.length) return Response.json({ saved: false, error: 'Fill in both fields for at least one tool.' }, { status: 400 });
+  if (!touched.length) return Response.json({ saved: false, error: 'Fill in every field for at least one tool.' }, { status: 400 });
   if (Object.keys(results).length) return Response.json({ saved: false, results }, { status: 400 });
 
   // One read call per touched tool, concurrently. Nothing is written unless every one passes.
