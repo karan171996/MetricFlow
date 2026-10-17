@@ -1,0 +1,65 @@
+[
+  {
+    "requestedUrl": "https://example.com/",
+    "finalDisplayedUrl": "https://example.com/",
+    "fetchTime": "2026-10-01T10:00:00.000Z",
+    "categories": {
+      "performance": {
+        "score": 0.8
+      }
+    },
+    "audits": {
+      "largest-contentful-paint": {
+        "numericValue": 2100
+      },
+      "cumulative-layout-shift": {
+        "numericValue": 0.05
+      },
+      "total-blocking-time": {
+        "numericValue": 150
+      }
+    }
+  },
+  {
+    "requestedUrl": "https://example.com/",
+    "finalDisplayedUrl": "https://example.com/",
+    "fetchTime": "2026-10-01T10:01:00.000Z",
+    "categories": {
+      "performance": {
+        "score": 0.9
+      }
+    },
+    "audits": {
+      "largest-contentful-paint": {
+        "numericValue": 2100
+      },
+      "cumulative-layout-shift": {
+        "numericValue": 0.05
+      },
+      "total-blocking-time": {
+        "numericValue": 150
+      }
+    }
+  },
+  {
+    "requestedUrl": "https://example.com/",
+    "finalDisplayedUrl": "https://example.com/",
+    "fetchTime": "2026-10-01T10:02:00.000Z",
+    "categories": {
+      "performance": {
+        "score": 0.85
+      }
+    },
+    "audits": {
+      "largest-contentful-paint": {
+        "numericValue": 2100
+      },
+      "cumulative-layout-shift": {
+        "numericValue": 0.05
+      },
+      "total-blocking-time": {
+        "numericValue": 150
+      }
+    }
+  }
+]
