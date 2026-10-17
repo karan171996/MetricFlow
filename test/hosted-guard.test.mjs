@@ -35,7 +35,7 @@ const resetSpies = () => { for (const s of [...spies, ...pSpies]) s.mock.resetCa
 const { isHosted, writeEnvLocal, EnvWriteRefused, SETUP_KEYS } = await load("lib/env.ts");
 const { DEFAULT_THRESHOLDS } = await load("lib/thresholds.ts");
 
-const hosted = async (fn) => { process.env.METRICFLOW_MODE = "hosted"; try { return await fn(); } finally { delete process.env.METRICFLOW_MODE; } };
+const modeOn = async (fn) => { process.env.METRICFLOW_MODE = "hosted"; try { return await fn(); } finally { delete process.env.METRICFLOW_MODE; } };
 afterEach(() => { delete process.env.METRICFLOW_MODE; });
 
 test("isHosted is true only for the exact value 'hosted'", () => {
@@ -53,7 +53,7 @@ test("METRICFLOW_MODE=hosted: writeEnvLocal throws EnvWriteRefused before any fs
   const path = tmpEnvFile();
   const before = JSON.stringify(process.env);
   resetSpies();
-  await hosted(() => assert.throws(() => writeEnvLocal({ NEWRELIC_API_KEY: FAKE.NEWRELIC_API_KEY }, path), (e) => e instanceof EnvWriteRefused && !/NEWRELIC|FAKE/.test(e.message)));
+  await modeOn(() => assert.throws(() => writeEnvLocal({ NEWRELIC_API_KEY: FAKE.NEWRELIC_API_KEY }, path), (e) => e instanceof EnvWriteRefused && !/NEWRELIC|FAKE/.test(e.message)));
   assert.equal(fsWrites(), 0);
   assert.equal(existsSync(path), false);
   assert.equal(JSON.stringify(process.env), before);
@@ -108,7 +108,7 @@ test("METRICFLOW_MODE=hosted: every handler answers its fixed response with zero
         const name = `${m} ${r.path}`;
         resetSpies();
         const before = JSON.stringify(process.env);
-        const res = await hosted(() => mod[m](req(`http://localhost:3000${r.path}`, { method: m, body: m === "GET" ? undefined : BODY })));
+        const res = await modeOn(() => mod[m](req(`http://localhost:3000${r.path}`, { method: m, body: m === "GET" ? undefined : BODY })));
         const text = await res.text();
         const want = EXPECTED[name];
         assert.equal(res.status, want.status, name);
@@ -144,7 +144,7 @@ test("isLocalRequest refuses a localhost request when METRICFLOW_MODE=hosted", a
   const { isLocalRequest } = await load("lib/localRequest.ts");
   const r = () => req("http://localhost:3000/api/setup");
   assert.equal(isLocalRequest(r()), true);
-  await hosted(() => assert.equal(isLocalRequest(r()), false));
+  await modeOn(() => assert.equal(isLocalRequest(r()), false));
 });
 
 test("the CLI empties METRICFLOW_MODE for the server, after the inherited shell env", () => {
