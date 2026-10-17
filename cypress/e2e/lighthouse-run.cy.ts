@@ -5,7 +5,7 @@ const status = (s: object) => ({ state: "idle", done: 0, total: 0, lastRunAt: nu
 beforeEach(() => {
   cy.viewport(1440, 900);
   cy.intercept("GET", "/api/setup", { configured: true, tools: ["lighthouse"], keys: {} });
-  cy.intercept("GET", "/api/metrics", { configured: true, tools: ["lighthouse"], sources: { pages: "lighthouse", lighthouse: "lighthouse" }, pages: [], history: [] });
+  cy.intercept("GET", "/api/metrics", { configured: true, tools: ["lighthouse"], sources: { pages: "lighthouse", lighthouse: "lighthouse" }, pages: [], history: [] }).as("metrics");
 });
 
 describe("Lighthouse runs on the project address", () => {
@@ -18,9 +18,13 @@ describe("Lighthouse runs on the project address", () => {
     cy.visit("/tools/lighthouse");
     cy.contains('[role="status"]', "Running 2 of 3").should("be.visible");
     cy.contains("button", "Running…").should("be.disabled");
+    let before = 0;
+    cy.get("@metrics.all").then((calls) => { before = calls.length; });
     // it polls while running, and the line moves on when the run finishes
     cy.contains('[role="status"]', "Last run", { timeout: 10000 }).should("be.visible");
     cy.contains("button", "Run now").should("be.enabled");
+    // the finished run refetches the table at once, well before its 30s poll
+    cy.get("@metrics.all", { timeout: 5000 }).should((calls) => expect(calls.length).to.be.greaterThan(before));
   });
 
   it("Run now posts JSON and shows the run starting", () => {
@@ -30,6 +34,17 @@ describe("Lighthouse runs on the project address", () => {
     cy.contains("button", "Run now").click();
     cy.wait("@run").its("request.headers.content-type").should("match", /application\/json/);
     cy.contains('[role="status"]', "Finding pages").should("be.visible");
+  });
+
+  it("before the first run it says how long scores take; Run now with no saved address says to set one", () => {
+    cy.intercept("GET", "/api/lighthouse", status({}));
+    cy.intercept("POST", "/api/lighthouse", { statusCode: 409, body: { error: "x" } }).as("run");
+    cy.visit("/tools/lighthouse");
+    cy.contains('[role="status"]', "Not run yet. Scores take about 10-30 seconds per page").should("be.visible");
+    cy.contains("button", "Run now").click();
+    cy.wait("@run");
+    cy.contains("Set a project address on Setup first.").should("be.visible");
+    cy.contains("Could not reach the dashboard server.").should("not.exist");
   });
 
   it("shows the fixed error text when a run failed", () => {

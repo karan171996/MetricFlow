@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { load } from "./helpers.mjs";
 
 const run = await load("lib/lighthouseRun.ts");
-const { checkTarget, discoverPages, startRun, maybeStartRun, getStatus, getResults, resetRun, deps, NOT_INSTALLED, NO_CHROME, TARGET_INVALID, TARGET_UNREACHABLE, STALE_MS } = run;
+const { checkTarget, discoverPages, startRun, maybeStartRun, getStatus, getResults, resetRun, deps, NOT_INSTALLED, NO_CHROME, OLD_NODE, NO_PAGES, RUN_FAILED, TARGET_INVALID, TARGET_UNREACHABLE, STALE_MS } = run;
 
 const T = "http://localhost:3001";
 const lhr = (url, score = 0.9) => ({
@@ -29,6 +29,7 @@ beforeEach(() => {
   deps.fetcher = async () => { throw new Error("unstubbed fetcher"); };
   deps.runner = async () => { throw new Error("unstubbed runner"); };
   deps.load = async () => { throw new Error("unstubbed load"); };
+  deps.nodeVersion = "22.19.0";
   process.env.LIGHTHOUSE_TARGET = T;
 });
 
@@ -168,10 +169,15 @@ test("the lazy schedule: runs when never run, target changed or over 60 min old;
 test("package missing or Chrome missing: state error with the exact fixed text (lazy import / launcher throwing)", async () => {
   deps.fetcher = site({ [`${T}/sitemap.xml`]: { body: `<loc>${T}/a</loc>` } });
   deps.runner = realDeps.runner;
-  deps.load = async () => { throw new Error("Cannot find package 'lighthouse' imported from /secret/path"); };
+  deps.load = async () => { throw Object.assign(new Error("Cannot find package 'lighthouse' imported from /secret/path"), { code: "ERR_MODULE_NOT_FOUND" }); };
   await startRun();
   assert.deepEqual({ state: getStatus().state, error: getStatus().error }, { state: "error", error: NOT_INSTALLED });
   assert.equal(NOT_INSTALLED, "Lighthouse is not installed. Reinstall MetricFlow to add it.");
+
+  // an import that fails for another reason (e.g. syntax on an old Node) is not "not installed"
+  deps.load = async () => { throw new SyntaxError("Unexpected token in /secret/path"); };
+  await startRun();
+  assert.deepEqual({ state: getStatus().state, error: getStatus().error }, { state: "error", error: RUN_FAILED });
 
   let lhCalls = 0;
   deps.load = async () => ({ lighthouse: async () => { lhCalls++; }, launch: async () => { throw new Error("ERR_LAUNCHER_NOT_INSTALLED at /secret/path"); } });
@@ -201,4 +207,88 @@ test("the real runner kills Chrome in finally, on success, failure and timeout, 
   assert.equal(killed, 3);
   assert.deepEqual(Object.keys(getResults(T)), ["/"]);
   for (const f of flagsSeen) assert.deepEqual(Object.keys(f).sort(), ["logLevel", "onlyCategories", "output", "port"]);
+});
+
+test("Node below 22.19: fixed text, the package is never imported", async () => {
+  deps.fetcher = site({});
+  deps.runner = realDeps.runner;
+  let loads = 0;
+  deps.load = async () => { loads++; throw Object.assign(new Error("x"), { code: "ERR_MODULE_NOT_FOUND" }); };
+  for (const v of ["20.12.0", "22.18.9", "18.0.0"]) {
+    deps.nodeVersion = v;
+    await startRun();
+    assert.deepEqual({ state: getStatus().state, error: getStatus().error }, { state: "error", error: OLD_NODE }, v);
+  }
+  assert.equal(OLD_NODE, "Running Lighthouse needs Node 22.19 or newer.");
+  assert.equal(loads, 0);
+  for (const v of ["22.19.0", "23.0.0", "24.21.0"]) {
+    deps.nodeVersion = v;
+    await startRun();
+    assert.equal(getStatus().error, NOT_INSTALLED, `${v} is new enough, so the import is tried`);
+  }
+  assert.equal(loads, 3);
+});
+
+test("a run that measures nothing is an error, keeps the previous results and lastRunAt, and is not retried on every poll", async () => {
+  deps.fetcher = site({ [`${T}/sitemap.xml`]: { body: `<loc>${T}/a</loc>` } });
+  await startRun({ runner: async (url) => lhr(url) });
+  const good = getStatus();
+  assert.equal(good.state, "idle");
+  const before = getResults(T);
+  assert.deepEqual(Object.keys(before), ["/", "/a"]);
+
+  await sleep(2);
+  let calls = 0;
+  deps.runner = async () => { calls++; throw new Error("page broke"); };
+  await startRun();
+  const s = getStatus();
+  assert.deepEqual({ state: s.state, error: s.error }, { state: "error", error: NO_PAGES });
+  assert.equal(NO_PAGES, "No page could be measured. Check that the site is running, then Run now.");
+  assert.equal(s.lastRunAt, good.lastRunAt, "a failed run is not recorded as a success");
+  assert.deepEqual(getResults(T), before, "the previous results stay");
+  maybeStartRun();
+  assert.equal(getStatus().state, "error", "not retried at once");
+  assert.equal(calls, 2);
+
+  // a new target that measures nothing shows nothing, and no last run
+  process.env.LIGHTHOUSE_TARGET = "http://localhost:3002";
+  await startRun({ fetcher: site({}) });
+  assert.deepEqual(getResults("http://localhost:3002"), {});
+  assert.equal(getStatus().lastRunAt, null);
+  assert.equal(getStatus().error, NO_PAGES);
+  assert.match(RUN_FAILED, /Run now\.$/);
+});
+
+test("an abort while Chrome is still launching kills it and the next page goes on alone", async () => {
+  deps.fetcher = site({ [`${T}/sitemap.xml`]: { body: `<loc>${T}/a</loc>` } });
+  deps.runner = realDeps.runner;
+  let killed = 0, lhCalls = 0, n = 0;
+  deps.load = async () => ({
+    launch: async () => { const slow = n++ === 0; if (slow) await sleep(60); return { port: 9222, kill: async () => { killed++; } }; },
+    lighthouse: async (url) => { lhCalls++; return { lhr: lhr(url) }; },
+  });
+  await startRun({ pageMs: 20 });
+  await sleep(60);
+  assert.equal(lhCalls, 1, "Lighthouse never ran on the Chrome that came up after the cap");
+  assert.equal(killed, 2, "both Chromes were killed");
+  assert.deepEqual(Object.keys(getResults(T)), ["/a"]);
+});
+
+test("discovery stays fast on hostile bodies (~2MB) and still finds the real paths", async () => {
+  const unclosedLoc = `<urlset><loc>${" ".repeat(2_000_000)}<loc>${T}/a</loc>` + `<loc>\n\t `.repeat(50_000) + `<loc>${T}/b</loc>`;
+  let t = performance.now();
+  let pages = await discoverPages(T, site({ [`${T}/sitemap.xml`]: { body: unclosedLoc } }));
+  assert.ok(performance.now() - t < 1000, `sitemap took ${performance.now() - t}ms`);
+  assert.deepEqual(pages.map((p) => p.path), ["/", "/a", "/b"]);
+
+  const manyA = "<a ".repeat(700_000) + '<a class="x" href="/c">';
+  t = performance.now();
+  pages = await discoverPages(T, site({ [`${T}/`]: { body: manyA } }));
+  assert.ok(performance.now() - t < 1000, `links took ${performance.now() - t}ms`);
+  assert.deepEqual(pages.map((p) => p.path), ["/", "/c"]);
+});
+
+test("a sitemap that lists only other-origin pages falls back to the root links", async () => {
+  const f = site({ [`${T}/sitemap.xml`]: { body: "<loc>https://prod.example/a</loc><loc>https://prod.example/b</loc>" }, [`${T}/`]: { body: '<a href="/docs">' } });
+  assert.deepEqual((await discoverPages(T, f)).map((p) => p.path), ["/", "/docs"]);
 });
