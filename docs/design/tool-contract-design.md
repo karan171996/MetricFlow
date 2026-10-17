@@ -1,6 +1,6 @@
 # Design: generic analytics-tool contract (C1, C2, C3)
 
-Tech-lead design for `docs/plans/tool-tabs-by-key.md` section 12. Design only; no product code changed.
+Tech-lead design for `docs/design/tool-tabs-by-key.md` section 12. Design only; no product code changed.
 Written against v0.5.0 on `docs/tool-contract-design`. Items marked **UNVERIFIED** were not proven against running code or real data.
 Revision 2: incorporates the eight required changes from the security review; recommended follow-ups are listed separately in section 12.1 and are not in scope unless stated.
 
@@ -635,7 +635,7 @@ Page loads are full loads only. A route reached by an in-app link is a `navigati
 | 1a | `lib/aiAnalysis.ts`, `lib/dashboardTransforms.ts` | Prompt by capability; supplier-switch guard | senior-dev |
 | 1b | `lib/tools.ts` | Sentry capabilities and columns; cells read `byTool`; sampled header | dev |
 | 1b | `lib/useMetrics.ts`, `components/EmptyState` callers, `Header.tsx`, hub, home, detail | 12.5 state replaces `NEEDS_NEW_RELIC`; sampled labels; "—" for absent vitals | dev |
-| 2 | `docs/plans/tool-tabs-ui-spec.md` | Retire the strings listed in 12.10.1 | dev |
+| 2 | `docs/design/tool-tabs-ui-spec.md` | Retire the strings listed in 12.10.1 | dev |
 | 2 | `AGENTS.md` | Metrics-shape bullet. **Blocked on the user's approval.** | senior-dev |
 | 3 | `test/tools.test.mjs`, `test/tool-tabs.test.mjs` | Fixtures move to the neutral shape | senior-dev |
 

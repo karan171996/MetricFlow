@@ -15,16 +15,23 @@ import { pathToFileURL } from "node:url";
 // that the growth is expected (no new junk in the file list), and set the new size plus headroom here in its own commit.
 export const MAX_PACKED_BYTES = 2_100_000;
 
-// Matched at any depth under package/, ignoring case.
+// The closed-source hosted service and private plans: never in the package, and never in this repo either
+// (scripts/check-hosted-paths.mjs runs the same list against `git ls-files`). Matched at any depth, ignoring case.
+// (\/|$): the folder's contents and a file or symlink with the folder's exact name, but not lib/hostedness.ts.
+export const HOSTED_PATHS = [
+  /(^|\/)lib\/hosted(\/|$)/i,
+  /(^|\/)components\/Hosted(\/|$)/i,
+  /(^|\/)lighthouse-runner(\/|$)/i,
+  /(^|\/)LICENSE-HOSTED[^/]*(\/|$)/i,
+  /(^|\/)docs\/plans(\/|$)/i,
+];
+
+// Matched at any depth under package/, ignoring case. The last three are fine in the repo, not in the package.
 const DENIED_PATHS = [
-  /(^|\/)lib\/hosted\//i,
-  /(^|\/)components\/Hosted\//i,
-  /(^|\/)lighthouse-runner\//i,
-  /(^|\/)LICENSE-HOSTED$/i,
+  ...HOSTED_PATHS,
   /(^|\/)\.env[^/]*(\/|$)/i,
   /\.map$/i,
   /(^|\/)factory\//i,
-  /(^|\/)docs\/plans\//i,
 ];
 
 // \bsk- skips look-alikes inside words (Next's "after-task-async-storage"). sk-ant- and sk-proj- keys

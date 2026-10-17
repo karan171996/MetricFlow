@@ -2,6 +2,8 @@
 
 Thanks for helping. Nobody pushes straight to `main`: every change comes in as a pull request (PR), and the maintainer reviews and merges it.
 
+The hosted MetricFlow service is closed source and not in this repo; PRs here cover the free CLI, under the MIT license. For an idea about the hosted service, [open an issue](https://github.com/karan171996/MetricFlow/issues) to discuss it.
+
 ## Raise a PR in 6 steps
 
 1. **Fork** the repo on GitHub and clone your fork.

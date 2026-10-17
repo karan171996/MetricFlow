@@ -133,7 +133,7 @@ Effect on plan: Phase 1 + 2 with static suggestions is about 2-3 dev days. Recom
 - INP = `percentile(interactionToNextPaint,75)` on `PageViewTiming`; 24h trend = `TIMESERIES 1 hour SINCE 24 hours ago`; throughput = `count(*)` per page. The current custom `PageMetrics` event has no INP or history unless the beacon sends them. FID is retired, so prefer INP.
 - 5xx is not visible from the browser agent or Sentry. It needs New Relic APM or `AjaxRequest` status >= 500. For v1, `errorRate` + Sentry is enough (confirms answer 2).
 - **Likely bug:** Sentry's `url` tag holds the full URL, so the current `url:/path` filter probably matches nothing; a wildcard (`url:*/path*`) is needed. Better: one org-level `events` call for all pages, 24h, cached 60s.
-- Add CrUX and PageSpeed Insights (free, URL-based, give fix suggestions) as extra sources; GA4/Search Console later. Details in `docs/plans/data-sources.md`.
+- Add CrUX and PageSpeed Insights (free, URL-based, give fix suggestions) as extra sources; GA4/Search Console later. Details in `docs/design/data-sources.md`.
 
 **Phyllis (build):**
 - History: JSON file at `~/.metricflow/history.json` (env-overridable). Skip SQLite (experimental/native build breaks `npx`). Max 1 snapshot per 5 min, keep ~2,000 (about 7 days), write temp file then rename. Same `getHistory()`/`recordSnapshot()` API. Effort S-M (~1 day).
@@ -149,7 +149,7 @@ Effect on plan: Phase 1 + 2 with static suggestions is about 2-3 dev days. Recom
 
 ## 15. Human direction (via Ryan, 2026-10-02): no demo data, first-run setup
 
-Source: `docs/plans/setup-and-event-emitter.md` (Ryan). Direction: no demo/mock data; first run asks for New Relic and Sentry keys; app runs locally; a page explains how to attach the event emitter so metrics appear.
+Source: `docs/design/setup-and-event-emitter.md` (Ryan). Direction: no demo/mock data; first run asks for New Relic and Sentry keys; app runs locally; a page explains how to attach the event emitter so metrics appear.
 
 **Effect on this plan**
 - Strengthens Phase 1: delete `lib/mockData.ts` use, every `/performance` view must have a real empty state ("No data yet" + link to `/connect`). Already required by US4.

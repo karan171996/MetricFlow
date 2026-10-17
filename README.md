@@ -30,7 +30,7 @@ npx @karan171996/metricflow
 ```
 
 The dashboard opens on `http://localhost:3000`. Paste your keys on the Setup page and you are done.
-There is no MetricFlow server and no account to create: it runs on your machine, with your keys.
+The free package has no MetricFlow server and no account to create: it runs on your machine, with your keys.
 
 ## Why MetricFlow
 
@@ -78,6 +78,11 @@ Options, privacy defaults and Content Security Policy hosts are in [Sending data
 | [CLI reference](https://github.com/karan171996/MetricFlow/blob/main/docs/cli.md) | Every option of the `performance-dashboard` command |
 | [Configuration](https://github.com/karan171996/MetricFlow/blob/main/docs/configuration.md) | Every environment variable MetricFlow reads |
 | [Developing MetricFlow](https://github.com/karan171996/MetricFlow/blob/main/docs/development.md) | Run from source, run the tests, project structure |
+
+## Free vs hosted
+
+- **Free (this package, MIT):** runs on your machine with no account. Lighthouse, New Relic and Sentry for the site you run on localhost, with the last 24 hours of data.
+- **Hosted (coming):** adds your staging and production sites, history beyond 24 hours, alerts, and Lighthouse runs hosted for you. The hosted service is closed source and not part of this repository.
 
 ## Status
 
