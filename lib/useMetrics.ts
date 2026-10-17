@@ -11,6 +11,8 @@ export type MetricsState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | ({ status: "ready" } & Pick<MetricsResponse, "configured" | "tools" | "failed" | "sources" | "pages" | "project"> & { timestamp?: string; /** The last refresh failed; the numbers and `timestamp` are from the last good one. */ stale?: boolean });
+/** Dispatched on window to refetch now, e.g. when a Lighthouse run finishes, instead of waiting for the next 30s poll. */
+export const METRICS_REFRESH_EVENT = "metricflow:metrics-refresh";
 // Same cadence as the home screen. The server memoises each tool for 25s, so three components polling do not triple the vendor calls.
 const REFRESH_INTERVAL_MS = 30000;
 
@@ -41,9 +43,11 @@ export function useMetrics() {
         });
     load();
     const interval = setInterval(load, REFRESH_INTERVAL_MS);
+    window.addEventListener(METRICS_REFRESH_EVENT, load);
     return () => {
       cancelled = true;
       clearInterval(interval);
+      window.removeEventListener(METRICS_REFRESH_EVENT, load);
     };
   }, [attempt]);
 

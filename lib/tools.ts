@@ -1,14 +1,14 @@
-import { Activity, Bug, type LucideIcon } from "lucide-react";
+import { Activity, Bug, Gauge, type LucideIcon } from "lucide-react";
 import type { MetricsPage, PageMetrics, Sources } from "@/lib/metricsHistory";
 import { formatDuration } from "@/lib/formatDuration";
 
 /** What a tool can provide. Screens ask "is this capability provided?", never "is this New Relic?". */
-export const CAPABILITIES = ["pages", "traffic", "loadTime", "apdex", "vitals", "ajax", "errorRate", "errors"] as const;
+export const CAPABILITIES = ["pages", "traffic", "loadTime", "apdex", "vitals", "ajax", "errorRate", "errors", "lighthouse"] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
 // Spelled out, not `keyof typeof TOOLS`: a page's `byTool` is keyed by tool id and a tool's cells take a page, so deriving it would be a type cycle.
 // `satisfies Record<ToolId, Tool>` below keeps the two in step: an id without an entry, or an entry without an id, does not compile.
-export type ToolId = "new-relic" | "sentry";
+export type ToolId = "new-relic" | "sentry" | "lighthouse";
 
 /** One sidebar entry + one /tools/[id] page per data source. Add a tool here (and its id above) and both appear. */
 export interface Tool {
@@ -20,10 +20,11 @@ export interface Tool {
   /** Optional line under the tool's group on /setup. */
   setupNote?: string;
   /**
-   * Env keys that connect this tool: it is connected when every `required` key is set (see isToolConnected).
+   * Env keys that connect this tool: it is connected when every `required` key is set and, if `anyOf` is given, at least one of those (see isToolConnected).
+   * `anyOf` keys are each their own choice on /setup: the half-filled-group rule does not apply to them.
    * `derived`: names the server works out and saves itself (New Relic's region). Nothing else is ever written for a tool.
    */
-  keys: { required: readonly string[]; optional: readonly string[]; derived?: readonly string[] };
+  keys: { required: readonly string[]; optional: readonly string[]; anyOf?: readonly string[]; derived?: readonly string[] };
   capabilities: readonly Capability[];
   /** Headline cards, computed from pages that have reported (see hasData). */
   stats: (live: MetricsPage[]) => { label: string; value: string }[];
@@ -38,6 +39,20 @@ const nr = (p: MetricsPage) => p.newRelic!;
 const ms = (v: number | undefined) => (v === undefined ? "—" : formatDuration(v));
 // Sentry's own errors for a page: from `byTool`, or from the deprecated `sentry` field on a body that only carries that.
 const sentryErrors = (p: MetricsPage) => p.byTool?.sentry?.errors ?? (p.sentry && { count: p.sentry.errorCount, latest: p.sentry.latestErrors });
+// Lighthouse numbers for a page; averaged only over pages that have the value, never counting a missing one as 0.
+const lh = (p: MetricsPage) => p.byTool?.lighthouse?.lighthouse;
+// undefined when no page has the value, so the card shows "—" (a real score of 0 still shows "0").
+const avgOf = (live: MetricsPage[], pick: (l: NonNullable<ReturnType<typeof lh>>) => number | undefined) => {
+  const xs: number[] = [];
+  for (const p of live) {
+    const l = lh(p);
+    const v = l === undefined ? undefined : pick(l);
+    if (v !== undefined) xs.push(v);
+  }
+  return xs.length ? avg(xs) : undefined;
+};
+const scoreText = (v: number | undefined) => (v === undefined ? "—" : String(Math.round(v)));
+const clsText = (v: number | undefined) => (v === undefined ? "—" : v.toFixed(2));
 const errorCount = (p: MetricsPage) => sentryErrors(p)?.count ?? 0;
 
 export const TOOLS = {
@@ -94,14 +109,50 @@ export const TOOLS = {
       { needs: "vitals", header: "INP", cell: (p) => ms(p.byTool?.sentry?.vitals?.inp) },
     ],
   },
+  lighthouse: {
+    label: "Lighthouse CI",
+    icon: Gauge,
+    description: "Lab scores per page, from Lighthouse runs on your project or a Lighthouse CI report: performance score, LCP, CLS and total blocking time.",
+    connectReason: "Add your project's address and MetricFlow runs Lighthouse on its pages, or add the path or URL of a Lighthouse CI JSON report.",
+    setupNote: "Fill in one of the two. If both are set, the project address is used and the report is ignored.",
+    keys: { required: [], optional: [], anyOf: ["LIGHTHOUSE_REPORT", "LIGHTHOUSE_TARGET"] },
+    capabilities: ["pages", "lighthouse"],
+    stats: (live) => [
+      { label: "Avg Score", value: scoreText(avgOf(live, (l) => l.score)) },
+      { label: "Avg LCP", value: ms(avgOf(live, (l) => l.lcp)) },
+      { label: "Avg CLS", value: clsText(avgOf(live, (l) => l.cls)) },
+      { label: "Avg TBT", value: ms(avgOf(live, (l) => l.tbt)) },
+    ],
+    columns: [
+      { needs: "lighthouse", header: "Score", cell: (p) => scoreText(lh(p)?.score) },
+      { needs: "lighthouse", header: "LCP", cell: (p) => ms(lh(p)?.lcp) },
+      { needs: "lighthouse", header: "CLS", cell: (p) => clsText(lh(p)?.cls) },
+      { needs: "lighthouse", header: "TBT", cell: (p) => ms(lh(p)?.tbt) },
+    ],
+  },
 } satisfies Record<ToolId, Tool>;
 
+/** How long a Lighthouse run on the project address takes, shown wherever a user waits for one. */
+export const LIGHTHOUSE_WAIT = "Scores take about 10-30 seconds per page, up to a few minutes for 20 pages.";
+
 /** One /setup field per required env key: its label, whether to mask it, and the help line under it. */
-export const KEY_FIELDS: Record<string, { label: string; secret: boolean; help: string }> = {
+export const KEY_FIELDS: Record<string, { label: string; secret: boolean; help: string; placeholder?: string }> = {
   NEWRELIC_API_KEY: { label: "New Relic User API key", secret: true, help: "READS your data (starts NRAK-). Create it under API keys > key type \"User\"." },
   NEXT_PUBLIC_NEWRELIC_ACCOUNT_ID: { label: "New Relic account ID", secret: false, help: "A plain number, shown next to your keys in New Relic." },
   SENTRY_API_KEY: { label: "Sentry auth token", secret: true, help: "Lets the dashboard read issues (scopes: project:read, event:read)." },
   SENTRY_DSN: { label: "Sentry DSN", secret: false, help: "Project settings, then Client Keys (DSN). The project and host are read from it." },
+  LIGHTHOUSE_REPORT: {
+    label: "Lighthouse report",
+    secret: false,
+    help: "A Lighthouse CI JSON report, or a folder of them. A relative path starts from the project folder. URLs must be public http(s); for a report on localhost, use its file path. Spaces, #, $, quotes and backslashes are not accepted.",
+    placeholder: ".lighthouseci/ or https://example.com/lhr.json",
+  },
+  LIGHTHOUSE_TARGET: {
+    label: "Project address",
+    secret: false,
+    help: "Your dev server or site, such as http://localhost:3001. MetricFlow finds up to 20 pages (sitemap.xml, or the links on the home page) and runs Lighthouse on each in headless Chrome, again every hour while the dashboard is open. About 10-30 seconds per page. Needs Google Chrome and Node 22.19 or newer on this machine.",
+    placeholder: "http://localhost:3001",
+  },
 };
 
 /** Field labels for each env key, used by the setup form and its error messages. */

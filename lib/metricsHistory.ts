@@ -20,6 +20,8 @@ export interface PageMetrics {
   ajax?: { latency: number; failRate: number };
   /** 0-100. */
   errorRate?: number;
+  /** score 0-100, lcp/tbt ms, cls unitless. A value not measured is absent, never 0. */
+  lighthouse?: { score?: number; lcp?: number; cls?: number; tbt?: number };
   /** A counted capability: `count: 0` is a real zero when the supplier answered. */
   errors?: { count: number; latest: { title: string; count: number; lastSeen: string }[] };
 }

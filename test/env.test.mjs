@@ -53,6 +53,18 @@ test("isConfigured is true when ONE tool's keys are all set; half a tool is not 
   assert.equal(isConfigured(), false);
   assert.deepEqual(connectedTools(), []);
   for (const id of TOOL_IDS) {
+    if (!TOOLS[id].keys.required.length) {
+      // An `anyOf` tool (Lighthouse): each key alone connects it, neither does not.
+      assert.ok(TOOLS[id].keys.anyOf.length > 1);
+      for (const k of TOOLS[id].keys.anyOf) {
+        process.env[k] = "FAKE-x";
+        assert.equal(isToolConnected(id), true, `${id}: ${k} alone`);
+        assert.deepEqual(connectedTools(), [id]);
+        delete process.env[k];
+        assert.equal(isToolConnected(id), false, `${id}: none set`);
+      }
+      continue;
+    }
     const [first, ...rest] = TOOLS[id].keys.required;
     process.env[first] = FAKE[first] ?? "FAKE-x";
     assert.equal(isToolConnected(id), rest.length === 0, `${id}: half set`);
@@ -63,7 +75,7 @@ test("isConfigured is true when ONE tool's keys are all set; half a tool is not 
     for (const k of TOOLS[id].keys.required) delete process.env[k];
     assert.equal(isConfigured(), false);
   }
-  Object.assign(process.env, FAKE);
+  Object.assign(process.env, FAKE, { LIGHTHOUSE_REPORT: "./lhr.json" });
   assert.deepEqual(connectedTools(), TOOL_IDS);
   for (const k of SETUP_KEYS) delete process.env[k];
 });

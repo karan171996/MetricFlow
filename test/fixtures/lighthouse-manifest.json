@@ -1,0 +1,13 @@
+[
+  {
+    "url": "https://example.com/",
+    "isRepresentativeRun": true,
+    "jsonPath": "lhr-1.json",
+    "summary": {
+      "performance": 0.92,
+      "accessibility": 1,
+      "best-practices": 1,
+      "seo": 1
+    }
+  }
+]

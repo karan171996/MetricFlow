@@ -52,7 +52,7 @@ export function deriveStatus(m: PageMetrics, t: Thresholds): PageStatus | undefi
 /** A page that has never reported has no beacon hit: show "No data yet", never 0ms/Healthy. */
 export function hasData(p: Pick<MetricsPage, "metrics">): boolean {
   const m = p.metrics;
-  return (m.traffic?.count ?? 0) > 0 || (m.loadTime ?? 0) > 0 || (m.errors?.count ?? 0) > 0;
+  return (m.traffic?.count ?? 0) > 0 || (m.loadTime ?? 0) > 0 || (m.errors?.count ?? 0) > 0 || m.lighthouse?.score !== undefined;
 }
 
 /** New Relic's numbers for a listed page it has no row for are zeros, not measurements (the route's emptyPage). Only a page with a view or a load time is judged. */

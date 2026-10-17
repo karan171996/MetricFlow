@@ -12,7 +12,7 @@ const page = (name, loadTime, errorCount, latestErrors = []) => ({
 });
 
 test("tools: ids, per-tool stats and cells", () => {
-  assert.deepEqual(TOOL_IDS, ["new-relic", "sentry"]);
+  assert.deepEqual(TOOL_IDS, ["new-relic", "sentry", "lighthouse"]);
   assert.equal(isToolId("sentry"), true);
   assert.equal(isToolId("toString"), false);
 

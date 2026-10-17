@@ -1,0 +1,44 @@
+[
+  {
+    "requestedUrl": "https://example.com/",
+    "finalDisplayedUrl": "https://example.com/",
+    "fetchTime": "2026-10-01T10:00:00.000Z",
+    "categories": {
+      "performance": {
+        "score": 0.92
+      }
+    },
+    "audits": {
+      "largest-contentful-paint": {
+        "numericValue": 2100
+      },
+      "cumulative-layout-shift": {
+        "numericValue": 0.05
+      },
+      "total-blocking-time": {
+        "numericValue": 150
+      }
+    }
+  },
+  {
+    "requestedUrl": "https://example.com/pricing",
+    "finalDisplayedUrl": "https://example.com/pricing",
+    "fetchTime": "2026-10-01T10:00:00.000Z",
+    "categories": {
+      "performance": {
+        "score": 0.71
+      }
+    },
+    "audits": {
+      "largest-contentful-paint": {
+        "numericValue": 3400
+      },
+      "cumulative-layout-shift": {
+        "numericValue": 0.12
+      },
+      "total-blocking-time": {
+        "numericValue": 420
+      }
+    }
+  }
+]

@@ -46,7 +46,7 @@ export abstract class Analytics<TRaw extends Record<string, unknown>, TPage> {
   /** Label under which a fresh read is timed in the "MetricFlow API response times" card. */
   protected abstract readonly timingLabel: string;
   /** @deprecated Name of the vendor-shaped page field this tool fills. Removed in C3. */
-  abstract readonly legacyField: 'newRelic' | 'sentry';
+  readonly legacyField?: 'newRelic' | 'sentry';
 
   // ponytail: single slot per tool; a map would keep old keys alive. Holds a hash of the keys, never the keys.
   private slot: { key: string; at: number; promise: Promise<ToolRead> } | null = null;
@@ -107,10 +107,15 @@ export abstract class Analytics<TRaw extends Record<string, unknown>, TPage> {
   }
 
   /** Fetch raw data from the API. Throws on failure. */
-  protected abstract fetchRows(): Promise<TRaw[]>;
+  protected async fetchRows(): Promise<TRaw[]> {
+    return [];
+  }
 
   /** Subclass defines how to merge query-string variants of one path into a single metric. */
-  protected abstract mergeVariants(rowsForOnePath: TRaw[]): TPage | null;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected mergeVariants(rowsForOnePath: TRaw[]): TPage | null {
+    return null;
+  }
 
   /** Group rows by their normalized page path. */
   protected groupByPath(rows: TRaw[]): Record<string, TRaw[]> {
