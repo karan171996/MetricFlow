@@ -59,3 +59,6 @@ next-env.d.ts
 
 # agent worktrees (full checkouts, never part of this repo)
 /.claude/worktrees/
+
+# private plans (scripts/check-hosted-paths.mjs fails CI if anything here is tracked)
+/docs/plans/

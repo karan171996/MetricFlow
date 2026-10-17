@@ -33,7 +33,7 @@ for (const path of [
   "package/.env.local",
   "package/.next/static/a.js.map",
   "package/factory/jobs/x/spec.md",
-  "package/docs/plans/commercialisation.md",
+  "package/docs/plans/notes.md",
 ]) {
   test(`denylisted path is reported: ${path}`, () => {
     const v = check({ ...clean, [path]: "ok" });

@@ -22,6 +22,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Check no hosted-only path is tracked (the hosted service is closed source, not in this MIT repo)
+        run: node scripts/check-hosted-paths.mjs
       - name: Build (generates Next's route types and the app the CLI tests start)
         run: npx next build --webpack
       - name: "Build the browser entry (sealed tree: fails on an import that leaves browser/)"
