@@ -62,6 +62,15 @@ test("the canary version is written only in the build job, and the tarball versi
   assert.match(publish, /tar -xOzf release\/\*\.tgz package\/package\.json/);
 });
 
+test("the build job checks the packed tarball after the pack and before the upload", () => {
+  const pack = build.indexOf("npm pack --ignore-scripts --pack-destination release");
+  const check = build.indexOf("run: node scripts/check-tarball.mjs release/*.tgz");
+  assert.ok(pack > 0, "build job packs");
+  assert.ok(check > pack, "the check runs after the pack");
+  assert.ok(check < build.indexOf("actions/upload-artifact@"), "and before the upload");
+  assert.doesNotMatch(publish, /check-tarball/);
+});
+
 test("the job split holds: only publish gets id-token, only release gets contents: write", () => {
   assert.doesNotMatch(build, /id-token/);
   assert.doesNotMatch(build, /contents: write/);

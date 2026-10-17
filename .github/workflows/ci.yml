@@ -26,6 +26,8 @@ jobs:
         run: npx next build --webpack
       - name: "Build the browser entry (sealed tree: fails on an import that leaves browser/)"
         run: pnpm run build:browser
+      - name: Check the package contents (denylisted paths, secrets, size ceiling)
+        run: node scripts/check-tarball.mjs
       - name: Type check
         run: pnpm exec tsc --noEmit
       - name: Lint

@@ -115,6 +115,9 @@ jobs:
             echo "The tarball says $packed, expected $VERSION." >&2
             exit 1
           fi
+      # Before the upload, so the publish job can never receive a tarball with hosted code, secrets or junk.
+      - name: Check the tarball (denylisted paths, secrets, size ceiling)
+        run: node scripts/check-tarball.mjs release/*.tgz
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: package
