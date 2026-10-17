@@ -8,7 +8,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { useMetrics, hasData } from "@/lib/useMetrics";
 import { TOOLS, toolColumns, type Tool, type ToolId } from "@/lib/tools";
 
-export function ToolInsights({ tool }: { tool: ToolId }) {
+/** `empty`: what to show instead of the generic "No data yet" card when no page has data. */
+export function ToolInsights({ tool, empty }: { tool: ToolId; empty?: { title: string; reason: string } }) {
   const { state, retry } = useMetrics();
   const router = useRouter();
   const { label, stats }: Tool = TOOLS[tool];
@@ -24,7 +25,7 @@ export function ToolInsights({ tool }: { tool: ToolId }) {
   // A failed load shows "Could not load", never zeros.
   if (state.failed.includes(tool)) return <EmptyState title={`Could not load ${label} data`} reason="The request failed. Your other data is unaffected." onRetry={retry} />;
   const live = state.pages.filter(hasData);
-  if (!live.length) return <EmptyState />;
+  if (!live.length) return empty ? <EmptyState title={empty.title} reason={empty.reason} href={null} /> : <EmptyState />;
 
   return (
     <>

@@ -132,6 +132,9 @@ export const TOOLS = {
   },
 } satisfies Record<ToolId, Tool>;
 
+/** How long a Lighthouse run on the project address takes, shown wherever a user waits for one. */
+export const LIGHTHOUSE_WAIT = "Scores take about 10-30 seconds per page, up to a few minutes for 20 pages.";
+
 /** One /setup field per required env key: its label, whether to mask it, and the help line under it. */
 export const KEY_FIELDS: Record<string, { label: string; secret: boolean; help: string; placeholder?: string }> = {
   NEWRELIC_API_KEY: { label: "New Relic User API key", secret: true, help: "READS your data (starts NRAK-). Create it under API keys > key type \"User\"." },
@@ -147,7 +150,7 @@ export const KEY_FIELDS: Record<string, { label: string; secret: boolean; help: 
   LIGHTHOUSE_TARGET: {
     label: "Project address",
     secret: false,
-    help: "Your dev server or site, such as http://localhost:3001. MetricFlow finds up to 20 pages (sitemap.xml, or the links on the home page) and runs Lighthouse on each in headless Chrome, again every hour while the dashboard is open. Needs Google Chrome on this machine.",
+    help: "Your dev server or site, such as http://localhost:3001. MetricFlow finds up to 20 pages (sitemap.xml, or the links on the home page) and runs Lighthouse on each in headless Chrome, again every hour while the dashboard is open. About 10-30 seconds per page. Needs Google Chrome and Node 22.19 or newer on this machine.",
     placeholder: "http://localhost:3001",
   },
 };

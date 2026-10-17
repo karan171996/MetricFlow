@@ -7,7 +7,11 @@ import type { PageMetrics } from '@/lib/metricsHistory';
 // Fixed texts: none ever carries the setting, a URL, a path or a Lighthouse message.
 export const NOT_INSTALLED = 'Lighthouse is not installed. Reinstall MetricFlow to add it.';
 export const NO_CHROME = 'Lighthouse needs Google Chrome installed on this machine.';
-export const RUN_FAILED = 'The Lighthouse run failed.';
+export const RUN_FAILED = 'The Lighthouse run failed. Check that the site is running, then Run now.';
+export const NO_PAGES = 'No page could be measured. Check that the site is running, then Run now.';
+export const OLD_NODE = 'Running Lighthouse needs Node 22.19 or newer.';
+/** The only texts a run's `error` can hold. */
+const FATAL_TEXTS = new Set([NOT_INSTALLED, NO_CHROME, OLD_NODE, RUN_FAILED]);
 export const TARGET_INVALID = 'The project address must be an http(s) URL with no user name or password in it.';
 export const TARGET_UNREACHABLE = 'The project address did not answer with a page within 10 seconds.';
 
@@ -28,6 +32,8 @@ type Modules = {
 };
 
 const fatal = (message: string) => Object.assign(new Error(message), { fatal: true });
+/** lighthouse 13.5.0 declares node >=22.19; MetricFlow itself runs on 20.12, so this optional feature checks at run time. */
+export const nodeTooOld = (v: string) => { const [a, b] = v.split('.').map(Number); return a < 22 || (a === 22 && b < 19); };
 
 // No cookies (Node's fetch keeps none), no extra headers, and the body is capped while it streams.
 const defaultFetcher: Fetcher = async url => {
@@ -49,11 +55,20 @@ const defaultFetcher: Fetcher = async url => {
 
 /** Headless Chrome from this machine (never downloaded), a fresh temporary profile, killed in `finally`. */
 const defaultRunner: Runner = async (url, signal) => {
+  if (nodeTooOld(deps.nodeVersion)) throw fatal(OLD_NODE);
   let mods: Modules;
-  try { mods = await deps.load(); } catch { throw fatal(NOT_INSTALLED); }
+  try {
+    mods = await deps.load();
+  } catch (e) {
+    // "Not installed" only when the package is really missing; any other import failure is the generic text.
+    const code = (e as { code?: string }).code;
+    throw fatal(code === 'ERR_MODULE_NOT_FOUND' || code === 'MODULE_NOT_FOUND' ? NOT_INSTALLED : RUN_FAILED);
+  }
   let chrome: Awaited<ReturnType<Modules['launch']>>;
   try { chrome = await mods.launch({ chromeFlags: ['--headless=new', '--disable-gpu'], logLevel: 'silent' }); } catch { throw fatal(NO_CHROME); }
   const kill = () => { try { return Promise.resolve(chrome.kill()).catch(() => {}); } catch { return Promise.resolve(); } };
+  // The page cap may have fired while Chrome was starting: an abort listener added now would never run.
+  if (signal.aborted) { await kill(); throw new Error('aborted'); }
   signal.addEventListener('abort', kill, { once: true });
   try {
     return (await mods.lighthouse(url, { port: chrome.port, output: 'json', logLevel: 'silent', onlyCategories: ['performance'] }))?.lhr;
@@ -64,9 +79,10 @@ const defaultRunner: Runner = async (url, signal) => {
 };
 
 /** Swappable so node:test stubs the network and Chrome. Nothing else writes these. */
-export const deps: { fetcher: Fetcher; runner: Runner; load: () => Promise<Modules> } = {
+export const deps: { fetcher: Fetcher; runner: Runner; load: () => Promise<Modules>; nodeVersion: string } = {
   fetcher: defaultFetcher,
   runner: defaultRunner,
+  nodeVersion: process.versions.node,
   // Lazy: the package is optional and only loaded when a run starts. Both are in serverExternalPackages.
   load: async () => {
     const [lh, cl] = await Promise.all([import('lighthouse'), import('chrome-launcher')]);
@@ -109,20 +125,8 @@ export async function checkTarget(spec: string, fetcher: Fetcher = deps.fetcher)
 
 const decodeXml = (s: string) => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'");
 
-/**
- * `/` first, then the sitemap's `<loc>` entries, or the root page's links when there is no sitemap (one level, no crawl).
- * Same origin only, normalised, de-duplicated, assets dropped, at most MAX_PAGES. `url` keeps the path's case for the run.
- */
-export async function discoverPages(target: string, fetcher: Fetcher = deps.fetcher): Promise<{ path: string; url: string }[]> {
-  const origin = new URL(target).origin;
-  const found: string[] = [];
-  const sitemap = await getSameOrigin(`${origin}/sitemap.xml`, origin, fetcher);
-  if (ok(sitemap)) for (const m of sitemap.body.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)) found.push(decodeXml(m[1]));
-  if (!found.length) {
-    const root = await getSameOrigin(`${origin}/`, origin, fetcher);
-    if (ok(root)) for (const m of root.body.matchAll(/<a\s[^>]*?href\s*=\s*["']([^"']+)["']/gi)) found.push(decodeXml(m[1]));
-  }
-  const out = new Map([['/', `${origin}/`]]);
+/** Adds the usable same-origin paths of `found` to `out` (normalised, de-duplicated, assets dropped, MAX_PAGES in all). */
+function addPaths(out: Map<string, string>, found: string[], origin: string): void {
   for (const raw of found) {
     if (out.size >= MAX_PAGES) break;
     let u: URL;
@@ -133,13 +137,30 @@ export async function discoverPages(target: string, fetcher: Fetcher = deps.fetc
     const path = normalizePath(u.pathname);
     if (path && !out.has(path)) out.set(path, origin + u.pathname);
   }
+}
+
+/**
+ * `/` first, then the sitemap's `<loc>` entries, or the root page's links when the sitemap gives no same-origin page (one level, no crawl).
+ * `url` keeps the path's case for the run. Both regexes are linear: no nested or overlapping quantifiers, and the lazy
+ * tag scan stops at `<` or `>`, so a hostile 5MB body cannot stall the event loop.
+ */
+export async function discoverPages(target: string, fetcher: Fetcher = deps.fetcher): Promise<{ path: string; url: string }[]> {
+  const origin = new URL(target).origin;
+  const out = new Map([['/', `${origin}/`]]);
+  const sitemap = await getSameOrigin(`${origin}/sitemap.xml`, origin, fetcher);
+  if (ok(sitemap)) addPaths(out, [...sitemap.body.matchAll(/<loc>([^<]*)<\/loc>/gi)].map(m => decodeXml(m[1].trim())), origin);
+  if (out.size === 1) {
+    const root = await getSameOrigin(`${origin}/`, origin, fetcher);
+    if (ok(root)) addPaths(out, [...root.body.matchAll(/<a\s[^<>]*?href\s*=\s*["']([^"']+)["']/gi)].map(m => decodeXml(m[1])), origin);
+  }
   return [...out].map(([path, url]) => ({ path, url }));
 }
 
 export interface RunStatus { state: 'idle' | 'running' | 'error'; done: number; total: number; lastRunAt: string | null; error?: string }
 
 // ponytail: one module-level store, like the history ring buffer; lost on restart, and the lazy schedule then runs again.
-const blank = () => ({ status: { state: 'idle', done: 0, total: 0, lastRunAt: null } as RunStatus, target: '', byPath: {} as Record<string, PageMetrics>, current: null as Promise<void> | null });
+// `lastRunAt` is the last run that measured something; `finishedAt` is any finished run, for the schedule, so a failing run is not retried on every poll.
+const blank = () => ({ status: { state: 'idle', done: 0, total: 0, lastRunAt: null } as RunStatus, target: '', byPath: {} as Record<string, PageMetrics>, finishedAt: 0, current: null as Promise<void> | null });
 let store = blank();
 
 export const getStatus = (): RunStatus => ({ ...store.status });
@@ -179,14 +200,14 @@ export function startRun(opts: RunOptions = {}): Promise<void> {
 export function maybeStartRun(now = Date.now()): void {
   const target = env('LIGHTHOUSE_TARGET');
   if (!target || store.current) return;
-  const last = store.status.lastRunAt ? Date.parse(store.status.lastRunAt) : NaN;
-  if (store.target !== target || !(now - last <= STALE_MS)) void startRun();
+  if (store.target !== target || !(now - store.finishedAt <= STALE_MS)) void startRun();
 }
 
 async function run(s: ReturnType<typeof blank>, target: string, opts: RunOptions): Promise<void> {
   const { fetcher = deps.fetcher, runner = deps.runner, pageMs = PAGE_MS, totalMs = TOTAL_MS } = opts;
   const deadline = Date.now() + totalMs;
   const lhrs: unknown[] = [];
+  let byPath: Record<string, PageMetrics> = {};
   let error: string | undefined;
   try {
     const origin = parseTarget(target)?.origin;
@@ -201,14 +222,21 @@ async function run(s: ReturnType<typeof blank>, target: string, opts: RunOptions
         const lhr = await withTimeout(signal => runner(url, signal), Math.min(pageMs, left));
         if (onOrigin(lhr, origin)) lhrs.push(lhr);
       } catch (e) {
-        if ((e as { fatal?: boolean }).fatal) { error = (e as Error).message === NO_CHROME ? NO_CHROME : NOT_INSTALLED; break; }
+        if ((e as { fatal?: boolean }).fatal) { const m = (e as Error).message; error = FATAL_TEXTS.has(m) ? m : RUN_FAILED; break; }
       }
       s.status.done++;
     }
+    byPath = parseLighthouse(lhrs);
+    if (!error && !Object.keys(byPath).length) error = NO_PAGES;
   } catch {
     error = RUN_FAILED;
   }
+  // A run that measured nothing is not a success: the previous results of the same target stay, and so does their lastRunAt.
+  const measured = Object.keys(byPath).length > 0;
+  const sameTarget = s.target === target;
   s.target = target;
-  s.byPath = parseLighthouse(lhrs);
-  s.status = { state: error ? 'error' : 'idle', done: s.status.done, total: s.status.total, lastRunAt: new Date().toISOString(), ...(error ? { error } : {}) };
+  s.finishedAt = Date.now();
+  if (measured || !sameTarget) s.byPath = byPath;
+  const lastRunAt = measured ? new Date(s.finishedAt).toISOString() : sameTarget ? s.status.lastRunAt : null;
+  s.status = { state: error ? 'error' : 'idle', done: s.status.done, total: s.status.total, lastRunAt, ...(error ? { error } : {}) };
 }

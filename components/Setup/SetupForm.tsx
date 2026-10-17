@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { KEY_FIELDS, TOOLS, TOOL_IDS, type Tool, type ToolId } from "@/lib/tools";
+import { KEY_FIELDS, LIGHTHOUSE_WAIT, TOOLS, TOOL_IDS, type Tool, type ToolId } from "@/lib/tools";
 
 // One field per required key, then per `anyOf` key, of each tool, in TOOLS order. A tool added to the registry gets its group here with no edit.
 const FIELDS = TOOL_IDS.flatMap((tool) => {
@@ -60,7 +60,9 @@ export function SetupForm() {
         setIsSet((prev) => ({ ...prev, ...Object.fromEntries(FIELDS.filter((f) => filled.has(f.tool) && (!f.anyOf || values[f.name]?.trim())).map((f) => [f.name, true])) }));
         const now = TOOL_IDS.filter((id) => filled.has(id) || connected?.includes(id));
         setConnected(now);
-        setMessage({ ok: true, text: `Saved. ${now.map((id) => TOOLS[id].label).join(" and ")} ${now.length > 1 ? "are" : "is"} connected. No restart needed.` });
+        // A saved project address starts a Lighthouse run in the background (see /api/setup).
+        const run = values.LIGHTHOUSE_TARGET?.trim() ? ` Lighthouse is now running on your project; follow it on the Lighthouse CI page. ${LIGHTHOUSE_WAIT}` : "";
+        setMessage({ ok: true, text: `Saved. ${now.map((id) => TOOLS[id].label).join(" and ")} ${now.length > 1 ? "are" : "is"} connected. No restart needed.${run}` });
       } else {
         setMessage({ ok: false, text: body.error ?? "Nothing was saved. Fix the fields marked below." });
       }

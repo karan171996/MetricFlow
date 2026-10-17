@@ -4,9 +4,12 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Header } from "@/components/header";
 import { ToolInsights } from "@/components/ToolInsights/ToolInsights";
 import { LighthouseRun } from "@/components/ToolInsights/LighthouseRun";
-import { TOOLS, isToolId } from "@/lib/tools";
-import { isToolConnected } from "@/lib/env";
+import { LIGHTHOUSE_WAIT, TOOLS, isToolId } from "@/lib/tools";
+import { env, isToolConnected } from "@/lib/env";
 import { EmptyState } from "@/components/EmptyState";
+
+// Target mode before the first run finishes: say a run is on its way, not "no events".
+const LIGHTHOUSE_EMPTY = { title: "No scores yet", reason: `Scores appear here after the first Lighthouse run. ${LIGHTHOUSE_WAIT}` };
 
 // Connected state depends on .env.local, which can change without a rebuild.
 export const dynamic = "force-dynamic";
@@ -26,7 +29,7 @@ export default async function ToolPage({ params }: { params: Promise<{ tool: str
           {tool === "lighthouse" && <LighthouseRun />}
 
           {isToolConnected(tool) ? (
-            <ToolInsights tool={tool} />
+            <ToolInsights tool={tool} empty={tool === "lighthouse" && env("LIGHTHOUSE_TARGET") ? LIGHTHOUSE_EMPTY : undefined} />
           ) : (
             <div className="mt-6">
               <EmptyState title={`Connect ${TOOLS[tool].label}`} reason={TOOLS[tool].connectReason} href={`/setup#${tool}`} cta={`Add ${TOOLS[tool].label} keys`} />
