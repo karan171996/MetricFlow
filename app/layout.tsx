@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { Depth3D } from "@/components/Depth3D";
 
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <Depth3D />
         {children}
+        {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>
   );
