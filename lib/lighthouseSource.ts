@@ -13,8 +13,12 @@ const MAX_FILES = 200;
 const MAX_HOPS = 3;
 const TIMEOUT_MS = 10_000;
 
-/** Errors are fixed text only: never the spec, a file name, a parse error, a body or an address. */
-const fail = (): never => { throw new Error('Could not read the Lighthouse report.'); };
+/** Why a load failed. Setup maps it to fixed text; the error itself never carries the spec, a file name, a parse error, a body or an address. */
+export type LoadReason = 'blocked' | 'notFound' | 'notJsonFile' | 'tooLarge' | 'timeout' | 'notJson' | 'unreadable';
+const loadError = (reason: LoadReason) => Object.assign(new Error('Could not read the Lighthouse report.'), { reason });
+const fail = (reason: LoadReason = 'unreadable'): never => { throw loadError(reason); };
+/** An fs call whose failure (missing, no permission, broken link) is reported as notFound, never as the OS message. */
+const fsTry = async <T>(p: Promise<T>): Promise<T> => { try { return await p; } catch { return fail('notFound'); } };
 
 const blocked = new BlockList();
 for (const [a, p] of [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.0.0.0', 24], ['192.168.0.0', 16], ['192.88.99.0', 24], ['192.0.2.0', 24], ['198.51.100.0', 24], ['203.0.113.0', 24], ['198.18.0.0', 15], ['224.0.0.0', 4], ['240.0.0.0', 4]] as const) blocked.addSubnet(a, p, 'ipv4');
@@ -44,7 +48,7 @@ const systemLookup: Lookup = host => dns.promises.lookup(host, { all: true });
 function guardedLookup(lookup: Lookup) {
   return (host: string, opts: { all?: boolean }, cb: (...a: unknown[]) => void) => {
     lookup(host).then(addrs => {
-      if (!addrs.length || addrs.some(a => isBlockedAddress(a.address))) return cb(new Error('blocked'));
+      if (!addrs.length || addrs.some(a => isBlockedAddress(a.address))) return cb(loadError('blocked'));
       if (opts.all) cb(null, addrs);
       else cb(null, addrs[0].address, addrs[0].family);
     }, err => cb(err));
@@ -61,22 +65,23 @@ function getOnce(url: URL, lookup: Lookup, deadline: number): Promise<{ status: 
       lookup: guardedLookup(lookup) as never, agent: false, timeout: Math.max(1, deadline - Date.now())
     }, res => {
       const status = res.statusCode ?? 0;
-      if (status >= 300 && status < 400) { res.resume(); return resolveP({ status, location: res.headers.location }); }
-      if (status !== 200) { res.destroy(); return reject(new Error('status')); }
+      // The redirect body is never used: drop the socket rather than drain it.
+      if (status >= 300 && status < 400) { res.destroy(); return resolveP({ status, location: res.headers.location }); }
+      if (status !== 200) { res.destroy(); return reject(loadError('unreadable')); }
       const type = String(res.headers['content-type'] ?? '').split(';')[0].trim().toLowerCase();
-      if (type !== 'application/json' && !type.endsWith('+json')) { res.destroy(); return reject(new Error('type')); }
+      if (type !== 'application/json' && !type.endsWith('+json')) { res.destroy(); return reject(loadError('notJson')); }
       const chunks: Buffer[] = [];
       let size = 0;
       res.on('data', (c: Buffer) => {
         size += c.length;
-        if (size > MAX_BYTES) { req.destroy(); return reject(new Error('size')); }
+        if (size > MAX_BYTES) { req.destroy(); return reject(loadError('tooLarge')); }
         chunks.push(c);
       });
       res.on('end', () => resolveP({ status, body: Buffer.concat(chunks).toString('utf8') }));
       res.on('error', reject);
     });
-    const timer = setTimeout(() => req.destroy(), Math.max(1, deadline - Date.now()));
-    req.on('timeout', () => req.destroy());
+    const timer = setTimeout(() => req.destroy(loadError('timeout')), Math.max(1, deadline - Date.now()));
+    req.on('timeout', () => req.destroy(loadError('timeout')));
     req.on('error', reject);
     req.on('close', () => clearTimeout(timer));
     req.end();
@@ -84,12 +89,12 @@ function getOnce(url: URL, lookup: Lookup, deadline: number): Promise<{ status: 
 }
 
 function checkUrl(u: URL): void {
-  if (u.protocol !== 'http:' && u.protocol !== 'https:') fail();
-  if (u.username || u.password) fail();
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') fail('blocked');
+  if (u.username || u.password) fail('blocked');
   const port = u.port || (u.protocol === 'https:' ? '443' : '80');
-  if (port !== '80' && port !== '443') fail();
+  if (port !== '80' && port !== '443') fail('blocked');
   const lit = u.hostname.replace(/^\[|\]$/g, '');
-  if (isIP(lit) && isBlockedAddress(lit)) fail();
+  if (isIP(lit) && isBlockedAddress(lit)) fail('blocked');
 }
 
 /** Exported with an injectable lookup so tests need no network. */
@@ -101,7 +106,7 @@ export async function fetchJson(spec: string, lookup: Lookup = systemLookup): Pr
     checkUrl(url);
     const res = await getOnce(url, lookup, deadline);
     if (res.body !== undefined) {
-      try { return JSON.parse(res.body); } catch { return fail(); }
+      try { return JSON.parse(res.body); } catch { return fail('notJson'); }
     }
     if (!res.location) fail();
     try { url = new URL(res.location!, url); } catch { return fail(); }
@@ -110,18 +115,22 @@ export async function fetchJson(spec: string, lookup: Lookup = systemLookup): Pr
 }
 
 async function readJsonFile(path: string, budget?: { left: number }): Promise<unknown> {
-  const s = await stat(path);
-  if (!s.isFile() || s.size > MAX_BYTES) fail();
-  if (budget && (budget.left -= s.size) < 0) fail();
-  return JSON.parse(await readFile(path, 'utf8'));
+  const s = await fsTry(stat(path));
+  if (!s.isFile()) fail('notFound');
+  if (s.size > MAX_BYTES) fail('tooLarge');
+  const buf = await fsTry(readFile(path));
+  // Checked again on what was read: a file that grew after stat cannot pass the caps.
+  if (buf.length > MAX_BYTES) fail('tooLarge');
+  if (budget && (budget.left -= buf.length) < 0) fail('tooLarge');
+  try { return JSON.parse(buf.toString('utf8')); } catch { return fail('notJson'); }
 }
 
 async function readPath(spec: string): Promise<unknown> {
-  const real = await realpath(resolve(projectDir(), spec));
-  const s = await stat(real);
+  const real = await fsTry(realpath(resolve(projectDir(), spec)));
+  const s = await fsTry(stat(real));
   if (s.isDirectory()) {
-    const names = (await readdir(real)).filter(n => extname(n).toLowerCase() === '.json').sort();
-    if (names.length > MAX_FILES) fail();
+    const names = (await fsTry(readdir(real))).filter(n => extname(n).toLowerCase() === '.json').sort();
+    if (names.length > MAX_FILES) fail('tooLarge');
     const out: unknown[] = [];
     const budget = { left: MAX_TOTAL_BYTES };
     for (const n of names) {
@@ -131,17 +140,19 @@ async function readPath(spec: string): Promise<unknown> {
     }
     return out;
   }
-  if (extname(real).toLowerCase() !== '.json') fail();
+  if (extname(real).toLowerCase() !== '.json') fail('notJsonFile');
   return readJsonFile(real);
 }
 
-/** A URL, or a path (file or folder) under the project: the Lighthouse JSON reports as parsed JSON. */
+/** A URL, or a path (file or folder) under the project: the Lighthouse JSON reports as parsed JSON. Throws an error with a `reason`. */
 export async function loadReports(spec: string, lookup?: Lookup): Promise<unknown> {
   try {
     if (/^https?:\/\//i.test(spec)) return await fetchJson(spec, lookup);
-    if (/^[a-z][a-z0-9+.-]+:/i.test(spec)) return fail();
+    if (/^[a-z][a-z0-9+.-]+:/i.test(spec)) return fail('blocked');
     return await readPath(spec);
-  } catch {
-    return fail();
+  } catch (e) {
+    // Our own errors keep their reason; anything else (DNS, socket, OS) becomes the generic one, its message dropped.
+    const reason = (e as { reason?: LoadReason }).reason;
+    return fail(reason ?? 'unreadable');
   }
 }
