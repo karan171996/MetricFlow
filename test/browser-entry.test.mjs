@@ -25,7 +25,7 @@ const { TOOLS } = await load("lib/tools.ts");
 const { AI_PROVIDERS, AI_PROVIDER_KEY } = await load("lib/env.ts");
 /** Derived from the registry, so a new tool's secret is covered the day it is added. */
 const FORBIDDEN_NAMES = [
-  ...Object.values(TOOLS).flatMap((t) => [...t.keys.required, ...t.keys.optional, ...(t.keys.derived ?? [])]).filter((n) => !n.startsWith("NEXT_PUBLIC_")),
+  ...Object.values(TOOLS).flatMap((t) => [...t.keys.required, ...(t.keys.anyOf ?? []), ...t.keys.optional, ...(t.keys.derived ?? [])]).filter((n) => !n.startsWith("NEXT_PUBLIC_")),
   ...Object.values(AI_PROVIDERS).map((p) => p.key),
   AI_PROVIDER_KEY,
 ];

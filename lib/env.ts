@@ -3,8 +3,10 @@ import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { TOOLS, TOOL_IDS, type Tool, type ToolId } from '@/lib/tools';
 
-/** Every tool's required keys, in TOOLS order = form order on /setup. */
-export const SETUP_KEYS: readonly string[] = TOOL_IDS.flatMap(id => TOOLS[id].keys.required);
+/** A tool's /setup keys: `required`, then `anyOf`. */
+export const setupKeysOf = (id: ToolId): readonly string[] => { const k = (TOOLS[id] as Tool).keys; return [...k.required, ...(k.anyOf ?? [])]; };
+/** Every tool's setup keys, in TOOLS order = form order on /setup. */
+export const SETUP_KEYS: readonly string[] = TOOL_IDS.flatMap(setupKeysOf);
 /** Sends events from your site (Ingest - License key). Not needed to read data; set on /connect. */
 export const INSERT_KEY = 'NEWRELIC_INSERT_KEY';
 /** 'eu' for EU data-centre accounts; anything else = US. Auto-detected on /setup. */
@@ -45,8 +47,11 @@ export function env(name: string): string {
   return process.env[name] ?? '';
 }
 
-/** A tool is connected when all its required keys are set. Nothing else decides it. */
-export const isToolConnected = (id: ToolId): boolean => TOOLS[id].keys.required.every(k => env(k));
+/** A tool is connected when all its required keys are set and, if it has `anyOf`, one of those. Nothing else decides it. */
+export const isToolConnected = (id: ToolId): boolean => {
+  const { required, anyOf }: Tool['keys'] = TOOLS[id].keys;
+  return required.every(k => env(k)) && (!anyOf || anyOf.some(k => env(k)));
+};
 export const connectedTools = (): ToolId[] => TOOL_IDS.filter(isToolConnected);
 /** True when at least one tool is connected. */
 export const isConfigured = (): boolean => connectedTools().length > 0;
@@ -71,7 +76,7 @@ export const UNSAFE = /[\s\0#"'`\\$]/;
 /** Every name writeEnvLocal may write: each tool's declared keys, and the AI keys. Nothing else. */
 const writableKeys = (): Set<string> =>
   new Set([
-    ...Object.values<Tool>(TOOLS).flatMap(t => [...t.keys.required, ...t.keys.optional, ...(t.keys.derived ?? [])]),
+    ...Object.values<Tool>(TOOLS).flatMap(t => [...t.keys.required, ...(t.keys.anyOf ?? []), ...t.keys.optional, ...(t.keys.derived ?? [])]),
     ...Object.values(AI_PROVIDERS).map(p => p.key),
     AI_PROVIDER_KEY
   ]);

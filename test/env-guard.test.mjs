@@ -36,7 +36,7 @@ test("writeEnvLocal: a value with an unsafe character throws without echoing it,
 
 test("writeEnvLocal: every declared tool key (required, optional, derived) and AI key is accepted", () => {
   const names = [
-    ...Object.values(TOOLS).flatMap((t) => [...t.keys.required, ...t.keys.optional, ...(t.keys.derived ?? [])]),
+    ...Object.values(TOOLS).flatMap((t) => [...t.keys.required, ...(t.keys.anyOf ?? []), ...t.keys.optional, ...(t.keys.derived ?? [])]),
     ...Object.values(AI_PROVIDERS).map((p) => p.key),
     AI_PROVIDER_KEY,
   ];

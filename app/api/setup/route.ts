@@ -1,5 +1,6 @@
 import { SERVER_TOOLS, type KeyResult, type ToolUpdate } from '@/lib/analytics';
-import { EnvWriteRefused, SETUP_KEYS, UNSAFE, connectedTools, env, isToolConnected, writeEnvLocal } from '@/lib/env';
+import { EnvWriteRefused, SETUP_KEYS, UNSAFE, connectedTools, env, isToolConnected, setupKeysOf, writeEnvLocal } from '@/lib/env';
+import { startRun } from '@/lib/lighthouseRun';
 import { KEY_LABELS, TOOLS, TOOL_IDS, type Tool, type ToolId } from '@/lib/tools';
 import { isLocalRequest, requireJson, REFUSAL_MESSAGE } from '@/lib/localRequest';
 
@@ -74,7 +75,8 @@ export async function POST(request: Request) {
   const results: Record<string, { ok: false; error: string }> = {};
   for (const id of TOOL_IDS) {
     const keys: readonly string[] = TOOLS[id].keys.required;
-    const typed = keys.filter(k => typeof body[k] === 'string' && (body[k] as string).trim());
+    // `anyOf` keys are each a choice of their own: checked and saved when typed, never "half filled".
+    const typed = setupKeysOf(id).filter(k => typeof body[k] === 'string' && (body[k] as string).trim());
     if (!typed.length) continue;
     const group: Record<string, string> = (groupValues[id] = {});
     for (const k of typed) {
@@ -106,5 +108,7 @@ export async function POST(request: Request) {
   } catch (e) {
     return writeFailed(e, 'Keys are valid but .env.local could not be written. Check folder permissions.');
   }
+  // A new project address gets its first Lighthouse run in the background; the save does not wait for it.
+  if (input.LIGHTHOUSE_TARGET) void startRun();
   return Response.json({ saved: true, results: checked });
 }

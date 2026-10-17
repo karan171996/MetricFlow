@@ -2,6 +2,7 @@ import { basename } from 'node:path';
 import { SERVER_TOOLS } from '@/lib/analytics';
 import { buildPages } from '@/lib/discoverPages';
 import { connectedTools, env } from '@/lib/env';
+import { maybeStartRun } from '@/lib/lighthouseRun';
 import { recordSnapshot, getHistory, type MetricsPage, type PageMetrics } from '@/lib/metricsHistory';
 import { mergeMetrics, sourcesFor, TOOLS } from '@/lib/tools';
 import type { PageStatus } from '@/types';
@@ -19,6 +20,8 @@ export async function GET() {
     return Response.json({ configured: true, tools, sources, project: projectName(), pages: [], history: [], timestamp: new Date().toISOString() });
   }
 
+  // The slow Lighthouse schedule: a poll starts a run when the last one is over an hour old. No timer.
+  if (tools.includes('lighthouse')) maybeStartRun();
   const routeStart = performance.now();
   // The tools are independent, so poll them concurrently. A rejection reason is never read: only "failed or not".
   const settled = await Promise.allSettled(tools.map(id => SERVER_TOOLS[id].poll()));

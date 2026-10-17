@@ -20,10 +20,11 @@ export interface Tool {
   /** Optional line under the tool's group on /setup. */
   setupNote?: string;
   /**
-   * Env keys that connect this tool: it is connected when every `required` key is set (see isToolConnected).
+   * Env keys that connect this tool: it is connected when every `required` key is set and, if `anyOf` is given, at least one of those (see isToolConnected).
+   * `anyOf` keys are each their own choice on /setup: the half-filled-group rule does not apply to them.
    * `derived`: names the server works out and saves itself (New Relic's region). Nothing else is ever written for a tool.
    */
-  keys: { required: readonly string[]; optional: readonly string[]; derived?: readonly string[] };
+  keys: { required: readonly string[]; optional: readonly string[]; anyOf?: readonly string[]; derived?: readonly string[] };
   capabilities: readonly Capability[];
   /** Headline cards, computed from pages that have reported (see hasData). */
   stats: (live: MetricsPage[]) => { label: string; value: string }[];
@@ -111,9 +112,10 @@ export const TOOLS = {
   lighthouse: {
     label: "Lighthouse CI",
     icon: Gauge,
-    description: "Lab scores per page from a Lighthouse CI report: performance score, LCP, CLS and total blocking time.",
-    connectReason: "Add the path or URL of a Lighthouse CI JSON report to see lab scores for each page. Localhost and private URLs are blocked, so use a file path when running locally.",
-    keys: { required: ["LIGHTHOUSE_REPORT"], optional: [] },
+    description: "Lab scores per page, from Lighthouse runs on your project or a Lighthouse CI report: performance score, LCP, CLS and total blocking time.",
+    connectReason: "Add your project's address and MetricFlow runs Lighthouse on its pages, or add the path or URL of a Lighthouse CI JSON report.",
+    setupNote: "Fill in one of the two. If both are set, the project address is used and the report is ignored.",
+    keys: { required: [], optional: [], anyOf: ["LIGHTHOUSE_REPORT", "LIGHTHOUSE_TARGET"] },
     capabilities: ["pages", "lighthouse"],
     stats: (live) => [
       { label: "Avg Score", value: scoreText(avgOf(live, (l) => l.score)) },
@@ -141,6 +143,12 @@ export const KEY_FIELDS: Record<string, { label: string; secret: boolean; help: 
     secret: false,
     help: "A Lighthouse CI JSON report, or a folder of them. A relative path starts from the project folder. URLs must be public http(s); for a report on localhost, use its file path. Spaces, #, $, quotes and backslashes are not accepted.",
     placeholder: ".lighthouseci/ or https://example.com/lhr.json",
+  },
+  LIGHTHOUSE_TARGET: {
+    label: "Project address",
+    secret: false,
+    help: "Your dev server or site, such as http://localhost:3001. MetricFlow finds up to 20 pages (sitemap.xml, or the links on the home page) and runs Lighthouse on each in headless Chrome, again every hour while the dashboard is open. Needs Google Chrome on this machine.",
+    placeholder: "http://localhost:3001",
   },
 };
 

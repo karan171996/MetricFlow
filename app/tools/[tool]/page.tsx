@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Header } from "@/components/header";
 import { ToolInsights } from "@/components/ToolInsights/ToolInsights";
+import { LighthouseRun } from "@/components/ToolInsights/LighthouseRun";
 import { TOOLS, isToolId } from "@/lib/tools";
 import { isToolConnected } from "@/lib/env";
 import { EmptyState } from "@/components/EmptyState";
@@ -22,6 +23,7 @@ export default async function ToolPage({ params }: { params: Promise<{ tool: str
         <div className="flex flex-1 flex-col p-6 md:p-8 max-w-[1600px] mx-auto w-full">
           <h1 className="title-enter text-2xl font-bold text-white tracking-tight mb-2">{TOOLS[tool].label}</h1>
           <p className="text-sm text-gray-400">{TOOLS[tool].description}</p>
+          {tool === "lighthouse" && <LighthouseRun />}
 
           {isToolConnected(tool) ? (
             <ToolInsights tool={tool} />

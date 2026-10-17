@@ -8,8 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { KEY_FIELDS, TOOLS, TOOL_IDS, type Tool, type ToolId } from "@/lib/tools";
 
-// One field per required key of each tool, in TOOLS order. A tool added to the registry gets its group here with no edit.
-const FIELDS = TOOL_IDS.flatMap((tool) => TOOLS[tool].keys.required.map((name) => ({ name, tool, ...KEY_FIELDS[name] })));
+// One field per required key, then per `anyOf` key, of each tool, in TOOLS order. A tool added to the registry gets its group here with no edit.
+const FIELDS = TOOL_IDS.flatMap((tool) => {
+  const { required, anyOf = [] }: Tool["keys"] = TOOLS[tool].keys;
+  return [...required.map((name) => ({ name, tool, anyOf: false, ...KEY_FIELDS[name] })), ...anyOf.map((name) => ({ name, tool, anyOf: true, ...KEY_FIELDS[name] }))];
+});
 
 type Result = { ok: true; notice?: string } | { ok: false; error: string; notice?: string };
 
@@ -52,9 +55,9 @@ export function SetupForm() {
       if (body.saved) {
         setSaved(true);
         setValues({});
-        // Only the groups that were filled in are now set; an untouched group stays as it was.
+        // Only the groups that were filled in are now set; an untouched group stays as it was. An `anyOf` field is set only if it was typed.
         const filled = new Set(FIELDS.filter((f) => values[f.name]?.trim()).map((f) => f.tool));
-        setIsSet((prev) => ({ ...prev, ...Object.fromEntries(FIELDS.filter((f) => filled.has(f.tool)).map((f) => [f.name, true])) }));
+        setIsSet((prev) => ({ ...prev, ...Object.fromEntries(FIELDS.filter((f) => filled.has(f.tool) && (!f.anyOf || values[f.name]?.trim())).map((f) => [f.name, true])) }));
         const now = TOOL_IDS.filter((id) => filled.has(id) || connected?.includes(id));
         setConnected(now);
         setMessage({ ok: true, text: `Saved. ${now.map((id) => TOOLS[id].label).join(" and ")} ${now.length > 1 ? "are" : "is"} connected. No restart needed.` });

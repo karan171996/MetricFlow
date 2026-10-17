@@ -121,5 +121,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "optionalDependencies": {
+    "chrome-launcher": "1.2.2",
+    "lighthouse": "13.5.0"
   }
 }

@@ -1,7 +1,8 @@
-import { Analytics, type ToolRead, type ToolUpdate } from '@/lib/analytics/Analytics';
+import { Analytics, type KeyResult, type ToolRead, type ToolUpdate } from '@/lib/analytics/Analytics';
 import { env } from '@/lib/env';
 import { parseLighthouse } from '@/lib/lighthouse';
 import { loadReports, type LoadReason } from '@/lib/lighthouseSource';
+import { checkTarget, getResults, getStatus } from '@/lib/lighthouseRun';
 import type { PageMetrics } from '@/lib/metricsHistory';
 
 // Setup is local-only, so naming the cause (which reveals whether a file exists) is accepted.
@@ -16,30 +17,45 @@ export const LOAD_ERRORS: Record<LoadReason, string> = {
 };
 export const NO_DATA = 'No Lighthouse performance runs were found in that Lighthouse report.';
 
-/** Lighthouse CI reports (a file, folder or URL named by LIGHTHOUSE_REPORT) as per-page lab metrics. */
+/**
+ * Per-page lab metrics from Lighthouse runs on LIGHTHOUSE_TARGET (see lib/lighthouseRun), or else from
+ * Lighthouse CI reports (a file, folder or URL named by LIGHTHOUSE_REPORT). The target wins when both are set.
+ */
 export class LighthouseAnalytics extends Analytics<Record<string, unknown>, object> {
   readonly id = 'lighthouse';
   protected readonly timingLabel = 'Lighthouse: report';
 
-  protected memoKey() { return env('LIGHTHOUSE_REPORT'); }
+  // A finished run changes lastRunAt, so it counts as a fresh read.
+  protected memoKey() {
+    const target = env('LIGHTHOUSE_TARGET');
+    return target ? `target\n${target}\n${getStatus().lastRunAt}` : env('LIGHTHOUSE_REPORT');
+  }
 
   emptyPage() { return { metrics: {} as PageMetrics, legacy: {} }; }
 
   protected async load(): Promise<ToolRead> {
-    const byPath = parseLighthouse(await loadReports(env('LIGHTHOUSE_REPORT')));
+    const target = env('LIGHTHOUSE_TARGET');
+    const byPath = target ? getResults(target) : parseLighthouse(await loadReports(env('LIGHTHOUSE_REPORT')));
     return { pages: Object.keys(byPath).map(url => ({ url, views: 0 })), byPath, legacy: {} };
   }
 
-  /** One load and parse, nothing written. Fixed text per cause: never the setting, a file name, a parse error, a body or an address. */
+  /** Checks each key given, nothing written. Fixed text per cause: never the setting, a file name, a parse error, a body or an address. */
   async update(values: Record<string, string>): Promise<ToolUpdate> {
-    const bad = (error: string): ToolUpdate => ({ results: { LIGHTHOUSE_REPORT: { ok: false, error } } });
+    const [report, target] = await Promise.all([
+      values.LIGHTHOUSE_REPORT === undefined ? undefined : this.checkReport(values.LIGHTHOUSE_REPORT),
+      values.LIGHTHOUSE_TARGET === undefined ? undefined : checkTarget(values.LIGHTHOUSE_TARGET)
+    ]);
+    return { results: { ...(report && { LIGHTHOUSE_REPORT: report }), ...(target && { LIGHTHOUSE_TARGET: target }) } };
+  }
+
+  /** One load and parse of a report. */
+  private async checkReport(spec: string): Promise<KeyResult> {
     try {
-      const n = Object.keys(parseLighthouse(await loadReports(values.LIGHTHOUSE_REPORT ?? ''))).length;
-      if (!n) return bad(NO_DATA);
-      return { results: { LIGHTHOUSE_REPORT: { ok: true } } };
+      const n = Object.keys(parseLighthouse(await loadReports(spec))).length;
+      return n ? { ok: true } : { ok: false, error: NO_DATA };
     } catch (e) {
       const reason = (e as { reason?: string }).reason;
-      return bad((reason && Object.hasOwn(LOAD_ERRORS, reason) && LOAD_ERRORS[reason as LoadReason]) || LOAD_ERRORS.unreadable);
+      return { ok: false, error: (reason && Object.hasOwn(LOAD_ERRORS, reason) && LOAD_ERRORS[reason as LoadReason]) || LOAD_ERRORS.unreadable };
     }
   }
 }
