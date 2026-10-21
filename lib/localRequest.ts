@@ -5,6 +5,12 @@ const LOOPBACK_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 /** Set by the CLI when started with a non-loopback --host: the 127.0.0.1 bind no longer protects us. */
 export const isExposed = () => process.env.METRICFLOW_EXPOSED === '1';
 
+/** The mode switch: true only when METRICFLOW_MODE=hosted. */
+export const isHosted = () => process.env.METRICFLOW_MODE === 'hosted';
+
+/** The refusal when METRICFLOW_MODE=hosted. Fixed text: names no route and no key. */
+export const modeRefusal = () => Response.json({ error: 'Not available in this mode.' }, { status: 403 });
+
 export const REFUSAL_MESSAGE = () =>
   isExposed()
     ? 'Setup and Connect are disabled because the dashboard is exposed on the network (--host). Restart without --host to use them.'
@@ -25,7 +31,7 @@ export function requireJson(request: Request): Response | null {
 
 /** Setup writes secrets to disk, so it only answers requests addressed to this machine. */
 export function isLocalRequest(request: Request): boolean {
-  if (isExposed()) return false;
+  if (isExposed() || isHosted()) return false;
   // Next sets x-forwarded-for to the socket address itself, so only a non-loopback hop means a real proxy.
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded && !forwarded.split(',').every(ip => LOOPBACK_IPS.has(ip.trim().replace(/^\[|\]$/g, '')))) return false;

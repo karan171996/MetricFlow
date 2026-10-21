@@ -1,9 +1,10 @@
 import { analyzeMetrics } from '@/lib/aiAnalysis';
 import { recordTiming } from '@/lib/apiTimingStore';
-import { AI_PROVIDERS, activeAi } from '@/lib/env';
-import { requireJson } from '@/lib/localRequest';
+import { AI_PROVIDERS, activeAi, isHosted } from '@/lib/env';
+import { modeRefusal, requireJson } from '@/lib/localRequest';
 
 export async function POST(request: Request) {
+  if (isHosted()) return modeRefusal();
   const notJson = requireJson(request);
   if (notJson) return notJson;
   try {

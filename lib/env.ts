@@ -2,6 +2,9 @@ import 'server-only';
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { TOOLS, TOOL_IDS, type Tool, type ToolId } from '@/lib/tools';
+import { isHosted } from '@/lib/localRequest';
+
+export { isHosted };
 
 /** A tool's /setup keys: `required`, then `anyOf`. */
 export const setupKeysOf = (id: ToolId): readonly string[] => { const k = (TOOLS[id] as Tool).keys; return [...k.required, ...(k.anyOf ?? [])]; };
@@ -89,6 +92,7 @@ export class EnvWriteRefused extends Error {}
  * The single writer is also the guard: an undeclared name or an unsafe value throws before the file is opened.
  */
 export function writeEnvLocal(values: Record<string, string>, path = envFilePath()): void {
+  if (isHosted()) throw new EnvWriteRefused('Refused to write: writes are off in this mode.');
   const allowed = writableKeys();
   for (const [name, v] of Object.entries(values)) {
     // Fixed text: the name or value could be something a caller should not echo.

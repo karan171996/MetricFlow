@@ -1,13 +1,15 @@
 import { basename } from 'node:path';
 import { SERVER_TOOLS } from '@/lib/analytics';
 import { buildPages } from '@/lib/discoverPages';
-import { connectedTools, env } from '@/lib/env';
+import { connectedTools, env, isHosted } from '@/lib/env';
 import { maybeStartRun } from '@/lib/lighthouseRun';
 import { recordSnapshot, getHistory, type MetricsPage, type PageMetrics } from '@/lib/metricsHistory';
 import { mergeMetrics, sourcesFor, TOOLS } from '@/lib/tools';
 import type { PageStatus } from '@/types';
 
 export async function GET() {
+  // The no-data shape, without polling a tool or reading the process-wide history, when METRICFLOW_MODE=hosted.
+  if (isHosted()) return Response.json({ configured: false, tools: [], sources: sourcesFor([]), project: '', pages: [], history: [], timestamp: new Date().toISOString() });
   const tools = connectedTools();
   // Which tool supplies each capability. Decided by what is connected, not by what loaded.
   const sources = sourcesFor(tools);
