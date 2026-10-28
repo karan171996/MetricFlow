@@ -21,7 +21,7 @@ const record = (where) => (value) => {
 for (const rel of STORES) {
   const real = await load(rel);
   const namedExports = Object.fromEntries(Object.entries(real).map(([k, v]) => [k, record(`${rel}:${k}`)(v)]));
-  mock.module(pathToFileURL(join(root, rel)).href, { exports: namedExports });
+  mock.module(pathToFileURL(join(root, rel)).href, { namedExports });
 }
 
 // fs writes: the builtin's named exports are re-synced so `import { writeFileSync }` sees the spy too.
