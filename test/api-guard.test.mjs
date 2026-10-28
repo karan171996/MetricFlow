@@ -21,11 +21,13 @@ const FOREIGN = { host: "evil.example:3000" };
 const CROSS_SITE = { "sec-fetch-site": "cross-site" };
 const exposed = async (fn) => { process.env.METRICFLOW_EXPOSED = "1"; try { return await fn(); } finally { delete process.env.METRICFLOW_EXPOSED; } };
 
+const MATCHER = ["/api/:path*", "/((?!_next|.*\\..*).*)"];
 test("the guard covers every route handler: a new route outside /api would be unguarded", () => {
-  assert.equal(config.matcher, "/api/:path*");
+  // Pages are matched too (for the hosted proxy); locally only /api paths are guarded, see below.
+  assert.deepEqual(config.matcher, MATCHER);
   assert.ok(routes.length >= 8, "route discovery found too few routes");
   for (const r of routes) {
-    assert.ok(r.path.startsWith("/api/"), `${r.path} is outside the proxy matcher ${config.matcher}`);
+    assert.ok(r.path.startsWith("/api/"), `${r.path} is outside the guarded /api paths`);
     assert.ok(r.methods.length, `${r.path}: no exported method found`);
   }
 });
@@ -40,14 +42,14 @@ test("the app has only the App Router at app/: no pages/api, no src/app, no 'use
 for (const { path, methods } of routes) for (const method of methods) {
   const call = (headers) => proxy(req(`http://localhost:3000${path}`, { method, headers }));
 
-  test(`${method} ${path}: local request passes (any port, same-origin browser, curl)`, () => {
-    for (const host of ["localhost:3000", "127.0.0.1:43177", "[::1]:3000"]) assert.equal(call({ host }), undefined, host);
-    for (const site of ["same-origin", "same-site", "none"]) assert.equal(call({ "sec-fetch-site": site, origin: "http://localhost:3000" }), undefined, site);
+  test(`${method} ${path}: local request passes (any port, same-origin browser, curl)`, async () => {
+    for (const host of ["localhost:3000", "127.0.0.1:43177", "[::1]:3000"]) assert.equal(await call({ host }), undefined, host);
+    for (const site of ["same-origin", "same-site", "none"]) assert.equal(await call({ "sec-fetch-site": site, origin: "http://localhost:3000" }), undefined, site);
   });
 
   test(`${method} ${path}: foreign Host (DNS rebinding) and cross-site are refused with the usual 403`, async () => {
     for (const headers of [FOREIGN, CROSS_SITE]) {
-      const res = call({ ...headers, authorization: "Bearer FAKE-SECRET-0000" });
+      const res = await call({ ...headers, authorization: "Bearer FAKE-SECRET-0000" });
       assert.equal(res.status, 403);
       const text = await res.text();
       assert.deepEqual(JSON.parse(text), { error: "This dashboard only answers requests from this machine." });
@@ -56,9 +58,39 @@ for (const { path, methods } of routes) for (const method of methods) {
   });
 
   test(`${method} ${path}: exposed (--host) the guard steps aside, as before`, async () => {
-    await exposed(() => { for (const headers of [{}, FOREIGN, { host: "192.168.1.84:3000" }, CROSS_SITE]) assert.equal(call(headers), undefined); });
+    await exposed(async () => { for (const headers of [{}, FOREIGN, { host: "192.168.1.84:3000" }, CROSS_SITE]) assert.equal(await call(headers), undefined); });
   });
 }
+
+const at = (path, headers = {}) => proxy(req(`http://localhost:3000${path}`, { headers }));
+
+test("pages pass straight through locally, foreign Host or not: only /api paths are guarded", async () => {
+  for (const path of ["/", "/setup", "/performance/home", "/apix", "/sign-in"]) for (const headers of [{}, FOREIGN, CROSS_SITE]) {
+    assert.equal(await at(path, headers), undefined, `${path} ${JSON.stringify(headers)}`);
+  }
+});
+
+test("odd spellings of an /api path get the guard too", async () => {
+  for (const path of ["/api", "/API/metrics", "//api/metrics", "/%61pi/metrics", "/api/metrics/"]) assert.equal((await at(path, FOREIGN))?.status, 403, path);
+});
+
+test("the hosted-build stub refuses with a fixed 503", async () => {
+  const { default: stub } = await load("lib/hosted-stub/proxy.ts");
+  const res = await stub(req("http://localhost:3000/api/metrics", { headers: { authorization: "Bearer FAKE-SECRET-0000" } }));
+  assert.equal(res.status, 503);
+  assert.deepEqual(await res.json(), { error: "Hosted build missing." });
+});
+
+test("METRICFLOW_MODE=hosted without the hosted build: every path, local or not, gets the stub's 503", { skip: existsSync(join(root, "lib/hosted/proxy.ts")) && "the hosted build is present (its own tests cover it)" }, async () => {
+  process.env.METRICFLOW_MODE = "hosted";
+  try {
+    for (const path of ["/", "/sign-in", "/api/health", "/api/metrics"]) for (const headers of [{}, FOREIGN]) {
+      const res = await at(path, headers);
+      assert.equal(res?.status, 503, path);
+      assert.deepEqual(await res.json(), { error: "Hosted build missing." });
+    }
+  } finally { delete process.env.METRICFLOW_MODE; }
+});
 
 // The unit tests above call proxy() directly; these prove Next really runs it in front of each route.
 const built = existsSync(join(root, ".next/BUILD_ID"));
