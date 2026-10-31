@@ -47,9 +47,9 @@ next-env.d.ts
 # brag video output (local only)
 /brag-output*/
 
-# cypress artifacts (live runs capture real data)
-/cypress/screenshots/
-/cypress/videos/
+# e2e artifacts (live runs capture real data)
+/test-results/
+/playwright-report/
 
 # shared dashboard settings
 .metricflow-settings.json*

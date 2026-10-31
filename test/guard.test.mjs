@@ -42,8 +42,8 @@ test(".env files are blocked except the placeholder templates", () => {
   for (const f of [".env.local.example", ".env.test.example"]) assert.equal(scan(repo({ [f]: "A=\n" })).status, 0, f);
 });
 
-test("cypress screenshots, videos and test output are blocked", () => {
-  for (const f of ["cypress/screenshots/a.png", "cypress/videos/a.mp4", "test-results/x.json", "coverage/lcov.info"]) assert.equal(scan(repo({ [f]: "x" })).status, 1, f);
+test("e2e screenshots, reports and test output are blocked", () => {
+  for (const f of ["test-results/screenshots/a.png", "playwright-report/index.html", "test-results/x.json", "coverage/lcov.info"]) assert.equal(scan(repo({ [f]: "x" })).status, 1, f);
 });
 
 test("guard on stdin (what pre-push feeds it) catches the value in a pushed commit log", () => {

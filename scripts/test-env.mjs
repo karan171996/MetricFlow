@@ -34,8 +34,8 @@ const nodeTests = mode === "basic"
 if (run(process.execPath, nodeTests)) process.exit(1);
 
 const specs = mode === "real"
-  ? ["cypress/e2e/live-metrics.cy.ts"]
-  : readdirSync(join(root, "cypress/e2e")).filter((s) => s !== "live-metrics.cy.ts").map((s) => `cypress/e2e/${s}`);
+  ? ["e2e/live-metrics.spec.ts"]
+  : readdirSync(join(root, "e2e")).filter((s) => s.endsWith(".spec.ts") && s !== "live-metrics.spec.ts").map((s) => `e2e/${s}`);
 
 if (run("pnpm", ["exec", "next", "build"])) process.exit(1);
 const port = await new Promise((res) => { const s = net.createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => res(p)); }); });
@@ -47,6 +47,6 @@ try {
     if (i > 60) throw new Error("server did not become healthy in 60s");
     await new Promise((r) => setTimeout(r, 1000));
   }
-  code = run("pnpm", ["exec", "cypress", "run",`--config=baseUrl=http://localhost:${port}`, `--spec=${specs.join(",")}`]);
+  code = run("pnpm", ["exec", "playwright", "test", ...specs], { env: { ...env, PLAYWRIGHT_BASE_URL: `http://localhost:${port}` } });
 } catch (e) { console.error(e.message); } finally { server.kill("SIGTERM"); }
 process.exit(code);

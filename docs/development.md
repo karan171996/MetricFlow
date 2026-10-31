@@ -18,7 +18,7 @@ cp .env.local.example .env.local   # then fill in your keys
 pnpm dev                           # http://127.0.0.1:3000
 ```
 
-This repo uses [pnpm](https://pnpm.io) (`corepack enable` picks the pinned version). Install scripts are allowed only for the packages listed in `pnpm-workspace.yaml` (Cypress and `unrs-resolver`).
+This repo uses [pnpm](https://pnpm.io) (`corepack enable` picks the pinned version). Install scripts are allowed only for the packages listed in `pnpm-workspace.yaml` (`unrs-resolver`).
 
 Run the production build through the CLI:
 
@@ -33,7 +33,7 @@ node bin/cli.mjs
 pnpm test              # all tests, fake keys, no network
 pnpm test:cli          # node:test suite only
 pnpm test:real         # against your real accounts (.env.local)
-pnpm cy:run            # Cypress tests (app must be running)
+pnpm e2e               # Playwright tests (app must be running; first run: pnpm exec playwright install chromium)
 pnpm lint
 pnpm send-test-data    # one dummy event to Sentry and New Relic
 ```
@@ -50,7 +50,7 @@ browser/        What a consumer site imports (init, send). Sealed: imports nothi
 bin/            CLI (cli.mjs) and output formatter (output.mjs)
 scripts/        send-test-data.mjs, test-env.mjs
 test/           node:test suites
-cypress/        End-to-end smoke test
+e2e/            Playwright end-to-end specs
 docs/images/    README screenshots (not shipped in the npm package)
 ```
 

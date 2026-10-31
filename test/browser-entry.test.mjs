@@ -181,7 +181,7 @@ test("neither SDK, nor anything it brings, has an install script; allowBuilds is
   const withScripts = [...seen.values()].filter((p) => ["preinstall", "install", "postinstall"].some((s) => p.scripts?.[s])).map((p) => p.name);
   assert.deepEqual(withScripts, []);
   const allow = readFileSync(join(root, "pnpm-workspace.yaml"), "utf8").match(/^allowBuilds:\n((?: {2}.*\n)+)/m)[1];
-  assert.deepEqual(allow.trim().split("\n").map((l) => l.trim()), ["cypress: true", "unrs-resolver: true"]);
+  assert.deepEqual(allow.trim().split("\n").map((l) => l.trim()), ["unrs-resolver: true"]);
 });
 
 // ---------- behaviour of init / send, against the built entry ----------

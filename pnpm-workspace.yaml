@@ -1,5 +1,4 @@
 allowBuilds:
-  cypress: true
   unrs-resolver: true
 
 # Patched versions of transitive deps (next: GHSA-68fv-2mgg-jv7q, GHSA-wq5f-xc86-pv6w; zod, fflate, fast-uri: pnpm audit). Drop once the parents ship them.

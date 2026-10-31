@@ -24,7 +24,7 @@ test("npm pack file list ships bin/public, never .next/dev or .next/cache", () =
   assert.ok(files.includes("bin/cli.mjs") && files.includes("bin/output.mjs"));
   assert.ok(files.includes("package.json"));
   assert.ok(!files.some((f) => /^\.next\/(dev|cache)\//.test(f)), "dev/cache leaked into package");
-  assert.ok(!files.some((f) => /^(cypress|test|docs|\.claude)\/|^cypress\.config/.test(f)), "test/dev files leaked into package");
+  assert.ok(!files.some((f) => /^(e2e|test|docs|\.claude)\/|^playwright\.config/.test(f)), "test/dev files leaked into package");
   assert.ok(!files.some((f) => /(^|\/)\.env(?!\.local\.example)/.test(f)), "env file shipped");
 });
 

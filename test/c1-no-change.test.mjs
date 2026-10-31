@@ -99,7 +99,7 @@ test("C1: /api/metrics legacy fields are the same as on main, and every transfor
       // Compared as text, so key order and absent fields count too.
       assert.equal(JSON.stringify(withoutNew(r.body), null, 2), JSON.stringify(before[i].body, null, 2), `${name} #${i}: body`);
       assert.deepEqual(r.transforms, before[i].transforms, `${name} #${i}: transforms`);
-      // A body with only the old fields (what the Cypress stubs send) is filled in by the client to exactly what the route now sends.
+      // A body with only the old fields (what the e2e stubs send) is filled in by the client to exactly what the route now sends.
       // History is left out: an old snapshot does not say which tools were connected then, so the client assumes today's.
       const filled = JSON.parse(JSON.stringify(withNeutralShape(before[i].body)));
       for (const k of ["sources", "pages"]) assert.deepEqual(filled[k], r.body[k], `${name} #${i}: client fill of ${k}`);
