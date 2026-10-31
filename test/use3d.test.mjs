@@ -1,5 +1,5 @@
 // The 3D guard (lib/use3d.ts): limits win over the user's choice, 3D is opt-in, and a missing browser
-// value never counts as a limit. The hook and Settings switch are covered by cypress/e2e/use3d-setting.cy.ts.
+// value never counts as a limit. The hook and Settings switch are covered by e2e/use3d-setting.spec.ts.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { load } from "./helpers.mjs";

@@ -128,5 +128,5 @@ The two browser SDKs (`@sentry/browser`, `@newrelic/browser-agent`) are pinned t
 ## Never include secrets or real data
 
 - Don't commit `.env.local`, API keys, tokens, or real New Relic or Sentry numbers. The pre-commit hook blocks most of these, but you are responsible for what you push.
-- Screenshots must use sample data. `cypress/e2e/screenshots.cy.ts` generates them with fake numbers.
+- Screenshots must use sample data. `e2e/screenshots.spec.ts` generates them with fake numbers.
 - Found a security problem? Don't open a public issue; contact the maintainer directly.

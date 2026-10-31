@@ -1,11 +1,11 @@
 allowBuilds:
-  cypress: true
   unrs-resolver: true
 
-# Patched versions of transitive deps (next: GHSA-68fv-2mgg-jv7q, GHSA-wq5f-xc86-pv6w; zod, fflate, fast-uri: pnpm audit). Drop once the parents ship them.
+# Patched versions of transitive deps (next: GHSA-68fv-2mgg-jv7q, GHSA-wq5f-xc86-pv6w; zod, fflate, fast-uri, follow-redirects: pnpm audit). Drop once the parents ship them.
 overrides:
   source-map-js: ^1.2.2
   sharp: ^0.35.5
   zod: ^4.6.6
   fflate: ^0.8.3
   fast-uri: ^3.1.9
+  follow-redirects: ^1.16.2

@@ -1,6 +1,6 @@
 {
   "name": "@karan171996/metricflow",
-  "version": "0.16.1",
+  "version": "0.16.2",
   "description": "Local performance dashboard: New Relic page metrics and Sentry errors per page, with AI suggestions. Run with one npx command.",
   "keywords": [
     "performance",
@@ -55,12 +55,13 @@
     "start": "next start -H 127.0.0.1",
     "lint": "eslint",
     "send-test-data": "node scripts/send-test-data.mjs",
-    "cy:open": "cypress open",
-    "cy:run": "cypress run",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
     "prepublishOnly": "pnpm run build",
     "test:cli": "node --experimental-test-module-mocks --import ./test/register.mjs --test test/*.test.mjs",
     "test:basic": "node scripts/test-env.mjs basic",
     "test:real": "node scripts/test-env.mjs real",
+    "test:ui": "PW_UI=1 node scripts/test-env.mjs basic",
     "test": "pnpm run test:basic",
     "release:bump": "node scripts/bump-version.mjs",
     "build:browser": "tsc -p tsconfig.browser.json"
@@ -75,6 +76,7 @@
   },
   "devDependencies": {
     "@base-ui/react": "^1.9.0",
+    "@playwright/test": "^1.64.1",
     "@sentry/node": "^10.76.2",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^20.19.43",
@@ -83,7 +85,6 @@
     "@vercel/analytics": "2.0.1",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.3.3",
-    "cypress": "^16.1.1",
     "dotenv": "^18.0.6",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.0",

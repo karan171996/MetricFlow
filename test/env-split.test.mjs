@@ -24,8 +24,8 @@ test("scripts: test and test:basic are basic, test:real is separate", () => {
 
 test("live-metrics spec is excluded from basic and is the only real spec", () => {
   const runner = read("scripts/test-env.mjs");
-  assert.match(runner, /s !== "live-metrics\.cy\.ts"/);
-  assert.match(runner, /\["cypress\/e2e\/live-metrics\.cy\.ts"\]/);
+  assert.match(runner, /s !== "live-metrics\.spec\.ts"/);
+  assert.match(runner, /\["e2e\/live-metrics\.spec\.ts"\]/);
 });
 
 test(".env.test.example has every key of .env.local.example, all placeholders", () => {

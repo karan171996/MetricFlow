@@ -13,7 +13,7 @@ jobs:
     name: check
     runs-on: ubuntu-latest
     env:
-      CYPRESS_INSTALL_BINARY: "0" # e2e specs are not part of this job
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1" # e2e specs are not part of this job
     steps:
       - uses: actions/checkout@v4
       - run: corepack enable # installs the pnpm version pinned in package.json
@@ -50,20 +50,15 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Cache Cypress binary
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/Cypress
-          key: cypress-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-      - run: pnpm exec cypress install
+      - run: pnpm exec playwright install --with-deps chromium
       - name: Build (the CLI test refuses a stale or missing .next)
         run: npx next build --webpack
       - name: "Build the browser entry (sealed tree: fails on an import that leaves browser/)"
         run: pnpm run build:browser
-      - name: Tests (node + Cypress, fake keys, no network)
+      - name: Tests (node + Playwright, fake keys, no network)
         run: pnpm test
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: cypress-screenshots
-          path: cypress/screenshots
+          name: playwright-results
+          path: test-results
