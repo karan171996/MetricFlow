@@ -33,6 +33,7 @@ node bin/cli.mjs
 pnpm test              # all tests, fake keys, no network
 pnpm test:cli          # node:test suite only
 pnpm test:real         # against your real accounts (.env.local)
+pnpm test:ui            # all e2e specs in one Playwright UI window
 pnpm e2e               # Playwright tests (app must be running; first run: pnpm exec playwright install chromium)
 pnpm lint
 pnpm send-test-data    # one dummy event to Sentry and New Relic

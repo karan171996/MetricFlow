@@ -61,6 +61,7 @@
     "test:cli": "node --experimental-test-module-mocks --import ./test/register.mjs --test test/*.test.mjs",
     "test:basic": "node scripts/test-env.mjs basic",
     "test:real": "node scripts/test-env.mjs real",
+    "test:ui": "PW_UI=1 node scripts/test-env.mjs basic",
     "test": "pnpm run test:basic",
     "release:bump": "node scripts/bump-version.mjs",
     "build:browser": "tsc -p tsconfig.browser.json"

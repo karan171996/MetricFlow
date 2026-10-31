@@ -47,6 +47,6 @@ try {
     if (i > 60) throw new Error("server did not become healthy in 60s");
     await new Promise((r) => setTimeout(r, 1000));
   }
-  code = run("pnpm", ["exec", "playwright", "test", ...specs], { env: { ...env, PLAYWRIGHT_BASE_URL: `http://localhost:${port}` } });
+  code = run("pnpm", ["exec", "playwright", "test", ...(process.env.PW_UI ? ["--ui"] : []), ...specs], { env: { ...env, PLAYWRIGHT_BASE_URL: `http://localhost:${port}` } });
 } catch (e) { console.error(e.message); } finally { server.kill("SIGTERM"); }
 process.exit(code);
