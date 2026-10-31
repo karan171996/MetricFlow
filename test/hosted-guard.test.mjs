@@ -68,9 +68,12 @@ test("control: unset, writeEnvLocal writes as before (the spies see it)", () => 
   delete process.env.NEWRELIC_REGION;
 });
 
-// Every route handler, discovered from app/ so a new route without a guard fails here.
+// Every route handler, discovered from app/ so a new route without a guard fails here. Only in the hosted build
+// (lib/hosted present, never in this repo) a route that imports @/lib/hosted/ is left to the hosted build's own tests.
+const hostedBuild = existsSync(join(root, "lib/hosted"));
 const routes = readdirSync(join(root, "app"), { recursive: true })
   .filter((f) => /(^|\/)route\.(ts|tsx|js|mjs)$/.test(f))
+  .filter((f) => !(hostedBuild && readFileSync(join(root, "app", f), "utf8").includes("@/lib/hosted/")))
   .map((f) => ({ file: `app/${f}`, path: "/" + f.replace(/\/?route\.(ts|tsx|js|mjs)$/, "") }));
 
 const REFUSED = { status: 403, body: { error: "Not available in this mode." } };
