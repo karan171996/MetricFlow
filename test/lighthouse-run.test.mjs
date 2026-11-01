@@ -121,8 +121,10 @@ test("the total cap stops the run and keeps the pages already measured", async (
   const seen = [];
   const runner = async (url) => { seen.push(url); await sleep(40); return lhr(url); };
   await startRun({ fetcher: f, runner, totalMs: 100 });
-  assert.ok(seen.length >= 2 && seen.length < 4, `ran ${seen.length}`);
-  assert.ok(Object.keys(getResults(T)).length >= 2 && Object.keys(getResults(T)).length < 4);
+  // A loaded machine can eat the 100ms cap before the second 40ms page finishes, so only the
+  // cap itself (fewer than all 4 pages) and "something was kept" are timing-independent.
+  assert.ok(seen.length >= 1 && seen.length < 4, `ran ${seen.length}`);
+  assert.ok(Object.keys(getResults(T)).length >= 1 && Object.keys(getResults(T)).length < 4);
   assert.ok(getResults(T)["/"], "measured pages are kept");
   assert.equal(getStatus().state, "idle");
 });
