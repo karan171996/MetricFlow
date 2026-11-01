@@ -18,3 +18,9 @@ This app is Next.js App Router (`app/`), not the separate Express backend the do
 - **Metrics shape**: `{ pageId, pageName, pageUrl, newRelic: { loadTime, lcp, ttfb, fid, errorRate, throughput, apdexScore }, sentry: { errorCount, errorRate, warningCount, latestErrors }, recordedAt }`.
 - **Alert shape**: `{ id, severity: "high"|"medium"|"low", type, page, message, metric, currentValue, threshold, aiInsight, createdAt, status: "active"|"resolved" }`.
 - **Intended endpoints**: `GET /api/metrics` (pull New Relic + Sentry), `POST /api/analyze` (send metrics to Claude, get back analysis/alerts/recommendations), `GET /api/health`.
+
+# Token economy
+
+- Default to `/effort medium` and Sonnet; raise effort or use Opus only for migrations, auth/payments, or unclear work.
+- Don't switch models mid-task (prompt-cache miss). Escalate once after a failed check, not repeatedly.
+- A Stop hook (`.claude/hooks/check.sh`) runs `pnpm run test:cli` and blocks "done" while it fails.
