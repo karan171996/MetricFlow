@@ -34,7 +34,14 @@ test("the guard covers every route handler: a new route outside /api would be un
 
 test("the app has only the App Router at app/: no pages/api, no src/app, no 'use server' that could add an endpoint the proxy does not match", () => {
   for (const dir of ["pages", "src"]) assert.ok(!existsSync(join(root, dir)), `${dir}/ exists`);
-  const files = readdirSync(root, { recursive: true }).filter((f) => /\.(ts|tsx|js|jsx|mjs)$/.test(f) && !/^(node_modules|\.next|\.claude|\.git|factory)\//.test(f) && !/(^|\/)(test|e2e)\//.test(f));
+  // Prune while walking: other processes write under factory/ and dist/ while this runs, and node_modules is huge.
+  const TOP_SKIP = new Set(["node_modules", ".next", ".claude", ".git", "factory", "dist"]);
+  const walk = (rel = "") => readdirSync(join(root, rel), { withFileTypes: true }).flatMap((e) => {
+    const p = rel ? `${rel}/${e.name}` : e.name;
+    if (e.isDirectory()) return (!rel && TOP_SKIP.has(e.name)) || e.name === "test" || e.name === "e2e" ? [] : walk(p);
+    return /\.(ts|tsx|js|jsx|mjs)$/.test(e.name) ? [p] : [];
+  });
+  const files = walk();
   assert.ok(files.length > 50, "source discovery found too few files");
   assert.deepEqual(files.filter((f) => /^\s*['"]use server['"]/m.test(readFileSync(join(root, f), "utf8"))), []);
 });
